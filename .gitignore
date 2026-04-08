@@ -1,2 +1,14 @@
-"node_modules/" 
-".env" 
+# Dependencias
+node_modules/
+backend/node_modules/
+
+# Variables de entorno
+.env
+backend/.env
+
+# Producción y compilación
+dist/
+backend/dist/
+
+# Docker (si crearon alguna carpeta local para los datos)
+pgdata/
