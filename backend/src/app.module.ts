@@ -6,6 +6,11 @@ import { AppService } from './app.service';
 import { TemasModule } from './temas/temas.module';
 import { ProductosModule } from './productos/productos.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { CarritoModule } from './carrito/carrito.module';
+import { LineaCarritoModule } from './linea-carrito/linea-carrito.module';
+import { PedidosModule } from './pedidos/pedidos.module';
+import { LineaPedidoModule } from './linea-pedido/linea-pedido.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -27,6 +32,11 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     TemasModule,
     ProductosModule,
     UsuariosModule,
+    CarritoModule,
+    LineaCarritoModule,
+    PedidosModule,
+    LineaPedidoModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloque Mundo | Catálogo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+
+    <header class="text-center mb-12">
+        <h1 class="text-5xl font-extrabold text-red-600 mb-2">Bloque Mundo</h1>
+        <p class="text-xl text-gray-600">El paraíso de los coleccionistas</p>
+    </header>
+
+    <main id="catalogo" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+    </main>
+
+    <script>
+        // Esta función va a buscar los productos a su Backend (NestJS)
+        async function cargarProductos() {
+            try {
+                const respuesta = await fetch('http://localhost:3000/productos');
+                const productos = await respuesta.json();
+
+                const contenedor = document.getElementById('catalogo');
+
+                productos.forEach(lego => {
+                    // Creamos una tarjeta por cada producto
+                    const tarjeta = `
+                        <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded">${lego.categoria}</span>
+                                <span class="text-sm font-semibold text-gray-500">ID: ${lego.codigoProducto}</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">${lego.titulo}</h2>
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-3">${lego.descripcion}</p>
+                            
+                            <div class="flex justify-between items-center mt-auto mb-4">
+                                <span class="text-2xl font-black text-green-600">$${lego.precio}</span>
+                                <span class="text-sm ${lego.stock > 0 ? 'text-gray-500' : 'text-red-500 font-bold'}">
+                                    ${lego.stock > 0 ? `Stock: ${lego.stock}` : 'Agotado'}
+                                </span>
+                            </div>
+                            
+                            <button 
+                                onclick="agregarAlCarrito(${lego.idProducto})" 
+                                class="w-full font-bold py-2 px-4 rounded transition-colors 
+                                ${lego.stock > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}"
+                                ${lego.stock === 0 ? 'disabled' : ''}
+                            >
+                                ${lego.stock > 0 ? '🛒 Agregar al Carrito' : 'Sin Stock'}
+                            </button>
+                        </div>
+                    `;
+                    contenedor.innerHTML += tarjeta;
+                });
+            } catch (error) {
+                console.error("Error al conectar con el backend:", error);
+                document.getElementById('catalogo').innerHTML = '<p class="text-red-500 col-span-full text-center">Error al cargar el catálogo. ¿El servidor está encendido?</p>';
+            }
+        }
+
+        // Ejecutamos la función apenas carga la página
+        cargarProductos();
+        // Función para enviar el producto al carrito del backend
+        async function agregarAlCarrito(idProducto) {
+            const idUsuarioFalso = '74593'; // <-- ¡CAMBIEN ESTO POR SU ID DE PGNADMIN!
+
+            try {
+                const respuesta = await fetch(`http://localhost:3000/carrito/${idUsuarioFalso}/agregar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        idProducto: idProducto,
+                        cantidad: 1
+                    })
+                });
+
+                if (respuesta.ok) {
+                    const carritoActualizado = await respuesta.json();
+                    alert(`¡LEGO agregado! 🚀\nTotal en carrito: $${carritoActualizado.total}`);
+                } else {
+                    const error = await respuesta.json();
+                    alert(`Ups: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error al agregar al carrito:", error);
+                alert("Error de conexión con el servidor.");
+            }
+        }
+    </script>
+</body>
+
+</html>
