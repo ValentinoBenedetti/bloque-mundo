@@ -9,7 +9,7 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
   // Acá está la magia: registramos ambas entidades juntas
   imports: [TypeOrmModule.forFeature([Producto, Tema]),
-    AuthModule
+    AuthModule,
   ],
   controllers: [ProductosController],
   providers: [ProductosService],

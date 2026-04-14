@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ¡Agregamos esta línea mágica!
+  // ¡ESTA LÍNEA ES VITAL! Permite que el frontend se conecte
   app.enableCors();
 
   await app.listen(3000);

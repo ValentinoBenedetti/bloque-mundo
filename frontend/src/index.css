@@ -1,0 +1,19 @@
+@import "tailwindcss";
+/* Importamos Micro 5 desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Micro+5&display=swap');
+
+@theme {
+  --color-brand-red: #D62828;
+  --color-brand-yellow: #FFD500;
+  --color-brand-dark: #1A1A1A;
+
+  /* Registramos la fuente para usarla como clase */
+  --font-logo: "Micro 5", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
