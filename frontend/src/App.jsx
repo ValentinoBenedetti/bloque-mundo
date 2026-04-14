@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
-import Home from './pages/Home'; // <--- Importante: traemos tu Home pro
+import Home from './pages/Home';
+import Store from './pages/Store';
+import ProductDetail from './pages/ProductDetail';
 
-// Este componente protege tus rutas (si no hay token, te manda al login)
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -14,17 +15,11 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Ruta del Login */}
           <Route path="/login" element={<Login />} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/tienda" element={<ProtectedRoute><Store /></ProtectedRoute>} />
+          <Route path="/producto/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
 
-          {/* Ruta del Home (Protegida) */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          } />
-
-          {/* Si alguien entra a cualquier otra cosa, lo mandamos al home */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
