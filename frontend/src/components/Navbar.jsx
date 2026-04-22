@@ -1,55 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Heart, ShoppingCart } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, X, Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Fuse from 'fuse.js';
-import { getProductsRequest } from '../api/products'; // Traemos la API
+import { getProductsRequest } from '../api/products';
+import { useCart } from '../context/CartContext';
+import { useFavorites } from '../context/FavoritesContext';
+import { useAuth } from '../context/AuthContext'; // <-- 1. Importamos el contexto de autenticación
 
 const Navbar = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Nuevos estados para la búsqueda en vivo
     const [products, setProducts] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-    // Referencia para saber si el usuario hace clic afuera del buscador
     const searchRef = useRef(null);
 
-    // 1. Cargar productos en segundo plano al iniciar la Navbar
+    // Traemos los datos de todos los contextos
+    const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen } = useCart();
+    const { favoritesIds } = useFavorites();
+    const { isAuthenticated, openAuthModal } = useAuth(); // <-- 2. Traemos las herramientas del Modal
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 const data = await getProductsRequest();
                 setProducts(data);
             } catch (err) {
-                console.error("Error cargando productos para el buscador", err);
+                console.error("Error cargando productos", err);
             }
         };
         fetchProducts();
     }, []);
 
-    // 2. Ejecutar la búsqueda mágica cada vez que el usuario teclea
     useEffect(() => {
         if (searchTerm.trim() === '') {
             setSuggestions([]);
             setIsDropdownOpen(false);
             return;
         }
-
-        const fuse = new Fuse(products, {
-            keys: ['titulo', 'categoria'], // Buscamos por título
-            threshold: 0.4,
-            distance: 100,
-        });
-
+        const fuse = new Fuse(products, { keys: ['titulo', 'categoria'], threshold: 0.4, distance: 100 });
         const results = fuse.search(searchTerm);
-        // Tomamos solo los primeros 5 resultados para no hacer una lista eterna
         setSuggestions(results.map(result => result.item).slice(0, 5));
         setIsDropdownOpen(true);
     }, [searchTerm, products]);
 
-    // 3. Cerrar el desplegable si hacen clic en cualquier otra parte de la pantalla
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -60,7 +54,6 @@ const Navbar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Funciones de navegación
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && searchTerm.trim() !== '') {
             setIsDropdownOpen(false);
@@ -74,78 +67,141 @@ const Navbar = () => {
         navigate(`/tienda?q=${titulo}`);
     };
 
-    const formatPrice = (p) => {
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p || 0);
+    const formatPrice = (p) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p || 0);
+
+    // 3. NUEVA FUNCIÓN: Freno para el botón de favoritos del Header
+    const handleFavoritesNav = () => {
+        if (!isAuthenticated) {
+            // Si no está logueado, abrimos el modal y le decimos que después lo mande a /favoritos
+            openAuthModal(() => navigate('/favoritos'));
+            return;
+        }
+        // Si ya está logueado, lo manda directo
+        navigate('/favoritos');
     };
 
     return (
-        <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-            <h1
-                className="text-3xl font-logo text-white tracking-widest cursor-pointer"
-                onClick={() => navigate('/')}
-            >
-                Bloque Mundo
-            </h1>
+        <>
+            <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
+                <h1 className="text-3xl font-logo text-white tracking-widest cursor-pointer" onClick={() => navigate('/')}>
+                    Bloque Mundo
+                </h1>
 
-            <div className="hidden md:flex gap-10 text-white font-medium text-sm tracking-tight items-center">
-                <button onClick={() => navigate('/')} className="hover:opacity-80 transition cursor-pointer">Inicio</button>
-                <button onClick={() => navigate('/tienda')} className="hover:opacity-80 transition cursor-pointer font-bold">Tienda</button>
-                <button className="hover:opacity-80 transition cursor-pointer">Nosotros</button>
+                <div className="hidden md:flex gap-10 text-white font-medium text-sm tracking-tight items-center">
+                    <button onClick={() => navigate('/')} className="hover:opacity-80 transition cursor-pointer">Inicio</button>
+                    <button onClick={() => navigate('/tienda')} className="hover:opacity-80 transition cursor-pointer">Tienda</button>
+                    <button className="hover:opacity-80 transition cursor-pointer">Nosotros</button>
 
-                {/* CONTENEDOR DEL BUSCADOR (CON REFERENCIA PARA CLIC AFUERA) */}
-                <div className="relative ml-4" ref={searchRef}>
-                    <input
-                        type="text"
-                        placeholder="Buscar productos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        onFocus={() => searchTerm.trim() !== '' && setIsDropdownOpen(true)}
-                        className="py-1.5 pl-4 pr-10 rounded-full text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-72 transition-all"
-                    />
-                    <Search
-                        size={16}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer hover:text-brand-red transition"
-                        onClick={() => searchTerm.trim() !== '' && navigate(`/tienda?q=${searchTerm}`)}
-                    />
+                    <div className="relative ml-4" ref={searchRef}>
+                        <input
+                            type="text" placeholder="Buscar productos..." value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
+                            onFocus={() => searchTerm.trim() !== '' && setIsDropdownOpen(true)}
+                            className="py-1.5 pl-4 pr-10 rounded-full text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-72 transition-all"
+                        />
+                        <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer hover:text-brand-red" onClick={() => searchTerm.trim() !== '' && navigate(`/tienda?q=${searchTerm}`)} />
 
-                    {/* MENÚ DESPLEGABLE DE RESULTADOS EN VIVO */}
-                    {isDropdownOpen && suggestions.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden z-50 flex flex-col">
-                            {suggestions.map((item) => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => handleSuggestionClick(item.titulo)}
-                                    className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-none transition-colors"
-                                >
-                                    <img
-                                        src={item.imagen || 'https://via.placeholder.com/50?text=Foto'}
-                                        alt={item.titulo}
-                                        className="w-10 h-10 object-contain mix-blend-multiply"
-                                    />
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-800 truncate w-48">{item.titulo}</span>
-                                        <span className="text-xs font-black text-brand-red">{formatPrice(item.precio)}</span>
+                        {isDropdownOpen && suggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
+                                {suggestions.map((item) => (
+                                    <div key={item.id} onClick={() => handleSuggestionClick(item.titulo)} className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50">
+                                        <img src={item.imagen || item.imagenes || item.image} alt={item.titulo} className="w-10 h-10 object-contain mix-blend-multiply" />
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-800 truncate w-48">{item.titulo || item.nombre}</span>
+                                            <span className="text-xs font-black text-brand-red">{formatPrice(item.precio || item.price)}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <button
-                                onClick={() => handleSuggestionClick(searchTerm)}
-                                className="bg-slate-50 text-slate-500 text-xs font-bold py-2 hover:bg-brand-red hover:text-white transition-colors text-center"
-                            >
-                                Ver todos los resultados
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex gap-6 text-white items-center">
+                    <User size={20} className="cursor-pointer hover:scale-110 transition" onClick={() => navigate('/perfil')} />
+
+                    {/* APLICAMOS EL FRENO ACÁ */}
+                    <div className="relative cursor-pointer hover:scale-110 transition" onClick={handleFavoritesNav}>
+                        <Heart size={20} />
+                        {favoritesIds.length > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-white text-brand-red text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-sm">
+                                {favoritesIds.length}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="relative cursor-pointer hover:scale-110 transition" onClick={() => setIsCartOpen(true)}>
+                        <ShoppingCart size={20} />
+                        {totalItems > 0 && (
+                            <span className="absolute -top-2 -right-3 bg-brand-yellow text-slate-900 text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center">
+                                {totalItems}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            {/* MENÚ LATERAL DEL CARRITO */}
+            {isCartOpen && (
+                <div className="fixed inset-0 z-100 flex justify-end">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
+                    <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+                            <h2 className="text-2xl font-black text-slate-900 uppercase italic">Carrito</h2>
+                            <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-slate-900 transition">
+                                <X size={24} />
                             </button>
                         </div>
-                    )}
-                </div>
-            </div>
 
-            <div className="flex gap-6 text-white items-center">
-                <User size={20} className="cursor-pointer hover:scale-110 transition" onClick={() => navigate('/perfil')} />
-                <Heart size={20} className="cursor-pointer hover:scale-110 transition" />
-                <ShoppingCart size={20} className="cursor-pointer hover:scale-110 transition" />
-            </div>
-        </nav>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {cart.length === 0 ? (
+                                <div className="text-center text-slate-500 mt-20">
+                                    <ShoppingCart size={48} className="mx-auto mb-4 opacity-20" />
+                                    <p className="font-bold">Tu carrito está vacío</p>
+                                </div>
+                            ) : (
+                                cart.map((item, index) => (
+                                    <div key={index} className="flex gap-4 items-center border-b border-slate-50 pb-4 last:border-0">
+                                        <div className="w-20 h-20 bg-slate-100 rounded-lg p-2 shrink-0">
+                                            <img src={item.imagen || item.imagenes || item.image} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-bold text-slate-800 leading-tight mb-1">{item.titulo || item.nombre}</h3>
+                                            <div className="text-xs text-slate-500 mb-2">
+                                                {item.quantity} x <span className="font-bold text-slate-900">{formatPrice(item.precio || item.price)}</span>
+                                            </div>
+                                            <div className="flex items-center border border-slate-200 rounded w-max bg-white">
+                                                <button onClick={() => addToCart(item, -1)} className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"><Minus size={12} /></button>
+                                                <span className="px-2 text-xs font-black text-slate-800">{item.quantity}</span>
+                                                <button onClick={() => addToCart(item, 1)} className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"><Plus size={12} /></button>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => removeFromCart(item.id || item.idProducto || item.id_producto)} className="bg-slate-100 text-slate-400 hover:bg-brand-red hover:text-white p-1.5 rounded-full transition self-start">
+                                            <X size={14} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {cart.length > 0 && (
+                            <div className="p-6 border-t border-slate-100 bg-white">
+                                <div className="flex justify-between items-end mb-6">
+                                    <span className="font-bold text-slate-500 text-sm">Subtotal</span>
+                                    <span className="text-xl font-black text-slate-900">{formatPrice(totalPrice)}</span>
+                                </div>
+                                <button
+                                    onClick={() => { setIsCartOpen(false); navigate('/carrito'); }}
+                                    className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-sm italic"
+                                >
+                                    Continuar
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 

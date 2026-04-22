@@ -14,19 +14,27 @@ const Login = () => {
     const [error, setError] = useState(null);
 
     const navigate = useNavigate();
-    const { setIsAuthenticated } = useAuth();
+
+    // OJO ACÁ: En nuestro nuevo contexto la función se llama "login", no "setIsAuthenticated"
+    const { login } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError(null);
         try {
             const data = await loginRequest(email, password);
-            localStorage.setItem('token', data.access_token);
-            setIsAuthenticated(true);
+            // Pasamos el access_token a la función login del contexto
+            login(data.access_token);
             navigate('/');
         } catch (err) {
             setError("Email o contraseña incorrectos");
         }
+    };
+
+    const handleGoogleLogin = () => {
+        // Función rápida para el botón de Google
+        login();
+        navigate('/');
     };
 
     return (
@@ -48,7 +56,11 @@ const Login = () => {
                 {/* MODAL FIGMA */}
                 <div className="bg-white p-8 md:p-10 rounded-lg shadow-2xl w-full max-w-lg relative z-20 mx-4">
 
-                    <button className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition">
+                    {/* Botón Cerrar (X) */}
+                    <button
+                        onClick={() => navigate('/')}
+                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -64,7 +76,11 @@ const Login = () => {
                         </h1>
                     </div>
 
-                    <button className="w-full flex items-center justify-center gap-3 border-2 border-slate-900 rounded-lg py-2 px-6 mb-6 hover:bg-slate-50 transition font-bold">
+                    <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        className="w-full flex items-center justify-center gap-3 border-2 border-slate-900 rounded-lg py-2 px-6 mb-6 hover:bg-slate-50 transition font-bold"
+                    >
                         <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="h-5 w-5" />
                         Continuar con Google
                     </button>

@@ -11,6 +11,7 @@ import { LineaCarritoModule } from './linea-carrito/linea-carrito.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { LineaPedidoModule } from './linea-pedido/linea-pedido.module';
 import { AuthModule } from './auth/auth.module';
+import { FavoritosModule } from './favoritos/favoritos.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AuthModule } from './auth/auth.module';
     PedidosModule,
     LineaPedidoModule,
     AuthModule,
+    FavoritosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

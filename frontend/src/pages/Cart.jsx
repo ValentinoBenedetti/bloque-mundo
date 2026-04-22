@@ -1,0 +1,139 @@
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
+
+const Cart = () => {
+    const { cart, addToCart, removeFromCart, totalPrice } = useCart();
+    const navigate = useNavigate();
+
+    const formatPrice = (p) => new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        maximumFractionDigits: 0
+    }).format(p || 0);
+
+    return (
+        <div className="min-h-screen flex flex-col bg-slate-50">
+            <Navbar />
+
+            <main className="flex-1 max-w-7xl mx-auto w-full py-12 px-6">
+                <button
+                    onClick={() => navigate('/tienda')}
+                    className="flex items-center gap-2 text-slate-500 hover:text-brand-red transition mb-8 font-bold text-sm"
+                >
+                    <ArrowLeft size={18} /> Continuar comprando
+                </button>
+
+                <h1 className="text-4xl font-black text-slate-900 uppercase italic mb-10 tracking-tighter">Mi Carrito</h1>
+
+                {cart.length === 0 ? (
+                    <div className="bg-white rounded-xl p-20 text-center shadow-sm border border-slate-100">
+                        <p className="text-2xl font-bold text-slate-400 mb-6">Tu carrito está vacío 🧱</p>
+                        <button
+                            onClick={() => navigate('/tienda')}
+                            className="bg-brand-red text-white px-8 py-3 rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition"
+                        >
+                            Ir a la tienda
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col lg:flex-row gap-10">
+
+                        {/* LISTA DE PRODUCTOS (Izquierda) */}
+                        <div className="flex-1 space-y-4">
+                            {cart.map((item, index) => (
+                                <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-6">
+                                    <div className="w-24 h-24 bg-slate-50 rounded-lg p-2 shrink-0">
+                                        <img
+                                            src={item.imagen || item.imagenes || item.image}
+                                            className="w-full h-full object-contain mix-blend-multiply"
+                                            alt="producto"
+                                        />
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-black text-slate-800 leading-tight mb-1 uppercase italic">
+                                            {item.titulo || item.nombre}
+                                        </h3>
+                                        <p className="text-brand-red font-black text-sm mb-4">
+                                            {formatPrice(item.precio || item.price)} c/u
+                                        </p>
+
+                                        <div className="flex items-center border-2 border-slate-100 rounded-lg w-max">
+                                            <button
+                                                onClick={() => addToCart(item, -1)}
+                                                className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
+                                            >
+                                                <Minus size={16} />
+                                            </button>
+                                            <span className="px-4 font-black text-slate-800">{item.quantity}</span>
+                                            <button
+                                                onClick={() => addToCart(item, 1)}
+                                                className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-right">
+                                        <p className="text-xl font-black text-slate-900 mb-4">
+                                            {formatPrice((item.precio || item.price) * item.quantity)}
+                                        </p>
+                                        <button
+                                            onClick={() => removeFromCart(item.id || item.idProducto || item.id_producto)}
+                                            className="text-slate-300 hover:text-brand-red transition p-2"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* RESUMEN DE COMPRA (Derecha) */}
+                        <div className="lg:w-96">
+                            <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-100 sticky top-28">
+                                <h2 className="text-xl font-black text-slate-900 uppercase italic mb-6 border-b-2 border-brand-yellow pb-2">
+                                    Resumen
+                                </h2>
+
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex justify-between text-slate-500 font-bold">
+                                        <span>Subtotal</span>
+                                        <span>{formatPrice(totalPrice)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-500 font-bold">
+                                        <span>Envío</span>
+                                        <span className="text-green-500">Gratis</span>
+                                    </div>
+                                    <div className="h-1px bg-slate-100 my-4"></div>
+                                    <div className="flex justify-between text-2xl font-black text-slate-900">
+                                        <span>Total</span>
+                                        <span>{formatPrice(totalPrice)}</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-sm italic mb-4"
+                                >
+                                    Finalizar compra
+                                </button>
+                                <p className="text-[10px] text-slate-400 text-center font-bold uppercase">
+                                    Aceptamos todos los medios de pago
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+            </main>
+
+            <Footer />
+        </div>
+    );
+};
+
+export default Cart;

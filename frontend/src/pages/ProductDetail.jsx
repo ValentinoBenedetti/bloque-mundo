@@ -5,10 +5,15 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const ProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    const { addToCart, setIsCartOpen } = useCart();
+    const { isAuthenticated, openAuthModal } = useAuth();
 
     const [product, setProduct] = useState(null);
     const [related, setRelated] = useState([]);
@@ -16,39 +21,28 @@ const ProductDetail = () => {
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
 
+    const [isFavorite, setIsFavorite] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             if (!id || id === 'undefined') {
                 setLoading(false);
                 return;
             }
-
             try {
                 setLoading(true);
-                // Traemos todos los productos para buscarlo localmente (Solución Ninja)
                 const allProducts = await getProductsRequest();
 
-                // --- LOG DE DEPURACIÓN (Mirá la consola F12 para ver esto) ---
-                console.log("🚀 URL ID:", id);
-                console.log("📦 Primer producto de la DB:", allProducts[0]);
-                // ------------------------------------------------------------
-
-                // Buscamos el producto con una comparación súper flexible
                 const foundProduct = allProducts.find(p => {
-                    // Buscamos el ID en cualquier propiedad posible que use NestJS/Sequelize/TypeORM
                     const pId = p.id || p.idProducto || p.id_producto || p.productoId || p.ID || p._id;
                     return String(pId) === String(id);
                 });
 
                 if (foundProduct) {
                     setProduct(foundProduct);
-                    // Adaptamos la imagen a tus nombres de columna
                     setMainImage(foundProduct.imagen || foundProduct.imagenes || foundProduct.image || foundProduct.url_imagen);
-                } else {
-                    console.warn("⚠️ No se encontró un producto con ID:", id, "en la lista de:", allProducts.length, "ítems.");
                 }
 
-                // Cargamos los relacionados (que no sean el actual)
                 setRelated(allProducts.filter(p => {
                     const pId = p.id || p.idProducto || p.id_producto || p.productoId || p.ID;
                     return String(pId) !== String(id);
@@ -65,7 +59,6 @@ const ProductDetail = () => {
         window.scrollTo(0, 0);
     }, [id]);
 
-    // Componente de Carga
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col bg-slate-50">
@@ -81,7 +74,6 @@ const ProductDetail = () => {
         );
     }
 
-    // Componente de Error / No Encontrado
     if (!product) {
         return (
             <div className="min-h-screen flex flex-col bg-slate-50">
@@ -93,17 +85,8 @@ const ProductDetail = () => {
                         No pudimos encontrar el set con ID <span className="font-bold text-brand-red">#{id}</span> en nuestra base de datos.
                     </p>
                     <div className="flex gap-4">
-                        <button
-                            onClick={() => navigate('/tienda')}
-                            className="bg-brand-red text-white px-8 py-3 rounded-md font-bold hover:bg-red-700 transition shadow-lg uppercase tracking-widest text-sm"
-                        >
+                        <button onClick={() => navigate('/tienda')} className="bg-brand-red text-white px-8 py-3 rounded-md font-bold hover:bg-red-700 transition shadow-lg uppercase tracking-widest text-sm">
                             Ir a la tienda
-                        </button>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="bg-white border-2 border-slate-200 text-slate-600 px-8 py-3 rounded-md font-bold hover:bg-slate-50 transition uppercase tracking-widest text-sm"
-                        >
-                            Reintentar
                         </button>
                     </div>
                 </div>
@@ -112,22 +95,45 @@ const ProductDetail = () => {
         );
     }
 
-    // Formateo de precio
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p || 0);
 
-    // Mapeo de campos de tu Base de Datos
     const titulo = product.titulo || product.nombre || 'Set de Colección';
     const precio = product.precio || product.price || 0;
     const imagen = product.imagen || product.imagenes || product.image || 'https://via.placeholder.com/600?text=Bloque+Mundo';
     const edad = product.rangoEdad || product.edad || '9';
     const piezas = product.cantidadPiezas || product.piezas || '---';
+
+    // Acá tomamos el ID real de 5 cifras que manda el Backend
     const idReal = product.id || product.idProducto || product.id_producto || id;
+
+    const handleAddToCart = () => {
+        if (!isAuthenticated) {
+            openAuthModal(() => {
+                addToCart(product, quantity);
+                setIsCartOpen(true);
+            });
+            return;
+        }
+
+        addToCart(product, quantity);
+        setIsCartOpen(true);
+    };
+
+    const handleFavorite = () => {
+        if (!isAuthenticated) {
+            openAuthModal(() => {
+                setIsFavorite(true);
+            });
+            return;
+        }
+
+        setIsFavorite(!isFavorite);
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-white">
             <Navbar />
 
-            {/* RUTA DE NAVEGACIÓN (Breadcrumbs) */}
             <div className="bg-brand-yellow w-full py-3 px-10 border-b border-yellow-500">
                 <div className="max-w-7xl mx-auto flex text-[10px] font-black text-slate-800 uppercase tracking-widest gap-2 items-center">
                     <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate('/')}>Inicio</span>
@@ -139,13 +145,9 @@ const ProductDetail = () => {
             </div>
 
             <main className="flex-1 max-w-7xl mx-auto w-full py-12 px-6">
-
-                {/* ARRIBA: GALERÍA Y COMPRA */}
                 <div className="flex flex-col md:flex-row gap-16 mb-24">
-
-                    {/* IZQUIERDA: IMÁGENES */}
                     <div className="flex gap-6 md:w-3/5">
-                        <div className="flex flex-col gap-4 hidden lg:flex">
+                        <div className="hidden lg:flex flex-col gap-4">
                             {[1, 2, 3].map((i) => (
                                 <div key={i} className="w-20 h-20 bg-slate-50 rounded border border-slate-200 p-2 cursor-pointer hover:border-brand-red transition">
                                     <img src={imagen} className="w-full h-full object-contain mix-blend-multiply" alt="thumb" />
@@ -153,23 +155,25 @@ const ProductDetail = () => {
                             ))}
                         </div>
                         <div className="flex-1 bg-slate-50 rounded-xl relative flex items-center justify-center p-12 group border border-slate-100 min-h-[500px]">
-                            <img
-                                src={mainImage}
-                                alt={titulo}
-                                className="w-full h-full object-contain mix-blend-multiply transform group-hover:scale-110 transition-transform duration-700"
-                            />
+                            <img src={mainImage} alt={titulo} className="w-full h-full object-contain mix-blend-multiply transform group-hover:scale-110 transition-transform duration-700" />
                             <button className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-brand-red">
                                 <Maximize size={24} />
                             </button>
                         </div>
                     </div>
 
-                    {/* DERECHA: DATOS */}
                     <div className="md:w-2/5 flex flex-col justify-center">
                         <div className="flex justify-between items-start mb-4">
                             <h1 className="text-5xl font-black text-slate-900 leading-none uppercase italic tracking-tighter">{titulo}</h1>
-                            <button className="p-2 hover:bg-slate-50 rounded-full transition group">
-                                <Heart size={32} className="text-slate-300 group-hover:text-brand-red transition-colors" />
+
+                            <button
+                                onClick={handleFavorite}
+                                className="p-2 hover:bg-slate-50 rounded-full transition group"
+                            >
+                                <Heart
+                                    size={32}
+                                    className={`transition-colors duration-300 ${isFavorite ? 'text-brand-red fill-brand-red' : 'text-slate-300 group-hover:text-brand-red'}`}
+                                />
                             </button>
                         </div>
 
@@ -190,7 +194,6 @@ const ProductDetail = () => {
                             Este set de colección de <span className="font-bold text-slate-800">Bloque Mundo</span> es perfecto para aquellos que buscan un desafío de construcción único. Con detalles realistas y piezas de alta calidad, es ideal tanto para jugar como para exhibir.
                         </p>
 
-                        {/* ESPECIFICACIONES TÉCNICAS */}
                         <div className="grid grid-cols-3 gap-4 mb-10 py-8 border-y border-slate-100">
                             <div className="flex flex-col items-center text-center">
                                 <Calendar size={28} className="text-slate-800 mb-2" />
@@ -205,60 +208,48 @@ const ProductDetail = () => {
                             <div className="flex flex-col items-center text-center">
                                 <Hash size={28} className="text-slate-800 mb-2" />
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Código</span>
-                                <span className="text-sm font-bold text-slate-800">{idReal}</span>
+                                {/* Mostramos el idReal tal cual viene del Backend */}
+                                <span className="text-sm font-bold text-slate-800">#{idReal}</span>
                             </div>
                         </div>
 
-                        {/* ACCIONES */}
                         <div className="flex gap-4">
                             <div className="flex items-center border-2 border-slate-200 rounded-lg bg-white overflow-hidden">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="px-4 py-2 hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition"
-                                >
-                                    <Minus size={18} />
-                                </button>
+                                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-2 hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition"><Minus size={18} /></button>
                                 <span className="w-10 text-center font-black text-slate-900 text-lg">{quantity}</span>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    className="px-4 py-2 hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition"
-                                >
-                                    <Plus size={18} />
-                                </button>
+                                <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-2 hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition"><Plus size={18} /></button>
                             </div>
-                            <button className="flex-1 bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all active:scale-95 uppercase tracking-widest text-sm italic">
+
+                            <button
+                                onClick={handleAddToCart}
+                                className="flex-1 bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all active:scale-95 uppercase tracking-widest text-sm italic"
+                            >
                                 Añadir al carrito
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* ABAJO: RELACIONADOS */}
                 <section className="pt-20 border-t border-slate-100">
                     <div className="flex justify-between items-end mb-12">
                         <div>
                             <span className="text-brand-red font-black text-xs uppercase tracking-[0.3em]">Más para armar</span>
                             <h2 className="text-4xl font-black text-slate-900 italic uppercase">Sets relacionados</h2>
                         </div>
-                        <button
-                            onClick={() => navigate('/tienda')}
-                            className="text-slate-400 font-bold text-sm hover:text-brand-red transition border-b-2 border-transparent hover:border-brand-red pb-1"
-                        >
+                        <button onClick={() => navigate('/tienda')} className="text-slate-400 font-bold text-sm hover:text-brand-red transition border-b-2 border-transparent hover:border-brand-red pb-1">
                             Ver toda la tienda
                         </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {related.length > 0 ? (
-                            related.map(p => <ProductCard key={p.id || p.idProducto} product={p} />)
+                            related.map(p => <ProductCard key={p.id || p.idProducto || p.id_producto || p.productoId} product={p} />)
                         ) : (
                             <p className="col-span-full text-center text-slate-300 italic">Cargando recomendaciones...</p>
                         )}
                     </div>
                 </section>
-
             </main>
-
             <Footer />
         </div>
     );

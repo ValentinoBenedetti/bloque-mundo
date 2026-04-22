@@ -1,19 +1,55 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) throw new Error('useAuth debe usarse dentro de un AuthProvider');
+    return context;
+};
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
 
-    // Al cargar la app, revisamos si ya hay un token
+    // NUEVO: Estado para guardar los datos del usuario logueado
+    const [user, setUser] = useState(null);
+
+    // Función mágica para leer el ID del token
+    const decodeToken = (token) => {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Al cargar la app, vemos si ya había un token guardado
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            setIsAuthenticated(true);
-            // Aquí después podríamos pedirle al backend los datos del usuario
+            const userData = decodeToken(token);
+            if (userData) {
+                setUser(userData);
+                setIsAuthenticated(true);
+            }
         }
     }, []);
+
+    const login = (token) => {
+        if (token) {
+            localStorage.setItem('token', token);
+            const userData = decodeToken(token);
+            setUser(userData);
+            setIsAuthenticated(true);
+        }
+    };
 
     const logout = () => {
         localStorage.removeItem('token');
@@ -21,11 +57,22 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
     };
 
+    const openAuthModal = (action = null) => {
+        if (action) setPendingAction(() => action);
+        setIsAuthModalOpen(true);
+    };
+
+    const closeAuthModal = () => {
+        setIsAuthModalOpen(false);
+        setPendingAction(null);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated, setIsAuthenticated, logout }}>
+        <AuthContext.Provider value={{
+            isAuthenticated, login, logout, user, // Exportamos "user"
+            isAuthModalOpen, openAuthModal, closeAuthModal, pendingAction
+        }}>
             {children}
         </AuthContext.Provider>
     );
 };
-
-export const useAuth = () => useContext(AuthContext);
