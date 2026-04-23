@@ -1,24 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, User, Heart, ShoppingCart, X, Plus, Minus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import { getProductsRequest } from '../api/products';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { useAuth } from '../context/AuthContext'; // <-- 1. Importamos el contexto de autenticación
+import { useAuth } from '../context/AuthContext';
+import ProfileSidebar from './ProfileSidebar';
 
 const Navbar = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // DETECTAMOS SI ESTAMOS EN LA PÁGINA DE LOGIN
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
     const [searchTerm, setSearchTerm] = useState('');
     const [products, setProducts] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
     const searchRef = useRef(null);
 
-    // Traemos los datos de todos los contextos
     const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen } = useCart();
     const { favoritesIds } = useFavorites();
-    const { isAuthenticated, openAuthModal } = useAuth(); // <-- 2. Traemos las herramientas del Modal
+    const { isAuthenticated, openAuthModal } = useAuth();
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -67,23 +73,52 @@ const Navbar = () => {
         navigate(`/tienda?q=${titulo}`);
     };
 
+    const handleProfileClick = () => {
+        if (isAuthenticated) {
+            setIsProfileSidebarOpen(true);
+        } else {
+            openAuthModal();
+        }
+    };
+
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p || 0);
 
-    // 3. NUEVA FUNCIÓN: Freno para el botón de favoritos del Header
     const handleFavoritesNav = () => {
         if (!isAuthenticated) {
-            // Si no está logueado, abrimos el modal y le decimos que después lo mande a /favoritos
             openAuthModal(() => navigate('/favoritos'));
             return;
         }
-        // Si ya está logueado, lo manda directo
         navigate('/favoritos');
     };
 
+    // ==============================================================
+    // 🔥 EL "OTRO HEADER" (SOLO PARA LOGIN/REGISTRO)
+    // ==============================================================
+    if (isAuthPage) {
+        return (
+            <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
+                <h1 className="text-3xl font-logo text-white tracking-widest select-none cursor-default uppercase">
+                    Bloque Mundo
+                </h1>
+
+                {/* BOTÓN "CONTINUAR A LA TIENDA" */}
+                <button
+                    onClick={() => navigate('/tienda')}
+                    className="text-white font-bold text-sm tracking-widest uppercase hover:opacity-80 transition cursor-pointer underline underline-offset-4"
+                >
+                    Continuar a la tienda
+                </button>
+            </nav>
+        );
+    }
+
+    // ==============================================================
+    // VISTA NORMAL: TIENDA COMPLETA (Para el resto de la página)
+    // ==============================================================
     return (
         <>
             <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <h1 className="text-3xl font-logo text-white tracking-widest cursor-pointer" onClick={() => navigate('/')}>
+                <h1 className="text-3xl font-logo text-white tracking-widest cursor-pointer uppercase" onClick={() => navigate('/')}>
                     Bloque Mundo
                 </h1>
 
@@ -118,9 +153,8 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex gap-6 text-white items-center">
-                    <User size={20} className="cursor-pointer hover:scale-110 transition" onClick={() => navigate('/perfil')} />
+                    <User size={20} className="cursor-pointer hover:scale-110 transition" onClick={handleProfileClick} />
 
-                    {/* APLICAMOS EL FRENO ACÁ */}
                     <div className="relative cursor-pointer hover:scale-110 transition" onClick={handleFavoritesNav}>
                         <Heart size={20} />
                         {favoritesIds.length > 0 && (
@@ -141,7 +175,7 @@ const Navbar = () => {
                 </div>
             </nav>
 
-            {/* MENÚ LATERAL DEL CARRITO */}
+            {/* CARRITO Y SIDEBAR */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-100 flex justify-end">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
@@ -201,6 +235,11 @@ const Navbar = () => {
                     </div>
                 </div>
             )}
+
+            <ProfileSidebar
+                isOpen={isProfileSidebarOpen}
+                onClose={() => setIsProfileSidebarOpen(false)}
+            />
         </>
     );
 };

@@ -61,7 +61,7 @@ export class AuthService {
     if (!passwordValida) throw new UnauthorizedException('Credenciales incorrectas');
 
     // 3. Si todo está bien, fabricamos el Pase VIP (JWT)
-    const payload = { sub: usuario.idUsuario, nombre: usuario.nombre, rol: 'Usuario', admin: usuario.esAdmin };
+    const payload = { sub: usuario.idUsuario, nombre: usuario.nombre, rol: 'Usuario', esAdmin: usuario.esAdmin };
 
     return {
       access_token: await this.jwtService.signAsync(payload),

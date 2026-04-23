@@ -4,7 +4,7 @@ import { Tema } from '../../temas/entities/tema.entity';
 @Entity('productos')
 export class Producto {
     // 1. Cambiamos PrimaryGeneratedColumn por PrimaryColumn (ya no es auto-incremental)
-    @PrimaryColumn()
+    @PrimaryColumn({ type: 'int' }) // 🔥 ESTO ES VITAL
     idProducto: number;
 
     @Column({ type: 'varchar', length: 20, unique: true })
