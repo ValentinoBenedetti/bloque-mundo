@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ¡ESTA LÍNEA ES VITAL! Permite que el frontend se conecte
+  // 🔥 AGREGAMOS ESTA LÍNEA PARA PERMITIR QUE REACT SE COMUNIQUE
   app.enableCors();
 
   await app.listen(3000);

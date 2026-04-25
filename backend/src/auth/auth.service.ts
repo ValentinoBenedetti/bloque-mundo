@@ -1,71 +1,96 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, UnauthorizedException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { Usuario } from '../usuarios/entities/usuario.entity';
+import { UsuariosService } from '../usuarios/usuarios.service'; // 🔥 Importante
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(Usuario) private usuarioRepository: Repository<Usuario>,
+    // 🔥 Inyectamos UsuariosService usando forwardRef para evitar problemas de dependencias circulares
+    @Inject(forwardRef(() => UsuariosService))
+    private usuariosService: UsuariosService,
     private jwtService: JwtService,
   ) { }
 
-  // --- FUNCIÓN 1: REGISTRAR UN NUEVO USUARIO ---
-  async registrar(datos: any) {
-    // 1. Verificamos que el mail no exista
-    const existeMail = await this.usuarioRepository.findOne({ where: { email: datos.email } });
-    if (existeMail) throw new BadRequestException('Ese correo ya está registrado.');
+  // --- 1. VERIFICAR SI EL EMAIL EXISTE (Para el Modal de Google) ---
+  async verificarExistencia(email: string) {
+    const usuario = await this.usuariosService.buscarPorEmail(email);
 
-    // 2. GENERADOR AUTOMÁTICO DE ID (5 dígitos al azar)
-    let idGenerado = '';
-    let idUnico = false;
+    if (usuario) {
+      const payload = {
+        sub: usuario.idUsuario,
+        nombre: usuario.nombre,
+        email: usuario.email
+      };
 
-    // Este bucle crea IDs hasta encontrar uno que nadie más tenga
-    while (!idUnico) {
-      // Genera un número entre 10000 y 99999
-      idGenerado = Math.floor(10000 + Math.random() * 90000).toString();
-      const existeId = await this.usuarioRepository.findOne({ where: { idUsuario: idGenerado } });
-      if (!existeId) {
-        idUnico = true; // ¡Encontramos uno libre!
-      }
+      return {
+        exists: true,
+        token: await this.jwtService.signAsync(payload)
+      };
     }
 
-    // 3. Encriptamos la contraseña
-    const passwordEncriptada = await bcrypt.hash(datos.password, 10);
+    return { exists: false };
+  }
 
-    // 4. Creamos el usuario con el ID inventado por el sistema
-    const nuevoUsuario = this.usuarioRepository.create({
-      idUsuario: idGenerado, // <--- Acá usamos el generado automáticamente
-      nombre: datos.nombre,
-      email: datos.email,
-      password: passwordEncriptada,
-    });
+  // --- 2. REGISTRAR CON GOOGLE (El que pide tu AuthController) ---
+  async registrarConGoogle(datos: any) {
+    // Usamos el método de UsuariosService que ya genera el ID de 5 dígitos
+    const nuevoUsuario = await this.usuariosService.crearUsuario(datos);
 
-    await this.usuarioRepository.save(nuevoUsuario);
+    const payload = {
+      sub: nuevoUsuario.idUsuario,
+      nombre: nuevoUsuario.nombre,
+      email: nuevoUsuario.email
+    };
+
     return {
-      mensaje: '¡Usuario registrado con éxito!',
-      idAsignado: idGenerado // Se lo devolvemos para que sepa cuál le tocó
+      access_token: await this.jwtService.signAsync(payload),
+      user: nuevoUsuario
     };
   }
 
-  // --- FUNCIÓN 2: INICIAR SESIÓN ---
+  // --- 3. LOGIN TRADICIONAL (Email y Password) ---
   async login(email: string, passwordPlana: string) {
-    // 1. Buscamos al usuario por su mail
-    const usuario = await this.usuarioRepository.findOne({ where: { email } });
+    const usuario = await this.usuariosService.buscarPorEmail(email);
     if (!usuario) throw new UnauthorizedException('Credenciales incorrectas');
 
-    // 2. Comparamos la contraseña plana con la encriptada de la base de datos
+    // Si el usuario se registró con Google, no tendrá password
+    if (!usuario.password) {
+      throw new UnauthorizedException('Este correo utiliza inicio de sesión con Google');
+    }
+
     const passwordValida = await bcrypt.compare(passwordPlana, usuario.password);
     if (!passwordValida) throw new UnauthorizedException('Credenciales incorrectas');
 
-    // 3. Si todo está bien, fabricamos el Pase VIP (JWT)
-    const payload = { sub: usuario.idUsuario, nombre: usuario.nombre, rol: 'Usuario', esAdmin: usuario.esAdmin };
+    const payload = {
+      sub: usuario.idUsuario,
+      nombre: usuario.nombre,
+      email: usuario.email,
+      esAdmin: usuario.esAdmin
+    };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
       usuario: { id: usuario.idUsuario, nombre: usuario.nombre }
+    };
+  }
+
+  // --- 4. REGISTRO TRADICIONAL (Opcional, por si lo sigues usando) ---
+  async registrar(datos: any) {
+    const existeMail = await this.usuariosService.buscarPorEmail(datos.email);
+    if (existeMail) throw new BadRequestException('Ese correo ya está registrado.');
+
+    // Encriptamos antes de mandar a UsuariosService
+    const passwordEncriptada = await bcrypt.hash(datos.password, 10);
+
+    const nuevoUsuario = await this.usuariosService.crearUsuario({
+      ...datos,
+      password: passwordEncriptada
+    });
+
+    return {
+      mensaje: '¡Usuario registrado con éxito!',
+      idAsignado: nuevoUsuario.idUsuario
     };
   }
 }

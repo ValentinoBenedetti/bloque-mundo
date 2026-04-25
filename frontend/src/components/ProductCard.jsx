@@ -27,11 +27,17 @@ const ProductCard = ({ product }) => {
 
     const handleHeartClick = (e) => {
         e.stopPropagation(); // Evita que al tocar el corazón te lleve a otra página
+
+        // 🔥 ACÁ ESTÁ LA MAGIA: Le pasamos el ID, no el objeto entero.
+        // Si no tenés "idSeguro" en este archivo, probá con "product.id" o "product.idProducto"
+        const idParaMandar = idSeguro;
+
         if (!isAuthenticated) {
-            openAuthModal(() => toggleFavorite(product));
+            openAuthModal(() => toggleFavorite(idParaMandar));
             return;
         }
-        toggleFavorite(product);
+
+        toggleFavorite(idParaMandar);
     };
 
     return (

@@ -10,27 +10,51 @@ export class UsuariosService {
     private readonly usuarioRepository: Repository<Usuario>,
   ) { }
 
-  // Función para generar el ID de 5 dígitos
-  private generarIdAleatorio(): string {
-    return Math.floor(10000 + Math.random() * 90000).toString();
+  // 🔥 NUEVO: Función para buscar por email (LA NECESITA EL AUTH SERVICE)
+  async buscarPorEmail(email: string) {
+    return await this.usuarioRepository.findOne({
+      where: { email },
+      relations: ['nivel']
+    });
   }
 
-  async create(createUsuarioDto: any) {
+  // Función unificada para crear usuarios (Tradicional o Google)
+  async crearUsuario(datos: any) {
+    let nuevoId: string = "";
+    let existe = true;
+
+    // Bucle para asegurar que el ID de 5 dígitos sea único
+    while (existe) {
+      nuevoId = Math.floor(10000 + Math.random() * 90000).toString();
+      const userExistente = await this.usuarioRepository.findOne({
+        where: { idUsuario: nuevoId }
+      });
+      if (!userExistente) existe = false;
+    }
+
     const nuevoUsuario = this.usuarioRepository.create({
-      ...createUsuarioDto,
-      idUsuario: this.generarIdAleatorio(), // Asignamos el ID manual aquí
+      idUsuario: nuevoId,
+      nombre: datos.nombre,
+      apellido: datos.apellido || '', // Evitamos nulos si no vienen
+      email: datos.email,
+      password: datos.password || null, // Google no manda password
+      direccion: datos.direccion || '',
+      telefono: datos.telefono || '',
+      idNivel: 1
     });
+
     return await this.usuarioRepository.save(nuevoUsuario);
   }
 
+  // Mantenemos los métodos estándar
   async findAll() {
     return await this.usuarioRepository.find({ relations: ['nivel'] });
   }
 
   async findOne(id: string) {
-    return await this.usuarioRepository.findOne({ 
-      where: { idUsuario: id }, 
-      relations: ['nivel'] 
+    return await this.usuarioRepository.findOne({
+      where: { idUsuario: id },
+      relations: ['nivel']
     });
   }
 

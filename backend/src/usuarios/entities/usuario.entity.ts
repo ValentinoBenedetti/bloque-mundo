@@ -1,28 +1,45 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { NivelUsuario } from './nivel-usuario.entity';
+
 
 @Entity('usuarios')
 export class Usuario {
-    // 🔥 VOLVEMOS A LA NORMALIDAD: Texto de 5 letras
     @PrimaryColumn({ type: 'char', length: 5 })
     idUsuario: string;
 
-    @Column({ type: 'varchar', length: 100, default: 'Coleccionista' })
+    @Column({ length: 100 })
     nombre: string;
 
-    @Column({ type: 'varchar', length: 150, unique: true })
+    // 🔥 NUEVO: Apellido
+    @Column({ length: 100, nullable: true })
+    apellido: string;
+
+    @Column({ length: 150, unique: true })
     email: string;
 
-    @Column({ type: 'varchar' })
+    // 🔥 CLAVE PARA GOOGLE: nullable: true (porque Google no manda password)
+    @Column({ nullable: true })
     password: string;
 
-    @Column({ type: 'boolean', default: false })
+    // 🔥 NUEVO: Dirección
+    @Column({ nullable: true })
+    direccion: string;
+
+    // 🔥 NUEVO: Teléfono
+    @Column({ nullable: true })
+    telefono: string;
+
+    @Column({ default: false })
     esAdmin: boolean;
 
     @CreateDateColumn()
     fechaRegistro: Date;
 
-    @ManyToOne(() => NivelUsuario, (nivel) => nivel.usuarios)
+    @Column({ nullable: true })
+    idNivel: number;
+
+    // 🔥 RESTAURAMOS LA RELACIÓN QUE FALTABA
+    @ManyToOne(() => NivelUsuario)
     @JoinColumn({ name: 'idNivel' })
     nivel: NivelUsuario;
 }

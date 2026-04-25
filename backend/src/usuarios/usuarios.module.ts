@@ -9,5 +9,6 @@ import { NivelUsuario } from './entities/nivel-usuario.entity';
   imports: [TypeOrmModule.forFeature([Usuario, NivelUsuario])],
   controllers: [UsuariosController],
   providers: [UsuariosService],
+  exports: [UsuariosService], // 🔥 ESTO ES OBLIGATORI  O
 })
 export class UsuariosModule { }

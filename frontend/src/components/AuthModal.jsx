@@ -1,40 +1,96 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { loginRequest } from '../api/auth';
+import { loginRequest, verifyUserRequest, registerRequest } from '../api/auth';
+import { GoogleLogin } from '@react-oauth/google'; // 🔥 Usamos el componente oficial
 
 const AuthModal = () => {
-    // TRAEMOS pendingAction del contexto
     const { isAuthModalOpen, closeAuthModal, login, pendingAction } = useAuth();
 
+    // Estados para login tradicional
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
 
+    // Estados para el registro de Google
+    const [showExtraFields, setShowExtraFields] = useState(false);
+    const [tempUserData, setTempUserData] = useState(null);
+    const [extraData, setExtraData] = useState({
+        apellido: '',
+        direccion: '',
+        telefono: ''
+    });
+
     if (!isAuthModalOpen) return null;
 
-    // NUEVA FUNCIÓN: Se ejecuta cuando el login (Google o Email) es exitoso
-    const handleSuccess = () => {
-        login(); // Inicia sesión
-        if (pendingAction) {
-            pendingAction(); // EJECUTA EL GUARDADO EN EL CARRITO
-        }
-        closeAuthModal(); // Cierra el modal
+    const handleSuccess = (token) => {
+        if (token) login(token);
+        if (pendingAction) pendingAction();
+        closeAuthModal();
+        setShowExtraFields(false);
+        setTempUserData(null);
     };
 
-    const handleLogin = async (e) => {
+    // 🔥 NUEVA FUNCIÓN: Maneja el éxito del BOTÓN OFICIAL
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            // 1. Google nos manda un token "JWT". Lo decodificamos para leer el email y el nombre.
+            const base64Url = credentialResponse.credential.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            const googleUser = JSON.parse(jsonPayload);
+            console.log("1. Mail recibido de Google:", googleUser.email);
+
+            // 2. Verificamos en el Backend si el email existe
+            const serverRes = await verifyUserRequest(googleUser.email);
+            console.log("2. Respuesta del backend:", serverRes);
+
+            if (serverRes.exists) {
+                console.log("3. El usuario YA EXISTE. Entrando directo...");
+                handleSuccess(serverRes.token);
+            } else {
+                console.log("3. El usuario ES NUEVO. Pidiendo datos extra...");
+                setTempUserData({
+                    given_name: googleUser.given_name,
+                    email: googleUser.email
+                });
+                setShowExtraFields(true);
+            }
+        } catch (error) {
+            console.error("Error procesando Google Login:", error);
+            setError("No se pudo conectar con Google.");
+        }
+    };
+
+    const handleFinalRegister = async (e) => {
+        e.preventDefault();
+        try {
+            const fullData = {
+                nombre: tempUserData.given_name,
+                email: tempUserData.email,
+                apellido: extraData.apellido,
+                direccion: extraData.direccion,
+                telefono: extraData.telefono
+            };
+
+            const res = await registerRequest(fullData);
+            handleSuccess(res.access_token);
+        } catch (err) {
+            setError("Error al completar el registro.");
+        }
+    };
+
+    const handleLoginTraditional = async (e) => {
         e.preventDefault();
         setError(null);
         try {
             const data = await loginRequest(email, password);
-            login(data.access_token); // <-- Pasamos el token aquí
-            handleSuccess();
+            handleSuccess(data.access_token);
         } catch (err) {
             setError("Email o contraseña incorrectos");
         }
-    };
-
-    const handleGoogleLogin = () => {
-        handleSuccess(); // Llamamos a la función de éxito
     };
 
     return (
@@ -49,30 +105,55 @@ const AuthModal = () => {
                     </svg>
                 </button>
 
-                <h2 className="text-2xl font-bold text-center text-slate-900 mb-6">Iniciar sesión o registrarse</h2>
+                {showExtraFields ? (
+                    <div className="animate-fade-in">
+                        <h2 className="text-2xl font-bold text-center text-slate-900 mb-2">¡Hola {tempUserData?.given_name}!</h2>
+                        <p className="text-slate-500 text-center text-sm mb-6">Solo unos pasos más para completar tu perfil de constructor.</p>
 
-                <div className="flex justify-center mb-6">
-                    <h1 className="text-7xl font-logo text-brand-red leading-none drop-shadow-sm text-center">BLOQUE MUNDO</h1>
-                </div>
+                        <form onSubmit={handleFinalRegister} className="space-y-4">
+                            <input type="text" placeholder="Tu Apellido" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setExtraData({ ...extraData, apellido: e.target.value })} required />
+                            <input type="text" placeholder="Dirección de envío (Calle, Altura, Ciudad)" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setExtraData({ ...extraData, direccion: e.target.value })} required />
+                            <input type="tel" placeholder="Teléfono de contacto" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setExtraData({ ...extraData, telefono: e.target.value })} required />
+                            <button type="submit" className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition uppercase tracking-wider">
+                                Finalizar Registro
+                            </button>
+                        </form>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-2xl font-bold text-center text-slate-900 mb-6">Iniciar sesión o registrarse</h2>
 
-                <button type="button" onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 border-2 border-slate-900 rounded-lg py-2 px-6 mb-6 hover:bg-slate-50 transition font-bold">
-                    <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="h-5 w-5" />
-                    Continuar con Google
-                </button>
+                        <div className="flex justify-center mb-6">
+                            <h1 className="text-7xl font-logo text-brand-red leading-none text-center">BLOQUE MUNDO</h1>
+                        </div>
 
-                <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                    <div className="relative flex justify-center text-[10px]"><span className="bg-white px-3 text-slate-400 uppercase tracking-widest font-bold">o usa tu cuenta</span></div>
-                </div>
+                        {/* 🔥 EL BOTÓN OFICIAL DE GOOGLE */}
+                        <div className="flex justify-center mb-6 w-full">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => {
+                                    console.log("Error oficial desde el botón de Google");
+                                    setError("El inicio de sesión falló.");
+                                }}
+                                ux_mode="popup"
+                            />
+                        </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                    {error && <p className="bg-red-50 text-red-600 p-2 rounded-lg text-xs border border-red-100 text-center">{error}</p>}
-                    <input type="email" placeholder="Tu Email" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setEmail(e.target.value)} required />
-                    <input type="password" placeholder="Tu Contraseña" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setPassword(e.target.value)} required />
-                    <button type="submit" className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition active:scale-[0.98] text-lg uppercase tracking-wider">
-                        Entrar con Email
-                    </button>
-                </form>
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+                            <div className="relative flex justify-center text-[10px]"><span className="bg-white px-3 text-slate-400 uppercase tracking-widest font-bold">o usa tu cuenta</span></div>
+                        </div>
+
+                        <form onSubmit={handleLoginTraditional} className="space-y-4">
+                            {error && <p className="bg-red-50 text-red-600 p-2 rounded-lg text-xs border border-red-100 text-center">{error}</p>}
+                            <input type="email" placeholder="Tu Email" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setEmail(e.target.value)} required />
+                            <input type="password" placeholder="Tu Contraseña" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setPassword(e.target.value)} required />
+                            <button type="submit" className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition text-lg uppercase tracking-wider">
+                                Entrar con Email
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     );

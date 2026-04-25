@@ -1,16 +1,26 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    // 1. En vez de arrancar en null, buscamos si hay alguien guardado en el navegador
+    // 1. Buscamos al usuario de forma SEGURA
     const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem('usuarioBloqueMundo');
-        return savedUser ? JSON.parse(savedUser) : null;
+        try {
+            const savedUser = localStorage.getItem('usuarioBloqueMundo');
+            // Si existe y no es la palabra "undefined", lo leemos. Si no, devolvemos null.
+            if (savedUser && savedUser !== "undefined") {
+                return JSON.parse(savedUser);
+            }
+            return null;
+        } catch (error) {
+            console.error("Error leyendo el localStorage. Reiniciando usuario.", error);
+            return null;
+        }
     });
 
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
-        return !!localStorage.getItem('usuarioBloqueMundo');
+        const savedUser = localStorage.getItem('usuarioBloqueMundo');
+        return !!savedUser && savedUser !== "undefined";
     });
 
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -21,7 +31,6 @@ export const AuthProvider = ({ children }) => {
     const login = (userData) => {
         setUser(userData);
         setIsAuthenticated(true);
-        // 🔥 GUARDAMOS AL USUARIO EN EL NAVEGADOR
         localStorage.setItem('usuarioBloqueMundo', JSON.stringify(userData));
         closeAuthModal();
     };
@@ -29,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         setIsAuthenticated(false);
-        // 🔥 BORRAMOS AL USUARIO AL SALIR
         localStorage.removeItem('usuarioBloqueMundo');
     };
 

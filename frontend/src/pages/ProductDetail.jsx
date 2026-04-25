@@ -7,6 +7,8 @@ import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+// 🔥 1. IMPORTAMOS EL CONTEXTO DE FAVORITOS
+import { useFavorites } from '../context/FavoritesContext';
 
 const ProductDetail = () => {
     const { id } = useParams();
@@ -15,13 +17,14 @@ const ProductDetail = () => {
     const { addToCart, setIsCartOpen } = useCart();
     const { isAuthenticated, openAuthModal } = useAuth();
 
+    // 🔥 2. TRAEMOS LAS FUNCIONES GLOBALES
+    const { toggleFavorite, isFavorite } = useFavorites();
+
     const [product, setProduct] = useState(null);
     const [related, setRelated] = useState([]);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
-
-    const [isFavorite, setIsFavorite] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -106,6 +109,9 @@ const ProductDetail = () => {
     // Acá tomamos el ID real de 5 cifras que manda el Backend
     const idReal = product.id || product.idProducto || product.id_producto || id;
 
+    // 🔥 3. CONSULTAMOS SI YA ESTÁ GUARDADO
+    const isFav = isFavorite(idReal);
+
     const handleAddToCart = () => {
         if (!isAuthenticated) {
             openAuthModal(() => {
@@ -121,13 +127,12 @@ const ProductDetail = () => {
 
     const handleFavorite = () => {
         if (!isAuthenticated) {
-            openAuthModal(() => {
-                setIsFavorite(true);
-            });
+            openAuthModal(() => toggleFavorite(idReal));
             return;
         }
 
-        setIsFavorite(!isFavorite);
+        // 🔥 4. MANDAMOS LA ORDEN CON EL ID CORRECTO
+        toggleFavorite(idReal);
     };
 
     return (
@@ -172,7 +177,8 @@ const ProductDetail = () => {
                             >
                                 <Heart
                                     size={32}
-                                    className={`transition-colors duration-300 ${isFavorite ? 'text-brand-red fill-brand-red' : 'text-slate-300 group-hover:text-brand-red'}`}
+                                    // 🔥 5. USAMOS LA VARIABLE isFav QUE VIENE DEL CONTEXTO
+                                    className={`transition-colors duration-300 ${isFav ? 'text-brand-red fill-brand-red' : 'text-slate-300 group-hover:text-brand-red'}`}
                                 />
                             </button>
                         </div>
@@ -208,7 +214,6 @@ const ProductDetail = () => {
                             <div className="flex flex-col items-center text-center">
                                 <Hash size={28} className="text-slate-800 mb-2" />
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Código</span>
-                                {/* Mostramos el idReal tal cual viene del Backend */}
                                 <span className="text-sm font-bold text-slate-800">#{idReal}</span>
                             </div>
                         </div>
