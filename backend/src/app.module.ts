@@ -12,6 +12,7 @@ import { PedidosModule } from './pedidos/pedidos.module';
 import { LineaPedidoModule } from './linea-pedido/linea-pedido.module';
 import { AuthModule } from './auth/auth.module';
 import { FavoritosModule } from './favoritos/favoritos.module';
+import { ResenasModule } from './resenas/resenas.module';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { FavoritosModule } from './favoritos/favoritos.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    // 2. Configurar la conexión a PostgreSQL
+    // 2. Configurar la conexin a PostgreSQL
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -39,6 +40,7 @@ import { FavoritosModule } from './favoritos/favoritos.module';
     LineaPedidoModule,
     AuthModule,
     FavoritosModule,
+    ResenasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

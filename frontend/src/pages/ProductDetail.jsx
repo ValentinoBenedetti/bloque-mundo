@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
+import { getResenasRequest } from '../api/resenas';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 // 🔥 1. IMPORTAMOS EL CONTEXTO DE FAVORITOS
@@ -22,6 +23,7 @@ const ProductDetail = () => {
 
     const [product, setProduct] = useState(null);
     const [related, setRelated] = useState([]);
+    const [resenas, setResenas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
@@ -44,6 +46,11 @@ const ProductDetail = () => {
                 if (foundProduct) {
                     setProduct(foundProduct);
                     setMainImage(foundProduct.imagen || foundProduct.imagenes || foundProduct.image || foundProduct.url_imagen);
+                    
+                    // Y" TRAEMOS LAS RESEAS DEL PRODUCTO
+                    const prodId = foundProduct.id || foundProduct.idProducto || foundProduct.id_producto || foundProduct.productoId;
+                    const res = await getResenasRequest(prodId);
+                    setResenas(res);
                 }
 
                 setRelated(allProducts.filter(p => {
@@ -234,6 +241,77 @@ const ProductDetail = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* --- SECCIÓN DE RESEÑAS --- */}
+                <section className="py-24 border-t border-slate-100 bg-white/50 -mx-6 px-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex justify-between items-end mb-12">
+                            <div>
+                                <span className="text-brand-red font-black text-xs uppercase tracking-[0.3em]">Opiniones reales</span>
+                                <h2 className="text-4xl font-black text-slate-900 italic uppercase">Reseñas [{resenas.length}]</h2>
+                            </div>
+                            {resenas.length > 0 && (
+                                <div className="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-full">
+                                    <div className="flex text-brand-yellow">
+                                        <Star size={16} className="fill-current" />
+                                    </div>
+                                    <span className="text-sm font-black text-slate-700">
+                                        {(resenas.reduce((acc, r) => acc + r.estrellas, 0) / resenas.length).toFixed(1)} / 5.0
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {resenas.length === 0 ? (
+                            <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                <p className="text-slate-400 font-bold italic">Aún no hay reseñas para este set. ¡Sé el primero en opinar!</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-6">
+                                {resenas.map((resena) => (
+                                    <div key={resena.idResena} className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm transition-hover hover:shadow-md">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex gap-1 text-brand-yellow">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star 
+                                                        key={i} 
+                                                        size={18} 
+                                                        className={i < resena.estrellas ? "fill-current" : "text-slate-200"} 
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Verificada</span>
+                                        </div>
+                                        
+                                        <p className="text-slate-600 leading-relaxed mb-6 font-medium">
+                                            "{resena.comentario}"
+                                        </p>
+
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-black text-xs">
+                                                {resena.usuario.nombre.charAt(0)}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-black text-slate-800 italic uppercase">
+                                                    {resena.esAnonima ? 'Anónimo' : `${resena.usuario.nombre} ${resena.usuario.apellido}`}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Comprador verificado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {resenas.length > 3 && (
+                                    <div className="flex justify-center mt-8">
+                                        <button className="bg-white border-2 border-slate-200 text-slate-400 font-black px-10 py-3 rounded-lg hover:border-brand-red hover:text-brand-red transition uppercase tracking-widest text-xs italic">
+                                            Ver más reseñas
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </section>
 
                 <section className="pt-20 border-t border-slate-100">
                     <div className="flex justify-between items-end mb-12">

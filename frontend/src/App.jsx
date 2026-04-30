@@ -9,6 +9,8 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Favorites from './pages/Favorites'; // <-- IMPORTAMOS PÁGINA
 import AuthModal from './components/AuthModal';
+import EditProfile from './pages/EditProfile';
+import MisCompras from './pages/MisCompras';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -30,6 +32,8 @@ function App() {
 
               <Route path="/carrito" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/favoritos" element={<ProtectedRoute><Favorites /></ProtectedRoute>} /> {/* <-- RUTA */}
+              <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+              <Route path="/perfil/compras" element={<ProtectedRoute><MisCompras /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

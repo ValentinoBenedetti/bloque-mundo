@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import ProfileSidebar from './ProfileSidebar';
+import ConfirmModal from './ConfirmModal';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -20,6 +21,14 @@ const Navbar = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
+    
+    // ESTADO PARA MODAL DE CONFIRMACIN
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        product: null,
+        action: null // 'remove' o 'minus'
+    });
+
     const searchRef = useRef(null);
 
     const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen } = useCart();
@@ -205,12 +214,36 @@ const Navbar = () => {
                                                 {item.quantity} x <span className="font-bold text-slate-900">{formatPrice(item.precio || item.price)}</span>
                                             </div>
                                             <div className="flex items-center border border-slate-200 rounded w-max bg-white">
-                                                <button onClick={() => addToCart(item, -1)} className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"><Minus size={12} /></button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (item.quantity === 1) {
+                                                            setConfirmModal({
+                                                                isOpen: true,
+                                                                product: item,
+                                                                action: 'minus'
+                                                            });
+                                                        } else {
+                                                            addToCart(item, -1);
+                                                        }
+                                                    }} 
+                                                    className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                >
+                                                    <Minus size={12} />
+                                                </button>
                                                 <span className="px-2 text-xs font-black text-slate-800">{item.quantity}</span>
                                                 <button onClick={() => addToCart(item, 1)} className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"><Plus size={12} /></button>
                                             </div>
                                         </div>
-                                        <button onClick={() => removeFromCart(item.id || item.idProducto || item.id_producto)} className="bg-slate-100 text-slate-400 hover:bg-brand-red hover:text-white p-1.5 rounded-full transition self-start">
+                                        <button 
+                                            onClick={() => {
+                                                setConfirmModal({
+                                                    isOpen: true,
+                                                    product: item,
+                                                    action: 'remove'
+                                                });
+                                            }} 
+                                            className="bg-slate-100 text-slate-400 hover:bg-brand-red hover:text-white p-1.5 rounded-full transition self-start"
+                                        >
                                             <X size={14} strokeWidth={3} />
                                         </button>
                                     </div>
@@ -239,6 +272,20 @@ const Navbar = () => {
             <ProfileSidebar
                 isOpen={isProfileSidebarOpen}
                 onClose={() => setIsProfileSidebarOpen(false)}
+            />
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={() => {
+                    if (confirmModal.action === 'remove') {
+                        removeFromCart(confirmModal.product.id || confirmModal.product.idProducto || confirmModal.product.id_producto);
+                    } else {
+                        addToCart(confirmModal.product, -1);
+                    }
+                }}
+                title="¿Eliminar producto?"
+                message={`¿Estás seguro que deseas eliminar "${confirmModal.product?.titulo || confirmModal.product?.nombre}" del carrito?`}
             />
         </>
     );

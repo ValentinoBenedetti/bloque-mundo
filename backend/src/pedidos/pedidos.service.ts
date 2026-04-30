@@ -71,4 +71,14 @@ export class PedidosService {
       relations: ['lineas', 'lineas.producto']
     });
   }
+
+  async findAllByUser(idUsuario: string) {
+    return await this.pedidoRepository
+      .createQueryBuilder('pedido')
+      .leftJoinAndSelect('pedido.lineas', 'lineas')
+      .leftJoinAndSelect('lineas.producto', 'producto')
+      .where('pedido.idUsuario = :idUsuario', { idUsuario })
+      .orderBy('pedido.fecha', 'DESC')
+      .getMany();
+  }
 }

@@ -42,9 +42,15 @@ export class CarritoService {
       if (producto.stock < (linea.cantidad + cantidad)) {
         throw new BadRequestException('No puedes agregar más unidades de las que hay en stock.');
       }
-      linea.cantidad += cantidad;
+      const nuevaCantidad = linea.cantidad + cantidad;
+      if (nuevaCantidad <= 0) {
+        await this.lineaRepository.remove(linea);
+        return this.actualizarTotal(carrito.idCarrito);
+      }
+      linea.cantidad = nuevaCantidad;
     } else {
       // Si es nuevo, creamos una nueva línea de carrito
+      if (cantidad <= 0) return this.actualizarTotal(carrito.idCarrito);
       linea = this.lineaRepository.create({
         carrito,
         producto,
@@ -63,7 +69,7 @@ export class CarritoService {
   private async actualizarTotal(idCarrito: number) {
     const carrito = await this.carritoRepository.findOne({
       where: { idCarrito },
-      relations: ['lineas']
+      relations: ['lineas', 'lineas.producto', 'usuario']
     });
 
     // 1. Le aseguramos a TypeScript que el carrito existe
@@ -79,7 +85,10 @@ export class CarritoService {
       return acc + (Number(linea.precioUnitario) * linea.cantidad);
     }, 0);
 
-    return await this.carritoRepository.save(carrito);
+    await this.carritoRepository.save(carrito);
+    
+    // Devolvemos el carrito con todas las relaciones cargadas
+    return carrito;
   }
 
   async obtenerCarrito(idUsuario: string) {
@@ -87,7 +96,39 @@ export class CarritoService {
       where: { usuario: { idUsuario } },
       relations: ['lineas', 'lineas.producto']
     });
-    if (!carrito) throw new NotFoundException('El usuario no tiene un carrito activo.');
+    // Si no existe, devolvemos un objeto vacío estructurado igual
+    if (!carrito) return { total: 0, lineas: [] };
+    return carrito;
+  }
+
+  async quitarProducto(idUsuario: string, idProducto: number) {
+    const carrito = await this.carritoRepository.findOne({
+      where: { usuario: { idUsuario } },
+      relations: ['lineas', 'lineas.producto']
+    });
+
+    if (!carrito) throw new NotFoundException('Carrito no encontrado.');
+
+    const linea = carrito.lineas?.find(l => l.producto.idProducto === idProducto);
+    if (linea) {
+      await this.lineaRepository.remove(linea);
+      return this.actualizarTotal(carrito.idCarrito);
+    }
+    return carrito;
+  }
+
+  async vaciarCarrito(idUsuario: string) {
+    const carrito = await this.carritoRepository.findOne({
+      where: { usuario: { idUsuario } },
+      relations: ['lineas', 'lineas.producto']
+    });
+
+    if (carrito && carrito.lineas) {
+      await this.lineaRepository.remove(carrito.lineas);
+      carrito.total = 0;
+      carrito.lineas = [];
+      return await this.carritoRepository.save(carrito);
+    }
     return carrito;
   }
 }

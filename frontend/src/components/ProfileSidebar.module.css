@@ -40,7 +40,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 5px;
+}
+
+.userName {
+    font-size: 18px;
+    font-weight: 500;
+    color: #4b5563;
+    margin: 0 0 25px 0;
 }
 
 .title {
@@ -99,7 +106,7 @@
     font-weight: 500;
 }
 
-.menuItem:hover {
+.menuItem:hover, .menuItem.active {
     background-color: #f3f4f6;
     color: #dc2626;
 }
@@ -109,7 +116,7 @@
     color: #9ca3af;
 }
 
-.menuItem:hover .icon {
+.menuItem:hover .icon, .menuItem.active .icon {
     color: #dc2626;
 }
 

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import styles from './ProfileSidebar.module.css';
 
+import { Link, useLocation } from 'react-router-dom';
 import { FiX, FiEdit2, FiPackage, FiLogOut, FiBarChart2, FiLayers, FiUsers } from 'react-icons/fi';
 
 // 🔥 ESTA ES LA MAGIA: Función que "traduce" el token de seguridad
@@ -26,6 +27,7 @@ const decodificarToken = (token) => {
 
 const ProfileSidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
+    const location = useLocation();
 
     // Extraemos tus datos reales del token
     const userData = decodificarToken(user);
@@ -61,18 +63,23 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
+                {/* Mostramos el nombre del usuario */}
+                {userData?.nombre && (
+                    <p className={styles.userName}>Hola, {userData.nombre}</p>
+                )}
+
                 {/* VISTA USUARIO NORMAL */}
                 <h3 className={styles.sectionTitle}>Acciones de Usuario</h3>
                 <ul className={styles.menuList}>
                     <li>
-                        <a href="/perfil/editar" className={styles.menuItem}>
+                        <Link to="/perfil/editar" className={`${styles.menuItem} ${location.pathname === '/perfil/editar' ? styles.active : ''}`} onClick={onClose}>
                             <FiEdit2 className={styles.icon} /> Editar mi perfil
-                        </a>
+                        </Link>
                     </li>
                     <li>
-                        <a href="/compras" className={styles.menuItem}>
+                        <Link to="/perfil/compras" className={`${styles.menuItem} ${location.pathname === '/perfil/compras' ? styles.active : ''}`} onClick={onClose}>
                             <FiPackage className={styles.icon} /> Mis compras
-                        </a>
+                        </Link>
                     </li>
                     <li>
                         <button onClick={handleLogout} className={styles.menuItem}>
@@ -88,19 +95,19 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                         <h3 className={styles.sectionTitle}>Administración</h3>
                         <ul className={styles.menuList}>
                             <li>
-                                <a href="/admin/ventas" className={styles.menuItem}>
+                                <Link to="/admin/ventas" className={styles.menuItem} onClick={onClose}>
                                     <FiBarChart2 className={styles.icon} /> Historial de ventas
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/admin/productos" className={styles.menuItem}>
+                                <Link to="/admin/productos" className={styles.menuItem} onClick={onClose}>
                                     <FiLayers className={styles.icon} /> Gestionar productos
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a href="/admin/usuarios" className={styles.menuItem}>
+                                <Link to="/admin/usuarios" className={styles.menuItem} onClick={onClose}>
                                     <FiUsers className={styles.icon} /> Administrar usuarios
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </>

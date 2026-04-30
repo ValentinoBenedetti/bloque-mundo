@@ -3,10 +3,19 @@ import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Cart = () => {
     const { cart, addToCart, removeFromCart, totalPrice } = useCart();
     const navigate = useNavigate();
+
+    // ESTADO PARA EL MODAL DE CONFIRMACI"N
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        product: null,
+        action: null
+    });
 
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -63,7 +72,17 @@ const Cart = () => {
 
                                         <div className="flex items-center border-2 border-slate-100 rounded-lg w-max">
                                             <button
-                                                onClick={() => addToCart(item, -1)}
+                                                onClick={() => {
+                                                    if (item.quantity === 1) {
+                                                        setConfirmModal({
+                                                            isOpen: true,
+                                                            product: item,
+                                                            action: 'minus'
+                                                        });
+                                                    } else {
+                                                        addToCart(item, -1);
+                                                    }
+                                                }}
                                                 className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
                                             >
                                                 <Minus size={16} />
@@ -83,7 +102,13 @@ const Cart = () => {
                                             {formatPrice((item.precio || item.price) * item.quantity)}
                                         </p>
                                         <button
-                                            onClick={() => removeFromCart(item.id || item.idProducto || item.id_producto)}
+                                            onClick={() => {
+                                                setConfirmModal({
+                                                    isOpen: true,
+                                                    product: item,
+                                                    action: 'remove'
+                                                });
+                                            }}
                                             className="text-slate-300 hover:text-brand-red transition p-2"
                                         >
                                             <Trash2 size={20} />
@@ -132,6 +157,20 @@ const Cart = () => {
             </main>
 
             <Footer />
+
+            <ConfirmModal 
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={() => {
+                    if (confirmModal.action === 'remove') {
+                        removeFromCart(confirmModal.product.id || confirmModal.product.idProducto || confirmModal.product.id_producto);
+                    } else {
+                        addToCart(confirmModal.product, -1);
+                    }
+                }}
+                title="¿Eliminar producto?"
+                message={`¿Estás seguro que deseas eliminar "${confirmModal.product?.titulo || confirmModal.product?.nombre}" del carrito?`}
+            />
         </div>
     );
 };

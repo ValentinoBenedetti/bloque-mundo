@@ -24,4 +24,20 @@ export class CarritoController {
     const idUsuario = req.user.sub;
     return this.carritoService.obtenerCarrito(idUsuario);
   }
+
+  // 3. QUITAR PRODUCTO
+  @UseGuards(AuthGuard)
+  @Post('quitar')
+  async quitar(@Request() req: any, @Body() data: { idProducto: number }) {
+    const idUsuario = req.user.sub;
+    return this.carritoService.quitarProducto(idUsuario, data.idProducto);
+  }
+
+  // 4. VACIAR CARRITO
+  @UseGuards(AuthGuard)
+  @Post('vaciar')
+  async vaciar(@Request() req: any) {
+    const idUsuario = req.user.sub;
+    return this.carritoService.vaciarCarrito(idUsuario);
+  }
 }
