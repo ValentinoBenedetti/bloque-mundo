@@ -1,6 +1,7 @@
 import { Controller, Post, Get, UseGuards, Request } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('pedidos')
 export class PedidosController {
@@ -21,5 +22,12 @@ export class PedidosController {
   async obtenerHistorialCompras(@Request() req: any) {
     const idUsuario = req.user.sub;
     return this.pedidosService.findAllByUser(idUsuario);
+  }
+
+  // GET: http://localhost:3000/pedidos/admin
+  @UseGuards(AuthGuard, RolesGuard)
+  @Get('admin')
+  async obtenerHistorialVentas() {
+    return this.pedidosService.findAllAdmin();
   }
 }

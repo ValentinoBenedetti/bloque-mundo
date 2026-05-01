@@ -34,8 +34,17 @@ export class Producto {
     @Column({ type: 'int', default: 0 })
     stock: number;
 
-    @Column({ type: 'enum', enum: ['Publicado', 'NoPublicado'], default: 'NoPublicado' })
+    @Column({ type: 'enum', enum: ['Publicado', 'NoPublicado'], default: 'Publicado' })
     estado: string;
+
+    @Column({ type: 'boolean', default: false })
+    esDestacado: boolean;
+
+    @Column({ type: 'boolean', default: false })
+    esNovedad: boolean;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    imagen: string;
 
     // Muchos Productos pertenecen a un Tema
     @ManyToOne(() => Tema, (tema) => tema.productos)

@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
+import { NivelUsuario } from './entities/nivel-usuario.entity';
 
 @Injectable()
 export class UsuariosService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(NivelUsuario)
+    private readonly nivelRepository: Repository<NivelUsuario>,
   ) { }
 
   // 🔥 NUEVO: Función para buscar por email (LA NECESITA EL AUTH SERVICE)
@@ -69,5 +72,46 @@ export class UsuariosService {
       return await this.usuarioRepository.remove(usuario);
     }
     return null;
+  }
+
+  async recalcularNivel(idUsuario: string) {
+    // 1. Obtener el gasto total del usuario sumando sus pedidos pagados
+    const result = await this.usuarioRepository.query(
+      'SELECT SUM(total) as total FROM pedidos WHERE "idUsuario" = $1 AND estado = \'PAGADO\'',
+      [idUsuario]
+    );
+    const gastoTotal = parseFloat(result[0].total || 0);
+
+    // 2. Buscar el nivel más alto que puede alcanzar con ese gasto
+    const niveles = await this.nivelRepository.find({
+      order: { montoMinimo: 'ASC' } // Cambiado a ASC para buscar el siguiente nivel más facil
+    });
+
+    let nivelAlcanzado = niveles[0]; // Por defecto el primero
+    let proximoNivel: NivelUsuario | null = null;
+
+    for (let i = 0; i < niveles.length; i++) {
+      if (gastoTotal >= parseFloat(niveles[i].montoMinimo as any)) {
+        nivelAlcanzado = niveles[i];
+      } else {
+        proximoNivel = niveles[i];
+        break;
+      }
+    }
+
+    if (nivelAlcanzado) {
+      await this.usuarioRepository.update(idUsuario, { idNivel: nivelAlcanzado.idNivel });
+    }
+
+    return {
+      nivelActual: nivelAlcanzado,
+      proximoNivel: proximoNivel,
+      gastoTotal: gastoTotal,
+      faltanteParaProximo: proximoNivel ? parseFloat(proximoNivel.montoMinimo as any) - gastoTotal : 0
+    };
+  }
+
+  async getStatus(idUsuario: string) {
+    return this.recalcularNivel(idUsuario);
   }
 }

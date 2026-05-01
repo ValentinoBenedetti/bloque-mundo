@@ -13,7 +13,7 @@ const MisCompras = () => {
     
     // Estados para la reseña
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [selectedPurchase, setSelectedPurchase] = useState(null);
 
     const navigate = useNavigate();
 
@@ -146,7 +146,7 @@ const MisCompras = () => {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setSelectedProduct(producto);
+                                                setSelectedPurchase(item);
                                                 setIsModalOpen(true);
                                             }}
                                             className="w-full text-center border border-slate-200 text-slate-400 font-medium py-2 rounded text-sm hover:bg-slate-50 hover:text-slate-600 transition"
@@ -171,13 +171,16 @@ const MisCompras = () => {
 
             <Footer />
 
-            {selectedProduct && (
+            {selectedPurchase && (
                 <ReviewModal 
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    product={selectedProduct}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setSelectedPurchase(null);
+                    }}
+                    product={selectedPurchase.producto}
+                    idPedido={selectedPurchase.idPedido}
                     onSuccess={() => {
-                        // Opcional: mostrar un toast de éxito o recargar algo
                         alert("¡Gracias por tu reseña!");
                     }}
                 />

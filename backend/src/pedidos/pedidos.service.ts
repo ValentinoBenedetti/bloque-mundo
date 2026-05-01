@@ -6,6 +6,7 @@ import { LineaPedido } from '../linea-pedido/entities/linea-pedido.entity';
 import { Carrito } from '../carrito/entities/carrito.entity';
 import { LineaCarrito } from '../linea-carrito/entities/linea-carrito.entity';
 import { Producto } from '../productos/entities/producto.entity';
+import { UsuariosService } from '../usuarios/usuarios.service';
 
 @Injectable()
 export class PedidosService {
@@ -15,6 +16,7 @@ export class PedidosService {
     @InjectRepository(Carrito) private carritoRepository: Repository<Carrito>,
     @InjectRepository(LineaCarrito) private lineaCarritoRepository: Repository<LineaCarrito>,
     @InjectRepository(Producto) private productoRepository: Repository<Producto>,
+    private usuariosService: UsuariosService,
   ) { }
 
   async procesarCompra(idUsuario: string) {
@@ -65,6 +67,9 @@ export class PedidosService {
     carrito.total = 0;
     await this.carritoRepository.save(carrito);
 
+    // 5. Recalcular el nivel del usuario
+    await this.usuariosService.recalcularNivel(idUsuario);
+
     // Devolvemos el ticket de compra
     return this.pedidoRepository.findOne({
       where: { idPedido: pedidoGuardado.idPedido },
@@ -78,6 +83,16 @@ export class PedidosService {
       .leftJoinAndSelect('pedido.lineas', 'lineas')
       .leftJoinAndSelect('lineas.producto', 'producto')
       .where('pedido.idUsuario = :idUsuario', { idUsuario })
+      .orderBy('pedido.fecha', 'DESC')
+      .getMany();
+  }
+
+  async findAllAdmin() {
+    return await this.pedidoRepository
+      .createQueryBuilder('pedido')
+      .leftJoinAndSelect('pedido.usuario', 'usuario')
+      .leftJoinAndSelect('pedido.lineas', 'lineas')
+      .leftJoinAndSelect('lineas.producto', 'producto')
       .orderBy('pedido.fecha', 'DESC')
       .getMany();
   }

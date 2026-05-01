@@ -6,8 +6,8 @@ export class RolesGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const user = request.user;
 
-        // Si el usuario existe y tiene admin: true, lo dejamos pasar
-        if (user && user.admin === true) {
+        // Si el usuario existe y tiene esAdmin: true, lo dejamos pasar
+        if (user && user.esAdmin === true) {
             return true;
         }
 

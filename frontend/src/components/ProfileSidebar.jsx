@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import styles from './ProfileSidebar.module.css';
 
 import { Link, useLocation } from 'react-router-dom';
-import { FiX, FiEdit2, FiPackage, FiLogOut, FiBarChart2, FiLayers, FiUsers } from 'react-icons/fi';
+import { FiX, FiEdit2, FiPackage, FiLogOut, FiBarChart2, FiLayers, FiUsers, FiAward } from 'react-icons/fi';
+import { getUserStatusRequest } from '../api/usuarios';
 
 // 🔥 ESTA ES LA MAGIA: Función que "traduce" el token de seguridad
 const decodificarToken = (token) => {
@@ -31,6 +32,24 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
 
     // Extraemos tus datos reales del token
     const userData = decodificarToken(user);
+
+    const [status, setStatus] = React.useState(null);
+
+    const userId = userData?.sub || userData?.idUsuario;
+
+    useEffect(() => {
+        if (isOpen && userId) {
+            const fetchStatus = async () => {
+                try {
+                    const data = await getUserStatusRequest(userId);
+                    setStatus(data);
+                } catch (error) {
+                    console.error("Error fetching user status:", error);
+                }
+            };
+            fetchStatus();
+        }
+    }, [isOpen, userId]);
 
     // Cerrar el panel apretando ESC
     useEffect(() => {
@@ -63,9 +82,40 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                {/* Mostramos el nombre del usuario */}
                 {userData?.nombre && (
-                    <p className={styles.userName}>Hola, {userData.nombre}</p>
+                    <div className="px-6 mb-6">
+                        <p className={styles.userName}>Hola, {userData.nombre}</p>
+                        
+                        {status && (
+                            <div className="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="bg-brand-yellow p-1.5 rounded-lg">
+                                        <FiAward className="text-slate-900" size={18} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">Nivel Actual</span>
+                                        <span className="text-sm font-black text-slate-800 uppercase italic leading-none mt-1">
+                                            {status.nivelActual?.idNivel >= 6 ? status.nivelActual.idNivel - 5 : status.nivelActual?.idNivel} - {status.nivelActual?.nombre}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {status.proximoNivel && (
+                                    <>
+                                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
+                                            <div 
+                                                className="h-full bg-brand-red transition-all duration-1000" 
+                                                style={{ width: `${Math.min(100, (status.gastoTotal / status.proximoNivel.montoMinimo) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-500">
+                                            Te faltan <span className="text-brand-red">${status.faltanteParaProximo.toLocaleString()}</span> para el nivel {status.proximoNivel.nombre}
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* VISTA USUARIO NORMAL */}

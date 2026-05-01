@@ -34,4 +34,35 @@ export class ProductosService {
     // Retornamos todos los productos, incluyendo la información de su tema
     return await this.productoRepository.find({ relations: ['tema'] });
   }
+
+  async findOne(id: number) {
+    const producto = await this.productoRepository.findOne({
+      where: { idProducto: id },
+      relations: ['tema']
+    });
+    if (!producto) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+    return producto;
+  }
+
+  async update(id: number, updateProductoDto: any) {
+    const { idTema, ...data } = updateProductoDto;
+    
+    const producto = await this.findOne(id);
+    
+    if (idTema) {
+      const tema = await this.temaRepository.findOne({ where: { idTema } });
+      if (!tema) throw new NotFoundException(`Tema con ID ${idTema} no encontrado`);
+      producto.tema = tema;
+    }
+
+    Object.assign(producto, data);
+    return await this.productoRepository.save(producto);
+  }
+
+  async remove(id: number) {
+    const producto = await this.findOne(id);
+    return await this.productoRepository.remove(producto);
+  }
 }

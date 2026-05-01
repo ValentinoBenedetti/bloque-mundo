@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { getUserRequest, updateUserRequest } from '../api/users';
+import { getUserStatusRequest } from '../api/usuarios';
 import bgImage from '../assets/background-lego.jpg';
 
 const decodificarToken = (token) => {
@@ -39,6 +40,7 @@ const EditProfile = () => {
 
     const tokenData = decodificarToken(user);
     const userId = tokenData?.sub || tokenData?.idUsuario;
+    const [status, setStatus] = useState(null);
 
     useEffect(() => {
         if (!userId) {
@@ -56,6 +58,10 @@ const EditProfile = () => {
                     telefono: data.telefono || '',
                 });
                 setOriginalData(data);
+                
+                // Traemos el status real (esto fuerza el recálculo si hubo cambios manuales en la DB)
+                const statusData = await getUserStatusRequest(userId);
+                setStatus(statusData);
             } catch (err) {
                 console.error(err);
                 setError('No se pudieron cargar los datos del perfil.');
@@ -88,7 +94,11 @@ const EditProfile = () => {
         }
     };
 
-    const nivelUsuario = originalData?.nivel?.idNivel || originalData?.idNivel || 1;
+    const nivelID = status?.nivelActual?.idNivel || originalData?.nivel?.idNivel || originalData?.idNivel || 1;
+    // Traducir el ID de la DB (6,7,8,9,10) a nivel (1,2,3,4,5)
+    const nivelNumero = nivelID >= 6 ? nivelID - 5 : nivelID;
+    const nivelNombre = status?.nivelActual?.nombre || originalData?.nivel?.nombre || "Aprendiz";
+    const nivelUsuario = `${nivelNumero} - ${nivelNombre}`;
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50">

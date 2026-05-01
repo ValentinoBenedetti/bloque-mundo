@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Check } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Producto } from '../../productos/entities/producto.entity';
+import { Pedido } from '../../pedidos/entities/pedido.entity';
 
 @Entity('resenas')
 @Check(`"estrellas" >= 1 AND "estrellas" <= 5`)
@@ -24,4 +25,11 @@ export class Resena {
     @ManyToOne(() => Producto)
     @JoinColumn({ name: 'idProducto' })
     producto: Producto;
+
+    @ManyToOne(() => Pedido)
+    @JoinColumn({ name: 'idPedido' })
+    pedido: Pedido;
+
+    @Column({ type: 'boolean', default: false })
+    eliminadaPorAdmin: boolean;
 }

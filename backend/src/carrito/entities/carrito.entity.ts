@@ -10,6 +10,12 @@ export class Carrito {
     @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
     total: number;
 
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+    descuentoAplicado: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+    totalConDescuento: number;
+
     // Relación 1:1 -> Un usuario tiene un único carrito activo
     @OneToOne(() => Usuario)
     @JoinColumn({ name: 'idUsuario' })

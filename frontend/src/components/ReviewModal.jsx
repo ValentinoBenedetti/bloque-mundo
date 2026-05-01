@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, X } from 'lucide-react';
 import { createResenaRequest, checkUserReviewRequest } from '../api/resenas';
 
-const ReviewModal = ({ isOpen, onClose, product, onSuccess }) => {
+const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [comment, setComment] = useState('');
@@ -10,24 +10,32 @@ const ReviewModal = ({ isOpen, onClose, product, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [isDeleted, setIsDeleted] = useState(false);
 
     useEffect(() => {
         if (isOpen && product) {
             const checkReview = async () => {
                 setLoading(true);
                 try {
-                    const res = await checkUserReviewRequest(product.idProducto);
+                    const res = await checkUserReviewRequest(product.idProducto, idPedido);
                     if (res.hasReviewed && res.resena) {
-                        setRating(res.resena.estrellas);
-                        setComment(res.resena.comentario);
-                        setIsAnonymous(res.resena.esAnonima);
-                        setIsReadOnly(true);
+                        if (res.resena.eliminadaPorAdmin) {
+                            setIsDeleted(true);
+                            setIsReadOnly(true);
+                        } else {
+                            setRating(res.resena.estrellas);
+                            setComment(res.resena.comentario);
+                            setIsAnonymous(res.resena.esAnonima);
+                            setIsReadOnly(true);
+                            setIsDeleted(false);
+                        }
                     } else {
                         // Reset form for new review
                         setRating(0);
                         setComment('');
                         setIsAnonymous(true);
                         setIsReadOnly(false);
+                        setIsDeleted(false);
                         setError(null);
                     }
                 } catch (err) {
@@ -64,6 +72,7 @@ const ReviewModal = ({ isOpen, onClose, product, onSuccess }) => {
         try {
             await createResenaRequest({
                 idProducto: product.idProducto,
+                idPedido: idPedido,
                 comentario: comment,
                 estrellas: rating,
                 esAnonima: isAnonymous
@@ -83,17 +92,25 @@ const ReviewModal = ({ isOpen, onClose, product, onSuccess }) => {
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold text-slate-800">
-                            {isReadOnly ? 'Tu opinión enviada' : 'Opinar sobre el producto'}
+                            {isDeleted ? 'Reseña eliminada' : isReadOnly ? 'Tu opinión enviada' : 'Opinar sobre el producto'}
                         </h2>
                         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
                             <X size={24} />
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center mb-8">
-                        <p className="text-sm font-medium text-slate-500 mb-3">
-                            {isReadOnly ? 'Calificaste este producto con:' : `¿Qué te pareció el ${product.titulo}?`}
-                        </p>
+                    {isDeleted ? (
+                        <div className="bg-red-50 p-6 rounded-xl text-center border border-red-100">
+                            <p className="text-sm font-bold text-brand-red">
+                                Tu reseña para este producto ha sido eliminada por un administrador.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-col items-center mb-8">
+                                <p className="text-sm font-medium text-slate-500 mb-3">
+                                    {isReadOnly ? 'Calificaste este producto con:' : `¿Qué te pareció el ${product.titulo}?`}
+                                </p>
                         <div className="flex gap-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button
@@ -179,6 +196,8 @@ const ReviewModal = ({ isOpen, onClose, product, onSuccess }) => {
                             </div>
                         )}
                     </form>
+                    </>
+                    )}
                 </div>
             </div>
         </div>

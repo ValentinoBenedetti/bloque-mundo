@@ -21,11 +21,11 @@ export const createResenaRequest = async (resenaData) => {
     return response.json();
 };
 
-export const checkUserReviewRequest = async (idProducto) => {
+export const checkUserReviewRequest = async (idProducto, idPedido) => {
     const savedUser = localStorage.getItem('usuarioBloqueMundo');
     const token = savedUser ? JSON.parse(savedUser) : null;
 
-    const response = await fetch(`${API_URL}/resenas/verificar/${idProducto}`, {
+    const response = await fetch(`${API_URL}/resenas/verificar/${idProducto}/${idPedido}`, {
         headers: {
             'Authorization': `Bearer ${token}`
         }
@@ -38,5 +38,38 @@ export const checkUserReviewRequest = async (idProducto) => {
 export const getResenasRequest = async (idProducto) => {
     const response = await fetch(`${API_URL}/resenas/producto/${idProducto}`);
     if (!response.ok) return [];
+    return response.json();
+};
+
+export const getReviewForAdminRequest = async (idUsuario, idProducto, idPedido) => {
+    const savedUser = localStorage.getItem('usuarioBloqueMundo');
+    const token = savedUser ? JSON.parse(savedUser) : null;
+
+    const response = await fetch(`${API_URL}/resenas/admin/${idUsuario}/${idProducto}/${idPedido}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) return null;
+    const text = await response.text();
+    if (!text) return null;
+    return JSON.parse(text);
+};
+
+export const deleteReviewAdminRequest = async (idResena) => {
+    const savedUser = localStorage.getItem('usuarioBloqueMundo');
+    const token = savedUser ? JSON.parse(savedUser) : null;
+
+    const response = await fetch(`${API_URL}/resenas/admin/${idResena}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error('Error al eliminar la reseña');
+    }
     return response.json();
 };

@@ -15,3 +15,18 @@ export const getPedidosRequest = async () => {
     }
     return response.json();
 };
+
+export const getHistorialVentasAdminRequest = async () => {
+    const savedUser = localStorage.getItem('usuarioBloqueMundo');
+    const token = savedUser ? JSON.parse(savedUser) : null;
+    
+    const response = await fetch(`${API_URL}/pedidos/admin`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        throw new Error('Error al obtener el historial de ventas');
+    }
+    return response.json();
+};

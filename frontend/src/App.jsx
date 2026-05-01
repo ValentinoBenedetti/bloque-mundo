@@ -11,6 +11,8 @@ import Favorites from './pages/Favorites'; // <-- IMPORTAMOS PÁGINA
 import AuthModal from './components/AuthModal';
 import EditProfile from './pages/EditProfile';
 import MisCompras from './pages/MisCompras';
+import HistorialVentas from './pages/HistorialVentas';
+import GestionProductos from './pages/GestionProductos';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -34,6 +36,8 @@ function App() {
               <Route path="/favoritos" element={<ProtectedRoute><Favorites /></ProtectedRoute>} /> {/* <-- RUTA */}
               <Route path="/perfil/editar" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/perfil/compras" element={<ProtectedRoute><MisCompras /></ProtectedRoute>} />
+              <Route path="/admin/ventas" element={<ProtectedRoute><HistorialVentas /></ProtectedRoute>} />
+              <Route path="/admin/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

@@ -13,7 +13,10 @@ export class NivelUsuario {
     beneficio: string; // [cite: 372]
 
     @Column({ type: 'decimal', precision: 10, scale: 2 })
-    montoMinimo: number; // [cite: 373]
+    montoMinimo: number;
+
+    @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+    porcentajeDescuento: number; // [cite: 373]
 
     @OneToMany(() => Usuario, (usuario) => usuario.nivel)
     usuarios: Usuario[]; // [cite: 375]

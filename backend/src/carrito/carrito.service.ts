@@ -69,7 +69,7 @@ export class CarritoService {
   private async actualizarTotal(idCarrito: number) {
     const carrito = await this.carritoRepository.findOne({
       where: { idCarrito },
-      relations: ['lineas', 'lineas.producto', 'usuario']
+      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
     });
 
     // 1. Le aseguramos a TypeScript que el carrito existe
@@ -81,9 +81,16 @@ export class CarritoService {
     const lineasSeguras = carrito.lineas || [];
 
     // 3. Calculamos el total
-    carrito.total = lineasSeguras.reduce((acc, linea) => {
+    const totalBruto = lineasSeguras.reduce((acc, linea) => {
       return acc + (Number(linea.precioUnitario) * linea.cantidad);
     }, 0);
+
+    carrito.total = totalBruto;
+
+    // 4. Aplicamos descuento por nivel si corresponde
+    const porcentaje = Number(carrito.usuario?.nivel?.porcentajeDescuento || 0);
+    carrito.descuentoAplicado = totalBruto * (porcentaje / 100);
+    carrito.totalConDescuento = totalBruto - carrito.descuentoAplicado;
 
     await this.carritoRepository.save(carrito);
     
@@ -94,7 +101,7 @@ export class CarritoService {
   async obtenerCarrito(idUsuario: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto']
+      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
     });
     // Si no existe, devolvemos un objeto vacío estructurado igual
     if (!carrito) return { total: 0, lineas: [] };
@@ -104,7 +111,7 @@ export class CarritoService {
   async quitarProducto(idUsuario: string, idProducto: number) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto']
+      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
     });
 
     if (!carrito) throw new NotFoundException('Carrito no encontrado.');
@@ -120,7 +127,7 @@ export class CarritoService {
   async vaciarCarrito(idUsuario: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto']
+      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
     });
 
     if (carrito && carrito.lineas) {

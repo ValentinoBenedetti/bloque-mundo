@@ -70,11 +70,11 @@ const Home = () => {
                     </div>
                 ) : (
                     <>
-                        {/* Destacados (Primeros 3 de la DB) */}
+                        {/* Destacados (Filtrados por esDestacado) */}
                         <div className="mb-20">
                             <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {products.slice(0, 3).map(p => <ProductCard key={p.id} product={p} />)}
+                                {products.filter(p => p.esDestacado && p.estado === 'Publicado').slice(0, 3).map(p => <ProductCard key={p.idProducto} product={p} />)}
                             </div>
                         </div>
 
@@ -82,7 +82,7 @@ const Home = () => {
                         <div>
                             <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Todos los productos</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                                {products.map(p => <ProductCard key={p.id} product={p} />)}
+                                {products.filter(p => p.estado === 'Publicado').map(p => <ProductCard key={p.idProducto} product={p} />)}
                             </div>
                         </div>
                     </>

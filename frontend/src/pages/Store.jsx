@@ -280,7 +280,7 @@ const Store = () => {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {filteredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                            {filteredProducts.map(p => <ProductCard key={p.idProducto} product={p} />)}
                         </div>
 
                         <div className="flex justify-center mt-12">

@@ -13,6 +13,7 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
     const { isAuthenticated } = useAuth();
     const [cart, setCart] = useState([]);
+    const [cartMetadata, setCartMetadata] = useState({ total: 0, descuentoAplicado: 0, totalConDescuento: 0, usuario: null });
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     // 1. Efecto para cargar el carrito del backend al iniciar sesin
@@ -27,6 +28,12 @@ export const CartProvider = ({ children }) => {
                         quantity: l.cantidad
                     }));
                     setCart(mappedCart);
+                    setCartMetadata({
+                        total: data.total,
+                        descuentoAplicado: data.descuentoAplicado,
+                        totalConDescuento: data.totalConDescuento,
+                        usuario: data.usuario
+                    });
                 } catch (error) {
                     console.error("Error cargando el carrito:", error);
                 }
@@ -49,6 +56,12 @@ export const CartProvider = ({ children }) => {
                     quantity: l.cantidad
                 }));
                 setCart(mappedCart);
+                setCartMetadata({
+                    total: updatedData.total,
+                    descuentoAplicado: updatedData.descuentoAplicado,
+                    totalConDescuento: updatedData.totalConDescuento,
+                    usuario: updatedData.usuario
+                });
             } catch (error) {
                 console.error("Error al agregar al carrito en backend:", error);
             }
@@ -82,6 +95,12 @@ export const CartProvider = ({ children }) => {
                     quantity: l.cantidad
                 }));
                 setCart(mappedCart);
+                setCartMetadata({
+                    total: updatedData.total,
+                    descuentoAplicado: updatedData.descuentoAplicado,
+                    totalConDescuento: updatedData.totalConDescuento,
+                    usuario: updatedData.usuario
+                });
             } catch (error) {
                 console.error("Error al quitar del carrito en backend:", error);
             }
@@ -98,6 +117,7 @@ export const CartProvider = ({ children }) => {
             try {
                 await vaciarCarritoRequest();
                 setCart([]);
+                setCartMetadata({ total: 0, descuentoAplicado: 0, totalConDescuento: 0, usuario: null });
             } catch (error) {
                 console.error("Error al vaciar carrito en backend:", error);
             }
@@ -117,7 +137,7 @@ export const CartProvider = ({ children }) => {
         // Ahora compartimos isCartOpen y setIsCartOpen con toda la app
         <CartContext.Provider value={{
             cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice,
-            isCartOpen, setIsCartOpen
+            isCartOpen, setIsCartOpen, cartMetadata
         }}>
             {children}
         </CartContext.Provider>

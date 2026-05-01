@@ -25,6 +25,11 @@ export class UsuariosController {
     return this.usuariosService.findOne(id);
   }
 
+  @Get('status/:id')
+  getStatus(@Param('id') id: string) {
+    return this.usuariosService.getStatus(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto) {
     return this.usuariosService.update(id, updateUsuarioDto);

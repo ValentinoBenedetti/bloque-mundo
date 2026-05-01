@@ -9,11 +9,13 @@ import { LineaCarrito } from '../linea-carrito/entities/linea-carrito.entity';
 import { Producto } from '../productos/entities/producto.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { AuthModule } from '../auth/auth.module';
+import { UsuariosModule } from '../usuarios/usuarios.module';
 
 @Module({
   // Importamos todo lo necesario para procesar la compra
   imports: [TypeOrmModule.forFeature([Pedido, LineaPedido, Carrito, LineaCarrito, Producto, Usuario]),
     AuthModule,
+    UsuariosModule,
   ],
   controllers: [PedidosController],
   providers: [PedidosService],

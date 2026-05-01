@@ -7,7 +7,7 @@ import { useState } from 'react';
 import ConfirmModal from '../components/ConfirmModal';
 
 const Cart = () => {
-    const { cart, addToCart, removeFromCart, totalPrice } = useCart();
+    const { cart, addToCart, removeFromCart, totalPrice, cartMetadata } = useCart();
     const navigate = useNavigate();
 
     // ESTADO PARA EL MODAL DE CONFIRMACI"N
@@ -128,8 +128,19 @@ const Cart = () => {
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between text-slate-500 font-bold">
                                         <span>Subtotal</span>
-                                        <span>{formatPrice(totalPrice)}</span>
+                                        <span>{formatPrice(cartMetadata.total)}</span>
                                     </div>
+                                    
+                                    {cartMetadata.descuentoAplicado > 0 && (
+                                        <div className="flex justify-between text-green-600 font-bold bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs uppercase italic font-black">Nivel {cartMetadata.usuario?.nivel?.nombre}</span>
+                                                <span className="text-[10px]">Descuento aplicado</span>
+                                            </div>
+                                            <span>-{formatPrice(cartMetadata.descuentoAplicado)}</span>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-between text-slate-500 font-bold">
                                         <span>Envío</span>
                                         <span className="text-green-500">Gratis</span>
@@ -137,7 +148,7 @@ const Cart = () => {
                                     <div className="h-1px bg-slate-100 my-4"></div>
                                     <div className="flex justify-between text-2xl font-black text-slate-900">
                                         <span>Total</span>
-                                        <span>{formatPrice(totalPrice)}</span>
+                                        <span>{formatPrice(cartMetadata.totalConDescuento)}</span>
                                     </div>
                                 </div>
 
