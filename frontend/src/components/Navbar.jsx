@@ -261,7 +261,7 @@ const Navbar = () => {
                                     onClick={() => { setIsCartOpen(false); navigate('/carrito'); }}
                                     className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-sm italic"
                                 >
-                                    Continuar
+                                    Ver carrito
                                 </button>
                             </div>
                         )}

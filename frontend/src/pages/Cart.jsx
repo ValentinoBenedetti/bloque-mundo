@@ -3,8 +3,9 @@ import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ConfirmModal from '../components/ConfirmModal';
+import logoMercadoPago from '../assets/logo mercado pago byn.png';
 
 const Cart = () => {
     const { cart, addToCart, removeFromCart, totalPrice, cartMetadata } = useCart();
@@ -16,6 +17,31 @@ const Cart = () => {
         product: null,
         action: null
     });
+    const [coupon, setCoupon] = useState('');
+    const [shippingAddress, setShippingAddress] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            if (shippingAddress.length < 3) {
+                setSuggestions([]);
+                return;
+            }
+            try {
+                const res = await fetch(`https://apis.datos.gob.ar/georef/api/localidades?nombre=${shippingAddress}&max=5`);
+                const data = await res.json();
+                if (data.localidades) {
+                    setSuggestions(data.localidades.map(l => `${l.nombre}, ${l.provincia.nombre}`));
+                }
+            } catch (err) {
+                console.error("Error fetching suggestions", err);
+            }
+        };
+
+        const timer = setTimeout(fetchSuggestions, 300);
+        return () => clearTimeout(timer);
+    }, [shippingAddress]);
 
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -122,30 +148,85 @@ const Cart = () => {
                         <div className="lg:w-96">
                             <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-100 sticky top-28">
                                 <h2 className="text-xl font-black text-slate-900 uppercase italic mb-6 border-b-2 border-brand-yellow pb-2">
-                                    Resumen
+                                    Total carrito
                                 </h2>
 
+                                {/* Cupon de Descuento */}
+                                <div className="mb-6 space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cupón de descuento</label>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={coupon}
+                                            onChange={(e) => setCoupon(e.target.value)}
+                                            placeholder="Ingresa tu cupón (opcional)"
+                                            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-brand-red transition"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Dirección de Envío */}
+                                <div className="mb-8 space-y-2 relative">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección de envío</label>
+                                    <input 
+                                        type="text" 
+                                        value={shippingAddress}
+                                        onChange={(e) => {
+                                            setShippingAddress(e.target.value);
+                                            setShowSuggestions(true);
+                                        }}
+                                        onFocus={() => setShowSuggestions(true)}
+                                        placeholder="Calle, Número, Ciudad y CP"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-brand-red transition"
+                                    />
+                                    
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-50 overflow-hidden">
+                                            {suggestions.map((s, i) => (
+                                                <div 
+                                                    key={i}
+                                                    onClick={() => {
+                                                        setShippingAddress(s);
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                    className="p-3 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                                >
+                                                    {s}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <p className="text-[9px] text-slate-400 italic">
+                                        Si no sabes tu CP, ingresa solo la Ciudad.
+                                    </p>
+                                </div>
+
                                 <div className="space-y-4 mb-8">
-                                    <div className="flex justify-between text-slate-500 font-bold">
+                                    <div className="flex justify-between text-slate-500 font-bold text-sm">
                                         <span>Subtotal</span>
                                         <span>{formatPrice(cartMetadata.total)}</span>
                                     </div>
                                     
                                     {cartMetadata.descuentoAplicado > 0 && (
-                                        <div className="flex justify-between text-green-600 font-bold bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+                                        <div className="flex justify-between text-brand-red font-black text-sm items-center">
                                             <div className="flex flex-col">
-                                                <span className="text-xs uppercase italic font-black">Nivel {cartMetadata.usuario?.nivel?.nombre}</span>
-                                                <span className="text-[10px]">Descuento aplicado</span>
+                                                <span>Descuento</span>
+                                                <span className="text-[9px] uppercase tracking-tighter opacity-70">
+                                                    Por ser Nivel {cartMetadata.usuario?.nivel?.nombre}
+                                                </span>
                                             </div>
                                             <span>-{formatPrice(cartMetadata.descuentoAplicado)}</span>
                                         </div>
                                     )}
 
-                                    <div className="flex justify-between text-slate-500 font-bold">
+                                    <div className="flex justify-between text-slate-500 font-bold text-sm">
                                         <span>Envío</span>
                                         <span className="text-green-500">Gratis</span>
                                     </div>
+
                                     <div className="h-1px bg-slate-100 my-4"></div>
+                                    
                                     <div className="flex justify-between text-2xl font-black text-slate-900">
                                         <span>Total</span>
                                         <span>{formatPrice(cartMetadata.totalConDescuento)}</span>
@@ -153,13 +234,21 @@ const Cart = () => {
                                 </div>
 
                                 <button
-                                    className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-sm italic mb-4"
+                                    className="w-full bg-slate-900 text-white font-black py-4 rounded-lg shadow-lg hover:bg-black transition-all uppercase tracking-widest text-sm italic mb-6"
                                 >
-                                    Finalizar compra
+                                    Pagar con Mercado Pago
                                 </button>
-                                <p className="text-[10px] text-slate-400 text-center font-bold uppercase">
-                                    Aceptamos todos los medios de pago
-                                </p>
+                                
+                                <div className="flex flex-col items-center gap-4">
+                                    <img 
+                                        src={logoMercadoPago} 
+                                        alt="Mercado Pago" 
+                                        className="h-8 brightness-0 opacity-80"
+                                    />
+                                    <p className="text-[10px] text-slate-400 text-center font-medium italic max-w-[200px] leading-tight">
+                                        Operamos exclusivamente con Mercado Pago para garantizar la seguridad de tus transacciones.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
