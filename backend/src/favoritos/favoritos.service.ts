@@ -16,11 +16,22 @@ export class FavoritosService {
   }
 
   async toggleFavorite(usuarioId: string, productoId: any) {
-    // Solo forzamos el producto a número, el usuario queda como string
-    const idProducto = parseInt(productoId.toString(), 10);
+    const isCombo = typeof productoId === 'string' && productoId.startsWith('combo-');
+    let idProducto: number | undefined = undefined;
+    let idCombo: number | undefined = undefined;
+
+    if (isCombo) {
+      idCombo = parseInt(productoId.replace('combo-', ''), 10);
+    } else {
+      idProducto = parseInt(productoId.toString(), 10);
+    }
+
+    const whereClause: any = isCombo 
+      ? { usuarioId: usuarioId, comboId: idCombo } 
+      : { usuarioId: usuarioId, productoId: idProducto };
 
     const existe = await this.favoritosRepository.findOne({
-      where: { usuarioId: usuarioId, productoId: idProducto }
+      where: whereClause
     });
 
     if (existe) {
@@ -28,9 +39,11 @@ export class FavoritosService {
       return { message: 'Removido de favoritos', isFavorite: false };
     } else {
       const nuevoFavorito = this.favoritosRepository.create({
-        usuarioId: usuarioId,
-        productoId: idProducto
+        usuarioId: usuarioId
       });
+      if (idProducto !== undefined) nuevoFavorito.productoId = idProducto;
+      if (idCombo !== undefined) nuevoFavorito.comboId = idCombo;
+      
       await this.favoritosRepository.save(nuevoFavorito);
       return { message: 'Agregado a favoritos', isFavorite: true };
     }

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { Producto } from '../../productos/entities/producto.entity';
+import { Combo } from '../../combos/entities/combo.entity';
 
 @Entity('favoritos')
 export class Favorito {
@@ -16,12 +17,19 @@ export class Favorito {
     usuario: Usuario;
 
     // 🔥 RESPETA AL PRODUCTO: Número entero
-    @Column({ type: 'int' })
+    @Column({ type: 'int', nullable: true })
     productoId: number;
 
-    @ManyToOne(() => Producto)
+    @ManyToOne(() => Producto, { nullable: true })
     @JoinColumn({ name: 'productoId' })
     producto: Producto;
+
+    @Column({ type: 'int', nullable: true })
+    comboId: number;
+
+    @ManyToOne(() => Combo, { nullable: true })
+    @JoinColumn({ name: 'comboId' })
+    combo: Combo;
 
     @CreateDateColumn({ type: 'timestamp' })
     fechaAgregado: Date;

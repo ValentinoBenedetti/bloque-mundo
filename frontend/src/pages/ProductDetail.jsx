@@ -119,17 +119,25 @@ const ProductDetail = () => {
     // 🔥 3. CONSULTAMOS SI YA ESTÁ GUARDADO
     const isFav = isFavorite(idReal);
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!isAuthenticated) {
-            openAuthModal(() => {
-                addToCart(product, quantity);
-                setIsCartOpen(true);
+            openAuthModal(async () => {
+                try {
+                    await addToCart(product, quantity);
+                    setIsCartOpen(true);
+                } catch (err) {
+                    alert(err.message || "Error al agregar al carrito");
+                }
             });
             return;
         }
 
-        addToCart(product, quantity);
-        setIsCartOpen(true);
+        try {
+            await addToCart(product, quantity);
+            setIsCartOpen(true);
+        } catch (err) {
+            alert(err.message || "Error al agregar al carrito");
+        }
     };
 
     const handleFavorite = () => {

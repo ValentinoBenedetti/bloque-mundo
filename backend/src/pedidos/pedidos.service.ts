@@ -6,6 +6,7 @@ import { LineaPedido } from '../linea-pedido/entities/linea-pedido.entity';
 import { Carrito } from '../carrito/entities/carrito.entity';
 import { LineaCarrito } from '../linea-carrito/entities/linea-carrito.entity';
 import { Producto } from '../productos/entities/producto.entity';
+import { Combo } from '../combos/entities/combo.entity';
 import { UsuariosService } from '../usuarios/usuarios.service';
 
 @Injectable()
@@ -23,7 +24,7 @@ export class PedidosService {
     // 1. Buscamos el carrito del usuario con todo lo que tiene adentro
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto'],
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos'],
     });
 
     if (!carrito || !carrito.lineas || carrito.lineas.length === 0) {
@@ -41,25 +42,43 @@ export class PedidosService {
 
     // 3. Movemos los items del carrito al pedido Y RESTAMOS EL STOCK
     for (const linea of carrito.lineas) {
-      const producto = linea.producto;
+      if (linea.producto) {
+        const producto = linea.producto;
+        if (producto.stock < linea.cantidad) {
+          throw new BadRequestException(`¡Ups! Alguien acaba de comprar los últimos ${producto.titulo}.`);
+        }
+        producto.stock -= linea.cantidad;
+        await this.productoRepository.save(producto);
 
-      // Última validación de seguridad (por si alguien compró justo antes)
-      if (producto.stock < linea.cantidad) {
-        throw new BadRequestException(`¡Ups! Alguien acaba de comprar los últimos ${producto.titulo}.`);
+        const lineaPedido = this.lineaPedidoRepository.create({
+          cantidad: linea.cantidad,
+          precioHistorico: linea.precioUnitario,
+          pedido: pedidoGuardado,
+        });
+        lineaPedido.producto = producto;
+        await this.lineaPedidoRepository.save(lineaPedido);
+      } else if (linea.combo) {
+        const combo = linea.combo;
+        
+        // Restamos stock a cada producto individual que conforma el combo
+        if (combo.productos && combo.productos.length > 0) {
+          for (const p of combo.productos) {
+            if (p.stock < linea.cantidad) {
+              throw new BadRequestException(`El combo ${combo.titulo} se agotó porque falta stock de ${p.titulo}.`);
+            }
+            p.stock -= linea.cantidad;
+            await this.productoRepository.save(p);
+          }
+        }
+
+        const lineaPedido = this.lineaPedidoRepository.create({
+          cantidad: linea.cantidad,
+          precioHistorico: linea.precioUnitario,
+          pedido: pedidoGuardado,
+        });
+        lineaPedido.combo = combo;
+        await this.lineaPedidoRepository.save(lineaPedido);
       }
-
-      // Restamos el stock de la estantería
-      producto.stock -= linea.cantidad;
-      await this.productoRepository.save(producto);
-
-      // Creamos la línea de la factura congelando el precio de hoy
-      const lineaPedido = this.lineaPedidoRepository.create({
-        cantidad: linea.cantidad,
-        precioHistorico: linea.precioUnitario,
-        pedido: pedidoGuardado,
-        producto: producto,
-      });
-      await this.lineaPedidoRepository.save(lineaPedido);
     }
 
     // 4. Limpiamos la mesa: Vaciamos el carrito
@@ -73,7 +92,7 @@ export class PedidosService {
     // Devolvemos el ticket de compra
     return this.pedidoRepository.findOne({
       where: { idPedido: pedidoGuardado.idPedido },
-      relations: ['lineas', 'lineas.producto']
+      relations: ['lineas', 'lineas.producto', 'lineas.combo']
     });
   }
 
@@ -82,6 +101,7 @@ export class PedidosService {
       .createQueryBuilder('pedido')
       .leftJoinAndSelect('pedido.lineas', 'lineas')
       .leftJoinAndSelect('lineas.producto', 'producto')
+      .leftJoinAndSelect('lineas.combo', 'combo')
       .where('pedido.idUsuario = :idUsuario', { idUsuario })
       .orderBy('pedido.fecha', 'DESC')
       .getMany();
@@ -93,6 +113,7 @@ export class PedidosService {
       .leftJoinAndSelect('pedido.usuario', 'usuario')
       .leftJoinAndSelect('pedido.lineas', 'lineas')
       .leftJoinAndSelect('lineas.producto', 'producto')
+      .leftJoinAndSelect('lineas.combo', 'combo')
       .orderBy('pedido.fecha', 'DESC')
       .getMany();
   }

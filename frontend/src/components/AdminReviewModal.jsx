@@ -109,7 +109,7 @@ const AdminReviewModal = ({ isOpen, onClose, idUsuario, idProducto, idPedido, pr
                         ) : (
                             <>
                                 <h3 className="font-bold text-slate-800 mb-2">{getRatingText(resena.estrellas)}</h3>
-                                <p className="text-sm text-slate-600 mb-6 break-words">{resena.comentario}</p>
+                                <p className="text-sm text-slate-600 mb-6 wrap-break-word">{resena.comentario}</p>
                                 
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0"></div>

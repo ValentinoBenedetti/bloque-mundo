@@ -37,7 +37,7 @@ export const FavoritesProvider = ({ children }) => {
             try {
                 const data = await getFavoritesRequest(usuarioIdReal);
                 // Extraemos los IDs de los productos para pintar los corazones
-                setFavoritesIds(data.map(fav => fav.productoId || fav.idProducto));
+                setFavoritesIds(data.map(fav => fav.comboId ? `combo-${fav.comboId}` : (fav.productoId || fav.idProducto)));
             } catch (error) {
                 console.error("Error cargando favoritos:", error);
             }
@@ -53,7 +53,8 @@ export const FavoritesProvider = ({ children }) => {
 
     const toggleFavorite = async (productoId) => {
         // Escudo protector: Si el productoId no es válido, frenamos todo.
-        if (!productoId || isNaN(productoId)) {
+        const isCombo = typeof productoId === 'string' && productoId.startsWith('combo-');
+        if (!productoId || (!isCombo && isNaN(productoId))) {
             console.error("Error: El ID del producto no es válido:", productoId);
             return;
         }

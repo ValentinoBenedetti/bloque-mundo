@@ -49,12 +49,12 @@ const HistorialVentas = () => {
 
     // Filtro por búsqueda (nombre de producto o código)
     const ventasFiltradas = ventas.filter(item => {
-        const producto = item.producto;
-        if (!producto) return false;
+        const itemComprado = item.producto || item.combo;
+        if (!itemComprado) return false;
         
         const term = searchTerm.toLowerCase();
-        const matchesName = producto.titulo && producto.titulo.toLowerCase().includes(term);
-        const matchesCode = (producto.codigoProducto || producto.idProducto || '').toString().toLowerCase().includes(term);
+        const matchesName = itemComprado.titulo && itemComprado.titulo.toLowerCase().includes(term);
+        const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
         
         return matchesName || matchesCode;
     });
@@ -149,21 +149,28 @@ const HistorialVentas = () => {
                 ) : (
                     <div className="space-y-6">
                         {ventasPaginadas.map((item, index) => {
-                            const producto = item.producto;
-                            const imagen = producto?.imagen || producto?.imagenes || producto?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto';
+                            const itemComprado = item.producto || item.combo;
+                            const isCombo = !!item.combo;
+                            const imagen = isCombo 
+                                ? 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                                : (itemComprado?.imagen || itemComprado?.imagenes || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+                            
+                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
+                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
+
                             const usuario = item.usuario;
                             const totalVenta = Number(item.precioHistorico) * Number(item.cantidad);
 
                             return (
                                 <div key={index} className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
                                     <div className="h-28 w-28 bg-slate-100 rounded-md overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                        <img src={imagen} alt={producto?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
+                                        <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
                                     </div>
 
                                     <div className="flex-1 space-y-4 w-full">
                                         <div className="flex justify-between items-start w-full">
                                             <h3 className="font-bold text-lg text-slate-800">
-                                                {producto?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
+                                                {itemComprado?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
                                             </h3>
                                             
                                             {/* Box de Total a la derecha */}
@@ -180,7 +187,7 @@ const HistorialVentas = () => {
                                         <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm font-medium text-slate-600">
                                             <div className="flex flex-col gap-1 items-center">
                                                 <Hash size={20} className="text-slate-800" strokeWidth={2.5} />
-                                                <span className="text-xs">Codigo: {producto?.codigoProducto || producto?.idProducto}</span>
+                                                <span className="text-xs">Codigo: {codigo}</span>
                                             </div>
                                             <div className="flex flex-col gap-1 items-center">
                                                 <Calendar size={20} className="text-slate-800" strokeWidth={2} />
@@ -193,18 +200,20 @@ const HistorialVentas = () => {
 
                                             {/* Botón ver reseña alineado al final */}
                                             <div className="ml-auto mt-2 sm:mt-0">
-                                                <button 
-                                                    onClick={() => setModalData({
-                                                        isOpen: true,
-                                                        idUsuario: usuario?.idUsuario,
-                                                        idProducto: producto?.idProducto,
-                                                        idPedido: item.idPedido,
-                                                        productoNombre: producto?.titulo
-                                                    })}
-                                                    className="border border-slate-300 text-slate-600 font-bold py-1.5 px-4 rounded text-xs hover:bg-slate-50 transition shadow-sm"
-                                                >
-                                                    Ver reseña
-                                                </button>
+                                                {!isCombo && (
+                                                    <button 
+                                                        onClick={() => setModalData({
+                                                            isOpen: true,
+                                                            idUsuario: usuario?.idUsuario,
+                                                            idProducto: itemComprado?.idProducto,
+                                                            idPedido: item.idPedido,
+                                                            productoNombre: itemComprado?.titulo
+                                                        })}
+                                                        className="border border-slate-300 text-slate-600 font-bold py-1.5 px-4 rounded text-xs hover:bg-slate-50 transition shadow-sm"
+                                                    >
+                                                        Ver reseña
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

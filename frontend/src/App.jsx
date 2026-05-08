@@ -8,6 +8,7 @@ import Store from './pages/Store';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Favorites from './pages/Favorites'; // <-- IMPORTAMOS PÁGINA
+import Nosotros from './pages/Nosotros';
 import AuthModal from './components/AuthModal';
 import EditProfile from './pages/EditProfile';
 import MisCompras from './pages/MisCompras';
@@ -30,6 +31,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Home />} />
               <Route path="/tienda" element={<Store />} />
+              <Route path="/nosotros" element={<Nosotros />} />
               <Route path="/producto/:id" element={<ProductDetail />} />
 
               <Route path="/carrito" element={<ProtectedRoute><Cart /></ProtectedRoute>} />

@@ -13,6 +13,7 @@ import { LineaPedidoModule } from './linea-pedido/linea-pedido.module';
 import { AuthModule } from './auth/auth.module';
 import { FavoritosModule } from './favoritos/favoritos.module';
 import { ResenasModule } from './resenas/resenas.module';
+import { CombosModule } from './combos/combos.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ResenasModule } from './resenas/resenas.module';
     AuthModule,
     FavoritosModule,
     ResenasModule,
+    CombosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

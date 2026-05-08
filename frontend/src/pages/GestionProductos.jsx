@@ -5,7 +5,9 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductModal from '../components/ProductModal';
 import ConfirmModal from '../components/ConfirmModal';
+import ComboModal from '../components/ComboModal';
 import { getProductsRequest, updateProductRequest, deleteProductRequest, createProductRequest } from '../api/products';
+import { getCombosRequest, createComboRequest, updateComboRequest, deleteComboRequest } from '../api/combos';
 import bgImage from '../assets/background-lego.jpg';
 
 const GestionProductos = () => {
@@ -16,9 +18,10 @@ const GestionProductos = () => {
     const [sortBy, setSortBy] = useState('desc'); // Descendente por defecto
     const [filterType, setFilterType] = useState('all'); // Producto individual / Combo
 
-    // Estados para Modales
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+    const [selectedCombo, setSelectedCombo] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
 
@@ -28,15 +31,15 @@ const GestionProductos = () => {
         maximumFractionDigits: 0
     }).format(p || 0);
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (showLoading = true) => {
         try {
-            setLoading(true);
-            const data = await getProductsRequest();
-            setProducts(data);
+            if (showLoading) setLoading(true);
+            const dataProducts = await getProductsRequest();
+            setProducts(dataProducts);
         } catch (err) {
             console.error("Error fetching products", err);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
@@ -45,30 +48,48 @@ const GestionProductos = () => {
     }, []);
 
     const handleToggleStatus = async (product) => {
+        const nuevoEstado = product.estado === 'Publicado' ? 'NoPublicado' : 'Publicado';
         try {
-            const nuevoEstado = product.estado === 'Publicado' ? 'NoPublicado' : 'Publicado';
-            await updateProductRequest(product.idProducto, { estado: nuevoEstado });
-            fetchProducts();
+            if (product.esCombo) {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, estado: nuevoEstado } : p));
+                await updateComboRequest(product.idCombo, { estado: nuevoEstado });
+            } else {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, estado: nuevoEstado } : p));
+                await updateProductRequest(product.idProducto, { estado: nuevoEstado });
+            }
         } catch (err) {
             alert('Error al actualizar el estado');
+            fetchProducts(false);
         }
     };
 
     const handleToggleFeatured = async (product) => {
         try {
-            await updateProductRequest(product.idProducto, { esDestacado: !product.esDestacado });
-            fetchProducts();
+            if (product.esCombo) {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esDestacado: !product.esDestacado } : p));
+                await updateComboRequest(product.idCombo, { esDestacado: !product.esDestacado });
+            } else {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esDestacado: !product.esDestacado } : p));
+                await updateProductRequest(product.idProducto, { esDestacado: !product.esDestacado });
+            }
         } catch (err) {
             alert('Error al actualizar destacados');
+            fetchProducts(false);
         }
     };
 
     const handleToggleNew = async (product) => {
         try {
-            await updateProductRequest(product.idProducto, { esNovedad: !product.esNovedad });
-            fetchProducts();
+            if (product.esCombo) {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esNovedad: !product.esNovedad } : p));
+                await updateComboRequest(product.idCombo, { esNovedad: !product.esNovedad });
+            } else {
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esNovedad: !product.esNovedad } : p));
+                await updateProductRequest(product.idProducto, { esNovedad: !product.esNovedad });
+            }
         } catch (err) {
             alert('Error al actualizar novedades');
+            fetchProducts(false);
         }
     };
 
@@ -79,22 +100,52 @@ const GestionProductos = () => {
 
     const confirmDelete = async () => {
         try {
-            await deleteProductRequest(productToDelete.idProducto);
+            if (productToDelete.esCombo) {
+                const realId = productToDelete.idCombo;
+                await deleteComboRequest(realId);
+            } else {
+                await deleteProductRequest(productToDelete.idProducto);
+            }
             setIsConfirmModalOpen(false);
-            fetchProducts();
+            fetchProducts(false);
         } catch (err) {
-            alert('Error al eliminar el producto');
+            alert(err.message || 'Error al eliminar');
+            setIsConfirmModalOpen(false);
         }
     };
 
     const handleEditClick = (product) => {
-        setSelectedProduct(product);
-        setIsProductModalOpen(true);
+        if (product.esCombo) {
+            setSelectedCombo(product);
+            setIsComboModalOpen(true);
+        } else {
+            setSelectedProduct(product);
+            setIsProductModalOpen(true);
+        }
     };
 
     const handleCreateClick = () => {
         setSelectedProduct(null);
         setIsProductModalOpen(true);
+    };
+
+    const handleCreateComboClick = () => {
+        setSelectedCombo(null);
+        setIsComboModalOpen(true);
+    };
+
+    const handleSaveCombo = async (formData) => {
+        try {
+            if (selectedCombo) {
+                await updateComboRequest(selectedCombo.idCombo, formData);
+            } else {
+                await createComboRequest(formData);
+            }
+            setIsComboModalOpen(false);
+            fetchProducts(false);
+        } catch (err) {
+            alert('Error al guardar el combo: ' + err.message);
+        }
     };
 
     const handleSaveProduct = async (formData) => {
@@ -105,21 +156,24 @@ const GestionProductos = () => {
                 await createProductRequest(formData);
             }
             setIsProductModalOpen(false);
-            fetchProducts();
+            fetchProducts(false);
         } catch (err) {
             alert('Error al guardar el producto: ' + err.message);
         }
     };
 
     const filteredProducts = products.filter(p => {
-        const matchSearch = (p.idProducto || p.id).toString().includes(searchTerm) || 
+        const idStr = p.esCombo ? `CMB-${p.idCombo}` : (p.idProducto || p.id).toString();
+        const matchSearch = idStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (p.titulo || p.nombre).toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = filterType === 'all' ? true : 
                          filterType === 'combo' ? p.esCombo : !p.esCombo;
         return matchSearch && matchType;
     }).sort((a, b) => {
-        if (sortBy === 'asc') return a.idProducto - b.idProducto;
-        return b.idProducto - a.idProducto;
+        const idA = a.esCombo ? a.idCombo : a.idProducto;
+        const idB = b.esCombo ? b.idCombo : b.idProducto;
+        if (sortBy === 'asc') return idA - idB;
+        return idB - idA;
     });
 
     return (
@@ -192,7 +246,7 @@ const GestionProductos = () => {
             {/* Action Buttons */}
             <div className="max-w-7xl mx-auto w-full py-8 px-6 flex justify-center gap-6">
                 <button 
-                    onClick={() => handleCreateClick()}
+                    onClick={() => handleCreateComboClick()}
                     className="flex items-center gap-3 bg-white border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm hover:bg-slate-900 hover:text-white transition group shadow-sm"
                 >
                     Crear nuevo combo <Plus size={20} className="group-hover:rotate-90 transition-transform" />
@@ -260,23 +314,27 @@ const GestionProductos = () => {
                                     {/* Featured Section */}
                                     <div className="p-6 border-r border-slate-100 text-center min-w-[120px]">
                                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Destacados</p>
-                                        <button 
+                                        <div 
+                                            className="relative inline-flex items-center cursor-pointer"
                                             onClick={() => handleToggleFeatured(product)}
-                                            className={`transition p-1 rounded-full ${product.esDestacado ? 'text-brand-yellow bg-yellow-50 scale-110' : 'text-slate-200 hover:text-slate-400'}`}
                                         >
-                                            {product.esDestacado ? <CheckCircle size={24} strokeWidth={3} /> : <Plus size={24} strokeWidth={3} />}
-                                        </button>
+                                            <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esDestacado ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esDestacado ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* New Section */}
                                     <div className="p-6 text-center min-w-[120px]">
                                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Novedades</p>
-                                        <button 
+                                        <div 
+                                            className="relative inline-flex items-center cursor-pointer"
                                             onClick={() => handleToggleNew(product)}
-                                            className={`transition p-1 rounded-full ${product.esNovedad ? 'text-green-500 bg-green-50 scale-110' : 'text-slate-200 hover:text-slate-400'}`}
                                         >
-                                            <CheckCircle size={24} strokeWidth={3} />
-                                        </button>
+                                            <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esNovedad ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esNovedad ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -300,11 +358,18 @@ const GestionProductos = () => {
                 product={selectedProduct}
             />
 
+            <ComboModal 
+                isOpen={isComboModalOpen}
+                onClose={() => setIsComboModalOpen(false)}
+                onSave={handleSaveCombo}
+                combo={selectedCombo}
+            />
+
             <ConfirmModal 
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={confirmDelete}
-                title="¿Eliminar producto?"
+                title={productToDelete?.esCombo ? "¿Eliminar combo?" : "¿Eliminar producto?"}
                 message={`¿Estás seguro que deseas eliminar "${productToDelete?.titulo || productToDelete?.nombre}"? Esta acción no se puede deshacer.`}
             />
         </div>

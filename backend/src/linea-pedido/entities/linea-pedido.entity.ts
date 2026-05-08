@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Pedido } from '../../pedidos/entities/pedido.entity';
 import { Producto } from '../../productos/entities/producto.entity';
+import { Combo } from '../../combos/entities/combo.entity';
 
 @Entity('lineas_pedido')
 export class LineaPedido {
@@ -18,7 +19,11 @@ export class LineaPedido {
     @JoinColumn({ name: 'idPedido' })
     pedido: Pedido;
 
-    @ManyToOne(() => Producto)
+    @ManyToOne(() => Producto, { nullable: true })
     @JoinColumn({ name: 'idProducto' })
     producto: Producto;
+
+    @ManyToOne(() => Combo, { nullable: true })
+    @JoinColumn({ name: 'idCombo' })
+    combo: Combo;
 }

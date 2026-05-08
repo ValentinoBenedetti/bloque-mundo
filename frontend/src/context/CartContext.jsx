@@ -23,10 +23,15 @@ export const CartProvider = ({ children }) => {
                 try {
                     const data = await getCarritoRequest();
                     // Transformamos el formato del backend (lineas) al formato del frontend
-                    const mappedCart = (data.lineas || []).map(l => ({
-                        ...l.producto,
-                        quantity: l.cantidad
-                    }));
+                    const mappedCart = (data.lineas || []).map(l => {
+                        const item = l.combo ? {
+                            ...l.combo,
+                            idProducto: `combo-${l.combo.idCombo}`,
+                            esCombo: true,
+                            imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                        } : l.producto;
+                        return { ...item, quantity: l.cantidad };
+                    });
                     setCart(mappedCart);
                     setCartMetadata({
                         total: data.total,
@@ -51,10 +56,15 @@ export const CartProvider = ({ children }) => {
         if (isAuthenticated) {
             try {
                 const updatedData = await agregarAlCarritoRequest(productId, quantity);
-                const mappedCart = (updatedData.lineas || []).map(l => ({
-                    ...l.producto,
-                    quantity: l.cantidad
-                }));
+                const mappedCart = (updatedData.lineas || []).map(l => {
+                    const item = l.combo ? {
+                        ...l.combo,
+                        idProducto: `combo-${l.combo.idCombo}`,
+                        esCombo: true,
+                        imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                    } : l.producto;
+                    return { ...item, quantity: l.cantidad };
+                });
                 setCart(mappedCart);
                 setCartMetadata({
                     total: updatedData.total,
@@ -64,6 +74,7 @@ export const CartProvider = ({ children }) => {
                 });
             } catch (error) {
                 console.error("Error al agregar al carrito en backend:", error);
+                throw error;
             }
         } else {
             // Si no est logueado (aunque las rutas estǸn protegidas), manejo local opcional
@@ -90,10 +101,15 @@ export const CartProvider = ({ children }) => {
         if (isAuthenticated) {
             try {
                 const updatedData = await quitarDelCarritoRequest(productId);
-                const mappedCart = (updatedData.lineas || []).map(l => ({
-                    ...l.producto,
-                    quantity: l.cantidad
-                }));
+                const mappedCart = (updatedData.lineas || []).map(l => {
+                    const item = l.combo ? {
+                        ...l.combo,
+                        idProducto: `combo-${l.combo.idCombo}`,
+                        esCombo: true,
+                        imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                    } : l.producto;
+                    return { ...item, quantity: l.cantidad };
+                });
                 setCart(mappedCart);
                 setCartMetadata({
                     total: updatedData.total,

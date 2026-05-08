@@ -97,7 +97,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         let finalImageUrl = formData.imagen;
 
         if (selectedFile) {
@@ -118,9 +118,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-            
+
             <div className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
                 <div className="sticky top-0 bg-white z-10 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
                     <h2 className="text-xl font-black text-slate-900 uppercase italic">
@@ -134,12 +134,12 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Image Selector */}
                     <div className="flex justify-center">
-                        <input 
-                            type="file" id="product-image" className="hidden" 
-                            accept="image/*" onChange={handleFileChange} 
+                        <input
+                            type="file" id="product-image" className="hidden"
+                            accept="image/*" onChange={handleFileChange}
                         />
-                        <label 
-                            htmlFor="product-image" 
+                        <label
+                            htmlFor="product-image"
                             className="w-48 h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition overflow-hidden relative group"
                         >
                             {previewUrl ? (
@@ -150,7 +150,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-center px-4">Insertar imagen</span>
                                 </>
                             )}
-                            
+
                             {previewUrl && (
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
                                     Cambiar imagen
@@ -169,7 +169,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Código */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Código</label>
-                            <input 
+                            <input
                                 type="text" name="codigoProducto" value={formData.codigoProducto} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese el código del producto"
@@ -179,7 +179,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Nombre */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nombre</label>
-                            <input 
+                            <input
                                 type="text" name="titulo" value={formData.titulo} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese el nombre del producto"
@@ -189,7 +189,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Tema */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Tema</label>
-                            <select 
+                            <select
                                 name="idTema" value={formData.idTema} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white appearance-none"
                             >
@@ -203,7 +203,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Edad */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Edad</label>
-                            <select 
+                            <select
                                 name="rangoEdad" value={formData.rangoEdad} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white"
                             >
@@ -219,7 +219,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Piezas */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Piezas</label>
-                            <input 
+                            <input
                                 type="number" name="cantidadPiezas" value={formData.cantidadPiezas} onChange={handleChange}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Cantidad de piezas"
@@ -229,7 +229,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Categoría */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Categoría</label>
-                            <select 
+                            <select
                                 name="categoria" value={formData.categoria} onChange={handleChange}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white"
                             >
@@ -244,7 +244,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Precio */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Precio de venta</label>
-                            <input 
+                            <input
                                 type="number" name="precio" value={formData.precio} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese el precio"
@@ -254,7 +254,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                         {/* Stock */}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Cantidad disponible</label>
-                            <input 
+                            <input
                                 type="number" name="stock" value={formData.stock} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese stock"
@@ -265,7 +265,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                     {/* Descripción */}
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Descripción</label>
-                        <textarea 
+                        <textarea
                             name="descripcion" value={formData.descripcion} onChange={handleChange} rows="4"
                             className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium resize-none"
                             placeholder="Descripción del producto..."
@@ -291,13 +291,13 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                     </div>
 
                     <div className="flex gap-4 pt-6 border-t border-slate-100">
-                        <button 
+                        <button
                             type="button" onClick={onClose}
                             className="flex-1 px-8 py-4 border-2 border-slate-200 text-slate-500 font-black uppercase tracking-widest text-sm rounded-xl hover:bg-slate-50 transition"
                         >
                             Cancelar
                         </button>
-                        <button 
+                        <button
                             type="submit"
                             disabled={isUploading}
                             className="flex-1 px-8 py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-black transition shadow-lg disabled:bg-slate-400 flex items-center justify-center gap-2"

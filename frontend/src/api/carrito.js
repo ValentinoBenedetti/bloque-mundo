@@ -23,6 +23,13 @@ export const agregarAlCarritoRequest = async (idProducto, cantidad) => {
         headers: getHeaders(),
         body: JSON.stringify({ idProducto, cantidad })
     });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (errorData && errorData.message) {
+            throw new Error(errorData.message);
+        }
+        throw new Error('Error al agregar al carrito');
+    }
     return response.json();
 };
 

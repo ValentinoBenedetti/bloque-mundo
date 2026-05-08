@@ -55,7 +55,7 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isReadOnly) return;
-        
+
         setError(null);
 
         if (rating === 0) {
@@ -111,92 +111,90 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
                                 <p className="text-sm font-medium text-slate-500 mb-3">
                                     {isReadOnly ? 'Calificaste este producto con:' : `¿Qué te pareció el ${product.titulo}?`}
                                 </p>
-                        <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => !isReadOnly && setRating(star)}
-                                    onMouseEnter={() => !isReadOnly && setHover(star)}
-                                    onMouseLeave={() => !isReadOnly && setHover(0)}
-                                    className={`transition-transform ${!isReadOnly ? 'hover:scale-110 active:scale-95' : 'cursor-default'}`}
-                                    disabled={isReadOnly}
-                                >
-                                    <Star
-                                        size={36}
-                                        className={`transition-colors ${
-                                            star <= (hover || rating)
-                                                ? 'fill-brand-yellow text-brand-yellow'
-                                                : 'text-slate-200 fill-slate-200'
-                                        }`}
-                                    />
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                                {isReadOnly ? 'Tu comentario enviado' : 'Tu comentario'}
-                            </label>
-                            <textarea
-                                value={comment}
-                                onChange={(e) => !isReadOnly && setComment(e.target.value)}
-                                readOnly={isReadOnly}
-                                placeholder={isReadOnly ? "" : "Cuéntanos tu experiencia con este set..."}
-                                className={`w-full p-4 border-2 rounded-xl outline-none transition h-32 text-sm resize-none ${
-                                    isReadOnly 
-                                    ? 'bg-slate-50 border-transparent text-slate-600 italic' 
-                                    : 'bg-slate-50 border-slate-100 focus:border-brand-red focus:bg-white'
-                                }`}
-                            ></textarea>
-                            {!isReadOnly && (
-                                <div className="flex justify-between mt-1 px-1">
-                                    <span className={`text-[10px] font-bold ${wordCount > 200 ? 'text-brand-red' : 'text-slate-400'}`}>
-                                        {wordCount} / 200 palabras
-                                    </span>
+                                <div className="flex gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => !isReadOnly && setRating(star)}
+                                            onMouseEnter={() => !isReadOnly && setHover(star)}
+                                            onMouseLeave={() => !isReadOnly && setHover(0)}
+                                            className={`transition-transform ${!isReadOnly ? 'hover:scale-110 active:scale-95' : 'cursor-default'}`}
+                                            disabled={isReadOnly}
+                                        >
+                                            <Star
+                                                size={36}
+                                                className={`transition-colors ${star <= (hover || rating)
+                                                        ? 'fill-brand-yellow text-brand-yellow'
+                                                        : 'text-slate-200 fill-slate-200'
+                                                    }`}
+                                            />
+                                        </button>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-3 py-2">
-                            <label className={`relative inline-flex items-center ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={isAnonymous} 
-                                    onChange={(e) => !isReadOnly && setIsAnonymous(e.target.checked)} 
-                                    disabled={isReadOnly}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-red opacity-80"></div>
-                            </label>
-                            <span className="text-sm font-medium text-slate-600">Publicada como reseña anónima</span>
-                        </div>
-
-                        {error && (
-                            <p className="text-xs font-bold text-brand-red bg-red-50 p-3 rounded-lg border border-red-100 animate-shake">
-                                {error}
-                            </p>
-                        )}
-
-                        {!isReadOnly ? (
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 uppercase tracking-widest"
-                            >
-                                {loading ? 'Enviando...' : 'Publicar reseña'}
-                            </button>
-                        ) : (
-                            <div className="bg-slate-100 p-4 rounded-xl text-center">
-                                <p className="text-sm font-bold text-slate-500">
-                                    Ya has opinado sobre este producto. ¡Gracias por tu feedback!
-                                </p>
                             </div>
-                        )}
-                    </form>
-                    </>
+
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                        {isReadOnly ? 'Tu comentario enviado' : 'Tu comentario'}
+                                    </label>
+                                    <textarea
+                                        value={comment}
+                                        onChange={(e) => !isReadOnly && setComment(e.target.value)}
+                                        readOnly={isReadOnly}
+                                        placeholder={isReadOnly ? "" : "Cuéntanos tu experiencia con este set..."}
+                                        className={`w-full p-4 border-2 rounded-xl outline-none transition h-32 text-sm resize-none ${isReadOnly
+                                                ? 'bg-slate-50 border-transparent text-slate-600 italic'
+                                                : 'bg-slate-50 border-slate-100 focus:border-brand-red focus:bg-white'
+                                            }`}
+                                    ></textarea>
+                                    {!isReadOnly && (
+                                        <div className="flex justify-between mt-1 px-1">
+                                            <span className={`text-[10px] font-bold ${wordCount > 200 ? 'text-brand-red' : 'text-slate-400'}`}>
+                                                {wordCount} / 200 palabras
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-3 py-2">
+                                    <label className={`relative inline-flex items-center ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isAnonymous}
+                                            onChange={(e) => !isReadOnly && setIsAnonymous(e.target.checked)}
+                                            disabled={isReadOnly}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-2px after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-red opacity-80"></div>
+                                    </label>
+                                    <span className="text-sm font-medium text-slate-600">Publicada como reseña anónima</span>
+                                </div>
+
+                                {error && (
+                                    <p className="text-xs font-bold text-brand-red bg-red-50 p-3 rounded-lg border border-red-100 animate-shake">
+                                        {error}
+                                    </p>
+                                )}
+
+                                {!isReadOnly ? (
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 uppercase tracking-widest"
+                                    >
+                                        {loading ? 'Enviando...' : 'Publicar reseña'}
+                                    </button>
+                                ) : (
+                                    <div className="bg-slate-100 p-4 rounded-xl text-center">
+                                        <p className="text-sm font-bold text-slate-500">
+                                            Ya has opinado sobre este producto. ¡Gracias por tu feedback!
+                                        </p>
+                                    </div>
+                                )}
+                            </form>
+                        </>
                     )}
                 </div>
             </div>

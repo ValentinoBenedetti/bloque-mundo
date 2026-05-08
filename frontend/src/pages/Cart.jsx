@@ -115,7 +115,13 @@ const Cart = () => {
                                             </button>
                                             <span className="px-4 font-black text-slate-800">{item.quantity}</span>
                                             <button
-                                                onClick={() => addToCart(item, 1)}
+                                                onClick={async () => {
+                                                    try {
+                                                        await addToCart(item, 1);
+                                                    } catch (err) {
+                                                        alert(err.message || "Error al actualizar la cantidad");
+                                                    }
+                                                }}
                                                 className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
                                             >
                                                 <Plus size={16} />

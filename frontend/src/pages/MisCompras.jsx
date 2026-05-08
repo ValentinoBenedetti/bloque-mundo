@@ -112,23 +112,29 @@ const MisCompras = () => {
                 ) : (
                     <div className="space-y-6">
                         {comprasOrdenadas.map((item, index) => {
-                            const producto = item.producto;
-                            const imagen = producto?.imagen || producto?.imagenes || producto?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto';
+                            const itemComprado = item.producto || item.combo;
+                            const isCombo = !!item.combo;
+                            const imagen = isCombo 
+                                ? 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                                : (itemComprado?.imagen || itemComprado?.imagenes || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+                            
+                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
+                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
 
                             return (
                                 <div key={index} className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
                                     <div className="h-28 w-28 bg-slate-100 rounded-md overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                        <img src={imagen} alt={producto?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
+                                        <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
                                     </div>
 
                                     <div className="flex-1 space-y-4">
                                         <h3 className="font-bold text-lg text-slate-800">
-                                            {producto?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
+                                            {itemComprado?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
                                         </h3>
                                         <div className="flex items-center gap-8 text-sm font-medium text-slate-600">
                                             <div className="flex flex-col gap-1">
                                                 <Hash size={18} className="text-slate-800" />
-                                                <span>Codigo: {producto?.codigoProducto || producto?.idProducto}</span>
+                                                <span>Codigo: {codigo}</span>
                                             </div>
                                             <div className="flex flex-col gap-1">
                                                 <Calendar size={18} className="text-slate-800" />
@@ -139,20 +145,22 @@ const MisCompras = () => {
 
                                     <div className="flex flex-col gap-3 w-full sm:w-48 mt-4 sm:mt-0">
                                         <button
-                                            onClick={() => navigate(`/producto/${producto?.idProducto}`)}
+                                            onClick={() => navigate(`/producto/${idStr}`)}
                                             className="w-full text-center border-2 border-slate-300 text-slate-800 font-bold py-2 rounded text-sm hover:border-brand-red hover:text-brand-red transition"
                                         >
                                             Volver a comprar
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedPurchase(item);
-                                                setIsModalOpen(true);
-                                            }}
-                                            className="w-full text-center border border-slate-200 text-slate-400 font-medium py-2 rounded text-sm hover:bg-slate-50 hover:text-slate-600 transition"
-                                        >
-                                            Opinar
-                                        </button>
+                                        {!isCombo && (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedPurchase(item);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                className="w-full text-center border border-slate-200 text-slate-400 font-medium py-2 rounded text-sm hover:bg-slate-50 hover:text-slate-600 transition"
+                                            >
+                                                Opinar
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -178,7 +186,7 @@ const MisCompras = () => {
                         setIsModalOpen(false);
                         setSelectedPurchase(null);
                     }}
-                    product={selectedPurchase.producto}
+                    product={selectedPurchase.producto || selectedPurchase.combo}
                     idPedido={selectedPurchase.idPedido}
                     onSuccess={() => {
                         alert("¡Gracias por tu reseña!");

@@ -52,7 +52,8 @@ const Store = () => {
     }, []);
 
     useEffect(() => {
-        let results = [...products];
+        // Filtrar solo productos con estado 'Publicado'
+        let results = products.filter(p => p.estado === 'Publicado');
 
         if (query) {
             const fuse = new Fuse(results, {

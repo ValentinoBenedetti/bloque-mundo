@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Producto } from './entities/producto.entity';
@@ -63,6 +63,14 @@ export class ProductosService {
 
   async remove(id: number) {
     const producto = await this.findOne(id);
-    return await this.productoRepository.remove(producto);
+    try {
+      return await this.productoRepository.remove(producto);
+    } catch (error) {
+      // 23503 es el código de error de Postgres para violación de llave foránea
+      if (error.code === '23503' || error.message?.includes('foreign key') || error.message?.includes('violates')) {
+        throw new BadRequestException('No se puede eliminar el producto porque ya tiene compras, reseñas o está en un carrito. Por favor, cambia su estado a "NoPublicado".');
+      }
+      throw error;
+    }
   }
 }

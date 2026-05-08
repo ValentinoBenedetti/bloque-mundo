@@ -134,7 +134,7 @@ const Navbar = () => {
                 <div className="hidden md:flex gap-10 text-white font-medium text-sm tracking-tight items-center">
                     <button onClick={() => navigate('/')} className="hover:opacity-80 transition cursor-pointer">Inicio</button>
                     <button onClick={() => navigate('/tienda')} className="hover:opacity-80 transition cursor-pointer">Tienda</button>
-                    <button className="hover:opacity-80 transition cursor-pointer">Nosotros</button>
+                    <button onClick={() => navigate('/nosotros')} className="hover:opacity-80 transition cursor-pointer">Nosotros</button>
 
                     <div className="relative ml-4" ref={searchRef}>
                         <input
@@ -231,7 +231,18 @@ const Navbar = () => {
                                                     <Minus size={12} />
                                                 </button>
                                                 <span className="px-2 text-xs font-black text-slate-800">{item.quantity}</span>
-                                                <button onClick={() => addToCart(item, 1)} className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"><Plus size={12} /></button>
+                                                <button 
+                                                    onClick={async () => {
+                                                        try {
+                                                            await addToCart(item, 1);
+                                                        } catch (err) {
+                                                            alert(err.message || "Error al actualizar la cantidad");
+                                                        }
+                                                    }} 
+                                                    className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                >
+                                                    <Plus size={12} />
+                                                </button>
                                             </div>
                                         </div>
                                         <button 

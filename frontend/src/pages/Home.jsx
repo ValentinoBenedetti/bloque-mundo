@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -9,6 +10,10 @@ const Home = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [activeNovedadIndex, setActiveNovedadIndex] = useState(0);
+    const [destacadoIndex, setDestacadoIndex] = useState(0);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -28,32 +33,91 @@ const Home = () => {
         loadProducts();
     }, []);
 
+    // --- Lógica del Carrusel de Novedades ---
+    const novedades = products.filter(p => p.esNovedad && p.estado === 'Publicado');
+
+    const handlePrevNovedad = () => {
+        if (novedades.length > 0) {
+            setActiveNovedadIndex(prev => (prev - 1 + novedades.length) % novedades.length);
+        }
+    };
+
+    const handleNextNovedad = () => {
+        if (novedades.length > 0) {
+            setActiveNovedadIndex(prev => (prev + 1) % novedades.length);
+        }
+    };
+
+    // --- Lógica del Carrusel de Destacados ---
+    const destacados = products.filter(p => p.esDestacado && p.estado === 'Publicado');
+
+    const handlePrevDestacado = () => {
+        setDestacadoIndex(prev => Math.max(prev - 1, 0));
+    };
+
+    const handleNextDestacado = () => {
+        setDestacadoIndex(prev => Math.min(prev + 1, Math.max(0, destacados.length - 4)));
+    };
+
+    const currentNovedad = novedades.length > 0 ? novedades[activeNovedadIndex] : null;
+    const prevNovedad = novedades.length > 1 ? novedades[(activeNovedadIndex - 1 + novedades.length) % novedades.length] : currentNovedad;
+    const nextNovedad = novedades.length > 2 ? novedades[(activeNovedadIndex + 1) % novedades.length] : (novedades.length > 1 ? prevNovedad : currentNovedad);
+
+    const renderCarouselBox = (novedad, type) => {
+        if (!novedad) return <div className="hidden md:block w-64 h-40 bg-slate-800/50 rounded-lg border border-white/20"></div>;
+        
+        const isCenter = type === 'center';
+        const imgUrl = novedad.imagen || novedad.imagenes || novedad.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto';
+
+        if (isCenter) {
+            return (
+                <div className="w-80 h-48 bg-slate-700 rounded-lg shadow-2xl border-4 border-white transform scale-110 z-20 flex flex-col items-center justify-end overflow-hidden relative group">
+                    <img src={imgUrl} alt={novedad.titulo} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                    <div className="relative z-10 w-full bg-linear-to-t from-black/90 to-transparent pt-8 pb-3 px-2 text-center text-white">
+                        <p className="font-bold text-sm truncate drop-shadow-md">{novedad.titulo}</p>
+                    </div>
+                </div>
+            );
+        } else {
+            return (
+                <div className="hidden md:flex w-64 h-40 bg-slate-800/50 rounded-lg border border-white/20 overflow-hidden relative opacity-50 hover:opacity-80 transition duration-300">
+                    <img src={imgUrl} alt={novedad.titulo} className="absolute inset-0 w-full h-full object-cover" />
+                </div>
+            );
+        }
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-white">
             <Navbar />
 
             {/* Carrusel Novedades */}
-            <section className="relative h-[450px] bg-slate-900 flex items-center justify-center text-white overflow-hidden">
-                <div className="absolute inset-0 bg-black/40 z-10"></div>
-                <img
-                    src="https://www.lego.com/cdn/cs/set/assets/blt8446b5d63ec200d6/City_Main_Hero_Standard_Background.jpg"
-                    className="absolute inset-0 w-full h-full object-cover opacity-60"
-                    alt="Banner"
-                />
-                <div className="relative z-20 text-center space-y-6 px-4">
-                    <h2 className="text-4xl font-bold tracking-tight uppercase italic">Novedades</h2>
-                    <div className="flex gap-4 justify-center items-center max-w-5xl mx-auto">
-                        <ChevronLeft size={40} className="cursor-pointer opacity-50 hover:opacity-100 hidden md:block" />
-                        <div className="hidden md:block w-64 h-40 bg-slate-800/50 rounded-lg border border-white/20"></div>
-                        <div className="w-80 h-48 bg-slate-700 rounded-lg shadow-2xl border-4 border-white transform scale-110 z-20 flex items-center justify-center text-xs italic">Imagen Novedad</div>
-                        <div className="hidden md:block w-64 h-40 bg-slate-800/50 rounded-lg border border-white/20"></div>
-                        <ChevronRight size={40} className="cursor-pointer opacity-50 hover:opacity-100 hidden md:block" />
+            {novedades.length > 0 && (
+                <section className="relative h-[450px] bg-slate-900 flex items-center justify-center text-white overflow-hidden">
+                    <div className="absolute inset-0 bg-black/40 z-10"></div>
+                    <img
+                        src="https://www.lego.com/cdn/cs/set/assets/blt8446b5d63ec200d6/City_Main_Hero_Standard_Background.jpg"
+                        className="absolute inset-0 w-full h-full object-cover opacity-60"
+                        alt="Banner"
+                    />
+                    <div className="relative z-20 text-center space-y-6 px-4">
+                        <h2 className="text-4xl font-bold tracking-tight uppercase italic">Novedades</h2>
+                        <div className="flex gap-4 justify-center items-center max-w-5xl mx-auto">
+                            <ChevronLeft onClick={handlePrevNovedad} size={40} className="cursor-pointer opacity-50 hover:opacity-100 hidden md:block transition" />
+                            {renderCarouselBox(prevNovedad, 'side')}
+                            {renderCarouselBox(currentNovedad, 'center')}
+                            {renderCarouselBox(nextNovedad, 'side')}
+                            <ChevronRight onClick={handleNextNovedad} size={40} className="cursor-pointer opacity-50 hover:opacity-100 hidden md:block transition" />
+                        </div>
+                        <button 
+                            onClick={() => currentNovedad && navigate(`/producto/${currentNovedad.idProducto}`)}
+                            className="bg-transparent border-2 border-white px-10 py-2 font-bold uppercase tracking-widest hover:bg-white hover:text-black transition active:scale-95"
+                        >
+                            Comprar
+                        </button>
                     </div>
-                    <button className="bg-transparent border-2 border-white px-10 py-2 font-bold uppercase tracking-widest hover:bg-white hover:text-black transition active:scale-95">
-                        Comprar
-                    </button>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* Catálogo Principal */}
             <main className="max-w-7xl mx-auto w-full py-12 px-6">
@@ -71,12 +135,32 @@ const Home = () => {
                 ) : (
                     <>
                         {/* Destacados (Filtrados por esDestacado) */}
-                        <div className="mb-20">
-                            <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {products.filter(p => p.esDestacado && p.estado === 'Publicado').slice(0, 3).map(p => <ProductCard key={p.idProducto} product={p} />)}
+                        {destacados.length > 0 && (
+                            <div className="mb-20">
+                                <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
+                                <div className="relative group md:px-12">
+                                    <button 
+                                        onClick={handlePrevDestacado}
+                                        disabled={destacadoIndex === 0}
+                                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
+                                    >
+                                        <ChevronLeft size={30} />
+                                    </button>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                                        {destacados.slice(destacadoIndex, destacadoIndex + 4).map(p => <ProductCard key={p.idProducto} product={p} />)}
+                                    </div>
+
+                                    <button 
+                                        onClick={handleNextDestacado}
+                                        disabled={destacadoIndex >= Math.max(0, destacados.length - 4)}
+                                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
+                                    >
+                                        <ChevronRight size={30} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Resto de los productos */}
                         <div>

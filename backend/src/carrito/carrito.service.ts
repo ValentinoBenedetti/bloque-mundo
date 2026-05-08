@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Carrito } from './entities/carrito.entity';
 import { LineaCarrito } from '../linea-carrito/entities/linea-carrito.entity';
 import { Producto } from '../productos/entities/producto.entity';
+import { Combo } from '../combos/entities/combo.entity';
 
 @Injectable()
 export class CarritoService {
@@ -14,34 +15,78 @@ export class CarritoService {
     private readonly lineaRepository: Repository<LineaCarrito>,
     @InjectRepository(Producto)
     private readonly productoRepository: Repository<Producto>,
+    @InjectRepository(Combo)
+    private readonly comboRepository: Repository<Combo>,
   ) { }
 
-  async agregarProducto(idUsuario: string, idProducto: number, cantidad: number) {
-    // 1. Validar existencia del producto y stock disponible
-    const producto = await this.productoRepository.findOne({ where: { idProducto } });
-    if (!producto) throw new NotFoundException('El LEGO que buscas no existe.');
-    if (producto.stock < cantidad) throw new BadRequestException(`Solo quedan ${producto.stock} unidades disponibles.`);
+  async agregarProducto(idUsuario: string, productoId: any, cantidad: number) {
+    const isCombo = typeof productoId === 'string' && productoId.startsWith('combo-');
+    
+    let item: Producto | Combo | null = null;
+    let itemIdStr = productoId.toString();
+    
+    if (isCombo) {
+      const idCombo = parseInt(productoId.replace('combo-', ''), 10);
+      item = await this.comboRepository.findOne({ where: { idCombo }, relations: ['productos'] });
+      if (!item) throw new NotFoundException('El combo que buscas no existe.');
+      if (!item.productos || item.productos.length === 0) throw new BadRequestException('El combo está vacío y no se puede comprar.');
+    } else {
+      const idProducto = parseInt(productoId.toString(), 10);
+      item = await this.productoRepository.findOne({ where: { idProducto } });
+      if (!item) throw new NotFoundException('El LEGO que buscas no existe.');
+    }
 
-    // 2. Buscar el carrito activo del usuario
+    // 2. Buscar el carrito activo del usuario para cruzar información de stock
     let carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto']
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos']
     });
 
-    // Si no tiene carrito, se lo creamos en el momento
     if (!carrito) {
       carrito = this.carritoRepository.create({ usuario: { idUsuario }, total: 0 });
       await this.carritoRepository.save(carrito);
     }
+    
+    if (!carrito.lineas) carrito.lineas = [];
 
-    // 3. ¿El producto ya estaba en el carrito?
-    let linea = carrito.lineas?.find(l => l.producto.idProducto === idProducto);
+    // Verificamos el stock global cruzado para cada producto involucrado
+    const productosAfectados = isCombo ? (item as Combo).productos : [(item as Producto)];
+    
+    for (const prod of productosAfectados) {
+      // Calculamos cuánto de este producto YA está reservado en el carrito
+      let cantidadEnCarrito = 0;
+      
+      for (const linea of carrito.lineas) {
+        if (linea.producto && linea.producto.idProducto === prod.idProducto) {
+          cantidadEnCarrito += linea.cantidad;
+        } else if (linea.combo && linea.combo.productos) {
+          const loContiene = linea.combo.productos.some(p => p.idProducto === prod.idProducto);
+          if (loContiene) {
+            cantidadEnCarrito += linea.cantidad;
+          }
+        }
+      }
+      
+      // La demanda total es lo que ya tengo en el carrito + lo que estoy intentando sumar
+      const demandaTotal = cantidadEnCarrito + cantidad;
+      
+      if (demandaTotal > prod.stock) {
+        if (isCombo) {
+          throw new BadRequestException(`No hay suficiente stock de "${prod.titulo}" para este combo. Tienes ${cantidadEnCarrito} en tu carrito y el máximo disponible es ${prod.stock}.`);
+        } else {
+          throw new BadRequestException(`No puedes agregar más "${prod.titulo}". Tienes ${cantidadEnCarrito} en tu carrito y el máximo disponible es ${prod.stock}.`);
+        }
+      }
+    }
+
+
+
+    // 3. ¿El item ya estaba en el carrito?
+    let linea = isCombo 
+      ? carrito.lineas.find(l => l.combo?.idCombo === (item as Combo).idCombo)
+      : carrito.lineas.find(l => l.producto?.idProducto === (item as Producto).idProducto);
 
     if (linea) {
-      // Si ya estaba, sumamos la cantidad (validando stock nuevamente)
-      if (producto.stock < (linea.cantidad + cantidad)) {
-        throw new BadRequestException('No puedes agregar más unidades de las que hay en stock.');
-      }
       const nuevaCantidad = linea.cantidad + cantidad;
       if (nuevaCantidad <= 0) {
         await this.lineaRepository.remove(linea);
@@ -49,19 +94,21 @@ export class CarritoService {
       }
       linea.cantidad = nuevaCantidad;
     } else {
-      // Si es nuevo, creamos una nueva línea de carrito
       if (cantidad <= 0) return this.actualizarTotal(carrito.idCarrito);
       linea = this.lineaRepository.create({
         carrito,
-        producto,
         cantidad,
-        precioUnitario: producto.precio
+        precioUnitario: item.precio
       });
+      if (isCombo) {
+        linea.combo = item as Combo;
+      } else {
+        linea.producto = item as Producto;
+      }
     }
 
     await this.lineaRepository.save(linea);
 
-    // 4. Recalcular el total general del carrito y devolverlo actualizado
     return this.actualizarTotal(carrito.idCarrito);
   }
 
@@ -69,7 +116,12 @@ export class CarritoService {
   private async actualizarTotal(idCarrito: number) {
     const carrito = await this.carritoRepository.findOne({
       where: { idCarrito },
-      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos', 'usuario', 'usuario.nivel'],
+      order: {
+        lineas: {
+          idLineaCarrito: 'ASC'
+        }
+      }
     });
 
     // 1. Le aseguramos a TypeScript que el carrito existe
@@ -101,22 +153,37 @@ export class CarritoService {
   async obtenerCarrito(idUsuario: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos', 'usuario', 'usuario.nivel'],
+      order: {
+        lineas: {
+          idLineaCarrito: 'ASC'
+        }
+      }
     });
     // Si no existe, devolvemos un objeto vacío estructurado igual
     if (!carrito) return { total: 0, lineas: [] };
     return carrito;
   }
 
-  async quitarProducto(idUsuario: string, idProducto: number) {
+  async quitarProducto(idUsuario: string, productoId: any) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto', 'usuario', 'usuario.nivel']
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'usuario', 'usuario.nivel']
     });
 
     if (!carrito) throw new NotFoundException('Carrito no encontrado.');
 
-    const linea = carrito.lineas?.find(l => l.producto.idProducto === idProducto);
+    const isCombo = typeof productoId === 'string' && productoId.startsWith('combo-');
+    
+    let linea;
+    if (isCombo) {
+      const idCombo = parseInt(productoId.replace('combo-', ''), 10);
+      linea = carrito.lineas?.find(l => l.combo?.idCombo === idCombo);
+    } else {
+      const idProducto = parseInt(productoId.toString(), 10);
+      linea = carrito.lineas?.find(l => l.producto?.idProducto === idProducto);
+    }
+
     if (linea) {
       await this.lineaRepository.remove(linea);
       return this.actualizarTotal(carrito.idCarrito);
