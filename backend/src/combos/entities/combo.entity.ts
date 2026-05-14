@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToMany, JoinTable, BeforeInsert } from 'typeorm';
 import { Producto } from '../../productos/entities/producto.entity';
 
 @Entity('combos')
 export class Combo {
-    @PrimaryGeneratedColumn()
+    @PrimaryColumn({ type: 'int' })
     idCombo: number;
 
     @Column({ type: 'varchar', length: 100, nullable: true })
@@ -49,4 +49,9 @@ export class Combo {
         }
     })
     productos: Producto[];
+
+    @BeforeInsert()
+    generarIdAleatorio() {
+        this.idCombo = Math.floor(10000 + Math.random() * 90000);
+    }
 }

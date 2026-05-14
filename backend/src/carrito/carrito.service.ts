@@ -71,10 +71,14 @@ export class CarritoService {
       const demandaTotal = cantidadEnCarrito + cantidad;
       
       if (demandaTotal > prod.stock) {
-        if (isCombo) {
-          throw new BadRequestException(`No hay suficiente stock de "${prod.titulo}" para este combo. Tienes ${cantidadEnCarrito} en tu carrito y el máximo disponible es ${prod.stock}.`);
+        if (cantidadEnCarrito === 0) {
+          throw new BadRequestException(`El stock máximo disponible de "${prod.titulo}" es de ${prod.stock} unidades.`);
         } else {
-          throw new BadRequestException(`No puedes agregar más "${prod.titulo}". Tienes ${cantidadEnCarrito} en tu carrito y el máximo disponible es ${prod.stock}.`);
+          if (isCombo) {
+            throw new BadRequestException(`No hay suficiente stock de "${prod.titulo}" para agregar este combo. Ya tienes ${cantidadEnCarrito} en tu carrito y el stock disponible es de ${prod.stock}.`);
+          } else {
+            throw new BadRequestException(`No puedes agregar más "${prod.titulo}". Ya tienes ${cantidadEnCarrito} en tu carrito y el stock disponible es de ${prod.stock}.`);
+          }
         }
       }
     }
@@ -116,7 +120,7 @@ export class CarritoService {
   private async actualizarTotal(idCarrito: number) {
     const carrito = await this.carritoRepository.findOne({
       where: { idCarrito },
-      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos', 'usuario', 'usuario.nivel'],
+      relations: ['lineas', 'lineas.producto', 'lineas.producto.tema', 'lineas.combo', 'lineas.combo.productos', 'lineas.combo.productos.tema', 'usuario', 'usuario.nivel'],
       order: {
         lineas: {
           idLineaCarrito: 'ASC'
@@ -153,7 +157,7 @@ export class CarritoService {
   async obtenerCarrito(idUsuario: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'lineas.combo.productos', 'usuario', 'usuario.nivel'],
+      relations: ['lineas', 'lineas.producto', 'lineas.producto.tema', 'lineas.combo', 'lineas.combo.productos', 'lineas.combo.productos.tema', 'usuario', 'usuario.nivel'],
       order: {
         lineas: {
           idLineaCarrito: 'ASC'

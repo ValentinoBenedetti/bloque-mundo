@@ -15,6 +15,7 @@ export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
     const [cartMetadata, setCartMetadata] = useState({ total: 0, descuentoAplicado: 0, totalConDescuento: 0, usuario: null });
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [stockError, setStockError] = useState(null);
 
     // 1. Efecto para cargar el carrito del backend al iniciar sesin
     useEffect(() => {
@@ -153,7 +154,7 @@ export const CartProvider = ({ children }) => {
         // Ahora compartimos isCartOpen y setIsCartOpen con toda la app
         <CartContext.Provider value={{
             cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice,
-            isCartOpen, setIsCartOpen, cartMetadata
+            isCartOpen, setIsCartOpen, cartMetadata, stockError, setStockError
         }}>
             {children}
         </CartContext.Provider>

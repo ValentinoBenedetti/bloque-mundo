@@ -25,11 +25,23 @@ const HistorialVentas = () => {
                 let allItems = [];
                 data.forEach(pedido => {
                     if (pedido.lineas) {
+                        // Calculamos el subtotal real (sin descuentos) de todo el pedido
+                        const subtotalPedido = pedido.lineas.reduce((acc, l) => acc + (Number(l.precioHistorico) * Number(l.cantidad)), 0);
+                        
+                        // Factor de descuento (ej: 0.9 si hubo 10% de descuento)
+                        // Si el subtotal es 0, el factor es 1
+                        const discountFactor = subtotalPedido > 0 ? (Number(pedido.total) / subtotalPedido) : 1;
+
                         pedido.lineas.forEach(linea => {
+                            // Calculamos el total de esta linea aplicado el descuento proporcional del pedido
+                            const totalConDescuentoProporcional = (Number(linea.precioHistorico) * Number(linea.cantidad)) * discountFactor;
+
                             allItems.push({
                                 ...linea,
+                                totalRealLinea: totalConDescuentoProporcional, // Guardamos el total ya descontado
                                 fechaPedido: pedido.fecha,
                                 idPedido: pedido.idPedido,
+                                estado: pedido.estado, // Guardamos el estado (PENDIENTE, PAGADO, etc)
                                 usuario: pedido.usuario
                             });
                         });
@@ -159,7 +171,7 @@ const HistorialVentas = () => {
                             const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
 
                             const usuario = item.usuario;
-                            const totalVenta = Number(item.precioHistorico) * Number(item.cantidad);
+                            const totalVenta = item.totalRealLinea;
 
                             return (
                                 <div key={index} className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
@@ -198,9 +210,21 @@ const HistorialVentas = () => {
                                                 <span className="text-xs">ID usuario: {usuario?.idUsuario}</span>
                                             </div>
 
+                                            {/* Badge de Estado */}
+                                            <div className="flex flex-col gap-1 items-center">
+                                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                                    item.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                    item.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-slate-100 text-slate-700'
+                                                }`}>
+                                                    {item.estado}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Estado</span>
+                                            </div>
+
                                             {/* Botón ver reseña alineado al final */}
                                             <div className="ml-auto mt-2 sm:mt-0">
-                                                {!isCombo && (
+                                                {!isCombo && item.estado === 'PAGADO' && (
                                                     <button 
                                                         onClick={() => setModalData({
                                                             isOpen: true,

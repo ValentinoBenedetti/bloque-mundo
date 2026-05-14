@@ -4,11 +4,12 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { crearPreferenciaRequest, confirmarCompraRequest } from '../api/pedidos';
 import ConfirmModal from '../components/ConfirmModal';
 import logoMercadoPago from '../assets/logo mercado pago byn.png';
 
 const Cart = () => {
-    const { cart, addToCart, removeFromCart, totalPrice, cartMetadata } = useCart();
+    const { cart, addToCart, removeFromCart, totalPrice, cartMetadata, setStockError } = useCart();
     const navigate = useNavigate();
 
     // ESTADO PARA EL MODAL DE CONFIRMACI"N
@@ -18,9 +19,24 @@ const Cart = () => {
         action: null
     });
     const [coupon, setCoupon] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponError, setCouponError] = useState('');
+    const [validatingCoupon, setValidatingCoupon] = useState(false);
     const [shippingAddress, setShippingAddress] = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [loadingCheckout, setLoadingCheckout] = useState(false);
+
+    const userSavedAddress = cartMetadata?.usuario?.direccion || '';
+    const [useSavedAddress, setUseSavedAddress] = useState(true);
+
+    useEffect(() => {
+        if (useSavedAddress && userSavedAddress) {
+            setShippingAddress(userSavedAddress);
+        } else if (!useSavedAddress && shippingAddress === userSavedAddress) {
+            setShippingAddress('');
+        }
+    }, [useSavedAddress, userSavedAddress]);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -29,25 +45,119 @@ const Cart = () => {
                 return;
             }
             try {
-                const res = await fetch(`https://apis.datos.gob.ar/georef/api/localidades?nombre=${shippingAddress}&max=5`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(shippingAddress)}&limit=5&countrycodes=ar`, {
+                    headers: {
+                        'Accept-Language': 'es',
+                        'User-Agent': 'BloqueMundo-App/1.0'
+                    }
+                });
                 const data = await res.json();
-                if (data.localidades) {
-                    setSuggestions(data.localidades.map(l => `${l.nombre}, ${l.provincia.nombre}`));
+                if (data && data.length > 0) {
+                    setSuggestions(data.map(d => d.display_name.replace(', Argentina', '')));
+                } else {
+                    const resLoc = await fetch(`https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(shippingAddress)}&max=5`);
+                    const dataLoc = await resLoc.json();
+                    if (dataLoc.localidades && dataLoc.localidades.length > 0) {
+                        setSuggestions(dataLoc.localidades.map(l => `${l.nombre}, ${l.provincia.nombre}`));
+                    }
                 }
             } catch (err) {
-                console.error("Error fetching suggestions", err);
+                console.error(err);
             }
         };
 
-        const timer = setTimeout(fetchSuggestions, 300);
+        const timer = setTimeout(() => {
+            fetchSuggestions();
+        }, 300);
         return () => clearTimeout(timer);
     }, [shippingAddress]);
 
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency: 'ARS',
-        maximumFractionDigits: 0
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(p || 0);
+
+    const handleApplyCoupon = async () => {
+        if (!coupon.trim()) return;
+
+        setValidatingCoupon(true);
+        setCouponError('');
+
+        try {
+            // Recopilar los IDs de todos los temas en el carrito para validación
+            const temasEnCarrito = cart.reduce((acc, item) => {
+                if (item.tema?.idTema) acc.push(item.tema.idTema);
+                if (item.productos && Array.isArray(item.productos)) {
+                    item.productos.forEach(prod => {
+                        if (prod.tema?.idTema) acc.push(prod.tema.idTema);
+                    });
+                }
+                return acc;
+            }, []);
+
+            const res = await fetch('http://localhost:3000/cupones/validar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codigo: coupon.trim(),
+                    subtotal: cartMetadata.total,
+                    temasEnCarrito,
+                    idUsuario: cartMetadata?.usuario?.idUsuario ?? undefined
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Cupón no válido');
+            }
+
+            setAppliedCoupon(data);
+        } catch (err) {
+            setCouponError(err.message);
+        } finally {
+            setValidatingCoupon(false);
+        }
+    };
+
+    const handleCheckout = async () => {
+        if (!shippingAddress.trim()) {
+            return setCouponError('Debes ingresar una dirección de envío.');
+        }
+
+        try {
+            setLoadingCheckout(true);
+            setCouponError(''); // Limpiar errores
+            
+            // Llama a la API para crear la preferencia pasándole el código del cupón (si lo hay)
+            const requestData = appliedCoupon ? { codigoCupon: appliedCoupon.codigo } : {};
+            
+            // Guardar el cupón en localStorage para poder aplicarlo a la vuelta de Mercado Pago
+            if (appliedCoupon) {
+                localStorage.setItem('tempCuponCheckout', appliedCoupon.codigo);
+            } else {
+                localStorage.removeItem('tempCuponCheckout');
+            }
+
+            const { init_point } = await crearPreferenciaRequest(requestData);
+            
+            // Redirige al checkout de Mercado Pago
+            window.location.href = init_point;
+        } catch (error) {
+            console.error(error);
+            setCouponError('No se pudo inicializar Mercado Pago. Intenta nuevamente.');
+        } finally {
+            setLoadingCheckout(false);
+        }
+    };
+
+    const subtotal = cartMetadata.total;
+    const descuentoNivel = cartMetadata.descuentoAplicado;
+    const baseParaCupon = cartMetadata.totalConDescuento;
+    const porcentajeCupon = appliedCoupon ? Number(appliedCoupon.porcentaje) : 0;
+    const descuentoCupon = baseParaCupon * (porcentajeCupon / 100);
+    const totalFinal = baseParaCupon - descuentoCupon;
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50">
@@ -119,7 +229,7 @@ const Cart = () => {
                                                     try {
                                                         await addToCart(item, 1);
                                                     } catch (err) {
-                                                        alert(err.message || "Error al actualizar la cantidad");
+                                                        setStockError(err.message || "No hay suficiente stock");
                                                     }
                                                 }}
                                                 className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
@@ -164,57 +274,114 @@ const Cart = () => {
                                         <input 
                                             type="text" 
                                             value={coupon}
-                                            onChange={(e) => setCoupon(e.target.value)}
-                                            placeholder="Ingresa tu cupón (opcional)"
-                                            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-brand-red transition"
+                                            onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+                                            placeholder="Ingresa tu cupón"
+                                            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-brand-red font-bold uppercase transition"
                                         />
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={validatingCoupon || !coupon.trim()}
+                                            className="bg-slate-900 text-white px-5 py-2 rounded-lg font-black text-xs uppercase tracking-wider hover:bg-brand-red transition disabled:opacity-50 shrink-0 cursor-pointer"
+                                        >
+                                            {validatingCoupon ? '...' : 'Aplicar'}
+                                        </button>
                                     </div>
+                                    
+                                    {couponError && (
+                                        <p className="text-xs font-bold text-brand-red italic pt-1">{couponError}</p>
+                                    )}
+
+                                    {appliedCoupon && (
+                                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex flex-col mt-2">
+                                            <div className="flex justify-between items-center text-xs font-black text-green-800">
+                                                <span>CUPÓN {appliedCoupon.codigo} APLICADO</span>
+                                                <span>-{appliedCoupon.porcentaje}%</span>
+                                            </div>
+                                            {appliedCoupon.condicion && (
+                                                <span className="text-[10px] text-green-700 italic mt-1">{appliedCoupon.condicion}</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Dirección de Envío */}
                                 <div className="mb-8 space-y-2 relative">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección de envío</label>
-                                    <input 
-                                        type="text" 
-                                        value={shippingAddress}
-                                        onChange={(e) => {
-                                            setShippingAddress(e.target.value);
-                                            setShowSuggestions(true);
-                                        }}
-                                        onFocus={() => setShowSuggestions(true)}
-                                        placeholder="Calle, Número, Ciudad y CP"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-brand-red transition"
-                                    />
                                     
-                                    {showSuggestions && suggestions.length > 0 && (
-                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-50 overflow-hidden">
-                                            {suggestions.map((s, i) => (
-                                                <div 
-                                                    key={i}
-                                                    onClick={() => {
-                                                        setShippingAddress(s);
-                                                        setShowSuggestions(false);
-                                                    }}
-                                                    className="p-3 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0"
-                                                >
-                                                    {s}
+                                    {userSavedAddress && (
+                                        <div className="mb-3 space-y-2">
+                                            <label className={`flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition ${useSavedAddress ? 'border-brand-red bg-red-50/50' : 'border-slate-200 bg-slate-50 hover:border-brand-red'}`}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="addressType"
+                                                    checked={useSavedAddress} 
+                                                    onChange={() => setUseSavedAddress(true)}
+                                                    className="accent-brand-red w-4 h-4 shrink-0"
+                                                />
+                                                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                                                    <span className="text-xs font-bold text-slate-700 leading-tight">Usar mi dirección guardada</span>
+                                                    <span className="text-[11px] text-slate-500 truncate mt-0.5" title={userSavedAddress}>{userSavedAddress}</span>
                                                 </div>
-                                            ))}
+                                            </label>
+
+                                            <label className={`flex items-center gap-3 cursor-pointer p-3 border rounded-lg transition ${!useSavedAddress ? 'border-brand-red bg-red-50/50' : 'border-slate-200 bg-slate-50 hover:border-brand-red'}`}>
+                                                <input 
+                                                    type="radio" 
+                                                    name="addressType"
+                                                    checked={!useSavedAddress} 
+                                                    onChange={() => setUseSavedAddress(false)}
+                                                    className="accent-brand-red w-4 h-4"
+                                                />
+                                                <span className="text-xs font-bold text-slate-700 leading-tight">Usar otra dirección temporal</span>
+                                            </label>
                                         </div>
                                     )}
 
-                                    <p className="text-[9px] text-slate-400 italic">
-                                        Si no sabes tu CP, ingresa solo la Ciudad.
-                                    </p>
+                                    {(!userSavedAddress || !useSavedAddress) && (
+                                        <>
+                                            <input 
+                                                type="text" 
+                                                value={shippingAddress}
+                                                onChange={(e) => {
+                                                    setShippingAddress(e.target.value);
+                                                    setShowSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowSuggestions(true)}
+                                                placeholder="Calle, Número, Ciudad y CP"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-brand-red transition"
+                                            />
+                                            
+                                            {showSuggestions && suggestions.length > 0 && (
+                                                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-100 rounded-lg shadow-xl z-50 overflow-hidden">
+                                                    {suggestions.map((s, i) => (
+                                                        <div 
+                                                            key={i}
+                                                            onClick={() => {
+                                                                setShippingAddress(s);
+                                                                setShowSuggestions(false);
+                                                            }}
+                                                            className="p-3 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                                        >
+                                                            {s}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <p className="text-[9px] text-slate-400 italic mt-2">
+                                                Si no sabes tu CP, ingresa solo la Ciudad.
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between text-slate-500 font-bold text-sm">
                                         <span>Subtotal</span>
-                                        <span>{formatPrice(cartMetadata.total)}</span>
+                                        <span>{formatPrice(subtotal)}</span>
                                     </div>
                                     
-                                    {cartMetadata.descuentoAplicado > 0 && (
+                                    {descuentoNivel > 0 && (
                                         <div className="flex justify-between text-brand-red font-black text-sm items-center">
                                             <div className="flex flex-col">
                                                 <span>Descuento</span>
@@ -222,7 +389,19 @@ const Cart = () => {
                                                     Por ser Nivel {cartMetadata.usuario?.nivel?.nombre}
                                                 </span>
                                             </div>
-                                            <span>-{formatPrice(cartMetadata.descuentoAplicado)}</span>
+                                            <span>-{formatPrice(descuentoNivel)}</span>
+                                        </div>
+                                    )}
+
+                                    {appliedCoupon && (
+                                        <div className="flex justify-between text-green-600 font-black text-sm items-center">
+                                            <div className="flex flex-col">
+                                                <span>Cupón ({appliedCoupon.codigo})</span>
+                                                <span className="text-[9px] uppercase tracking-tighter opacity-70">
+                                                    -{appliedCoupon.porcentaje}%
+                                                </span>
+                                            </div>
+                                            <span>-{formatPrice(descuentoCupon)}</span>
                                         </div>
                                     )}
 
@@ -235,14 +414,16 @@ const Cart = () => {
                                     
                                     <div className="flex justify-between text-2xl font-black text-slate-900">
                                         <span>Total</span>
-                                        <span>{formatPrice(cartMetadata.totalConDescuento)}</span>
+                                        <span>{formatPrice(totalFinal)}</span>
                                     </div>
                                 </div>
 
                                 <button
-                                    className="w-full bg-slate-900 text-white font-black py-4 rounded-lg shadow-lg hover:bg-black transition-all uppercase tracking-widest text-sm italic mb-6"
+                                    onClick={handleCheckout}
+                                    disabled={loadingCheckout}
+                                    className="w-full bg-slate-900 text-white font-black py-4 rounded-lg shadow-lg hover:bg-black transition-all uppercase tracking-widest text-sm italic mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Pagar con Mercado Pago
+                                    {loadingCheckout ? 'Procesando...' : 'Pagar con Mercado Pago'}
                                 </button>
                                 
                                 <div className="flex flex-col items-center gap-4">

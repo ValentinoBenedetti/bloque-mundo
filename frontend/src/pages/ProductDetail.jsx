@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, Calendar, Package, Hash, Star, Minus, Plus, Maximize } from 'lucide-react';
+import { Heart, Calendar, Package, Hash, Star, StarHalf, Minus, Plus, Maximize } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -15,7 +15,7 @@ const ProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const { addToCart, setIsCartOpen } = useCart();
+    const { addToCart, setIsCartOpen, setStockError } = useCart();
     const { isAuthenticated, openAuthModal } = useAuth();
 
     // 🔥 2. TRAEMOS LAS FUNCIONES GLOBALES
@@ -88,15 +88,15 @@ const ProductDetail = () => {
         return (
             <div className="min-h-screen flex flex-col bg-slate-50">
                 <Navbar />
-                <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10 text-center">
-                    <div className="text-8xl">🧱</div>
-                    <h2 className="text-3xl font-black text-slate-800 uppercase italic">¡Ups! Bloque perdido</h2>
-                    <p className="text-slate-500 max-w-md">
-                        No pudimos encontrar el set con ID <span className="font-bold text-brand-red">#{id}</span> en nuestra base de datos.
-                    </p>
-                    <div className="flex gap-4">
-                        <button onClick={() => navigate('/tienda')} className="bg-brand-red text-white px-8 py-3 rounded-md font-bold hover:bg-red-700 transition shadow-lg uppercase tracking-widest text-sm">
-                            Ir a la tienda
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center bg-white p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md mx-auto">
+                        <p className="text-2xl font-bold text-slate-800 mb-4">Set no encontrado</p>
+                        <p className="text-slate-500 mb-8">El producto que buscas no existe o fue eliminado.</p>
+                        <button
+                            onClick={() => navigate('/tienda')}
+                            className="bg-brand-red text-white px-8 py-3 rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition"
+                        >
+                            Volver a la tienda
                         </button>
                     </div>
                 </div>
@@ -115,6 +115,9 @@ const ProductDetail = () => {
 
     // Acá tomamos el ID real de 5 cifras que manda el Backend
     const idReal = product.id || product.idProducto || product.id_producto || id;
+    
+    // Código visual a mostrar
+    const codigoVisual = product.codigoProducto || product.codigoCombo || product.codigo || idReal;
 
     // 🔥 3. CONSULTAMOS SI YA ESTÁ GUARDADO
     const isFav = isFavorite(idReal);
@@ -126,7 +129,7 @@ const ProductDetail = () => {
                     await addToCart(product, quantity);
                     setIsCartOpen(true);
                 } catch (err) {
-                    alert(err.message || "Error al agregar al carrito");
+                    setStockError(err.message || "No hay suficiente stock disponible");
                 }
             });
             return;
@@ -136,7 +139,7 @@ const ProductDetail = () => {
             await addToCart(product, quantity);
             setIsCartOpen(true);
         } catch (err) {
-            alert(err.message || "Error al agregar al carrito");
+            setStockError(err.message || "No hay suficiente stock disponible");
         }
     };
 
@@ -201,14 +204,30 @@ const ProductDetail = () => {
                         <div className="flex items-center gap-4 mb-6">
                             <span className="text-3xl font-black text-brand-red">{formatPrice(precio)}</span>
                             <div className="h-6 w-[2px] bg-slate-200"></div>
-                            <div className="flex items-center gap-1 text-brand-yellow">
-                                <Star size={18} className="fill-current" />
-                                <Star size={18} className="fill-current" />
-                                <Star size={18} className="fill-current" />
-                                <Star size={18} className="fill-current" />
-                                <Star size={18} className="text-slate-200" />
-                                <span className="text-slate-400 text-xs font-bold ml-2">(4)</span>
-                            </div>
+                            {resenas.length > 0 ? (
+                                (() => {
+                                    const average = resenas.reduce((acc, r) => acc + r.estrellas, 0) / resenas.length;
+                                    const roundedAverage = Math.round(average * 2) / 2;
+                                    const fullStars = Math.floor(roundedAverage);
+                                    const hasHalfStar = roundedAverage % 1 !== 0;
+                                    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+                                    return (
+                                        <div className="flex items-center gap-1 text-brand-yellow">
+                                            {[...Array(fullStars)].map((_, i) => (
+                                                <Star key={`full-${i}`} size={18} className="fill-current" />
+                                            ))}
+                                            {hasHalfStar && <StarHalf key="half" size={18} className="fill-current" />}
+                                            {[...Array(emptyStars)].map((_, i) => (
+                                                <Star key={`empty-${i}`} size={18} className="text-slate-200" />
+                                            ))}
+                                            <span className="text-slate-400 text-xs font-bold ml-2">({roundedAverage.toLocaleString('es-AR')})</span>
+                                        </div>
+                                    );
+                                })()
+                            ) : (
+                                <span className="text-slate-400 text-xs font-bold italic">Este producto aún no tiene reseñas</span>
+                            )}
                         </div>
 
                         <p className="text-slate-500 text-sm leading-relaxed mb-10">
@@ -229,7 +248,7 @@ const ProductDetail = () => {
                             <div className="flex flex-col items-center text-center">
                                 <Hash size={28} className="text-slate-800 mb-2" />
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Código</span>
-                                <span className="text-sm font-bold text-slate-800">#{idReal}</span>
+                                <span className="text-sm font-bold text-slate-800">{String(codigoVisual).startsWith('CMB') ? codigoVisual : `#${codigoVisual}`}</span>
                             </div>
                         </div>
 

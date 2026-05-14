@@ -14,6 +14,8 @@ import EditProfile from './pages/EditProfile';
 import MisCompras from './pages/MisCompras';
 import HistorialVentas from './pages/HistorialVentas';
 import GestionProductos from './pages/GestionProductos';
+import AdminUsuarios from './pages/AdminUsuarios';
+import GestionPedidos from './pages/GestionPedidos';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -40,6 +42,8 @@ function App() {
               <Route path="/perfil/compras" element={<ProtectedRoute><MisCompras /></ProtectedRoute>} />
               <Route path="/admin/ventas" element={<ProtectedRoute><HistorialVentas /></ProtectedRoute>} />
               <Route path="/admin/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
+              <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
+              <Route path="/admin/pedidos" element={<ProtectedRoute><GestionPedidos /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

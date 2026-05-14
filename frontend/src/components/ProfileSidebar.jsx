@@ -159,6 +159,11 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                                     <FiUsers className={styles.icon} /> Administrar usuarios
                                 </Link>
                             </li>
+                            <li>
+                                <Link to="/admin/pedidos" className={styles.menuItem} onClick={onClose}>
+                                    <FiPackage className={styles.icon} /> Gestión de envíos
+                                </Link>
+                            </li>
                         </ul>
                     </>
                 )}

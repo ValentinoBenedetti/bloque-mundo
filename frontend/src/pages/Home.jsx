@@ -12,6 +12,7 @@ const Home = () => {
     const [error, setError] = useState(false);
     const [activeNovedadIndex, setActiveNovedadIndex] = useState(0);
     const [destacadoIndex, setDestacadoIndex] = useState(0);
+    const [hoveredDestacadoId, setHoveredDestacadoId] = useState(null);
 
     const navigate = useNavigate();
 
@@ -62,6 +63,9 @@ const Home = () => {
     const currentNovedad = novedades.length > 0 ? novedades[activeNovedadIndex] : null;
     const prevNovedad = novedades.length > 1 ? novedades[(activeNovedadIndex - 1 + novedades.length) % novedades.length] : currentNovedad;
     const nextNovedad = novedades.length > 2 ? novedades[(activeNovedadIndex + 1) % novedades.length] : (novedades.length > 1 ? prevNovedad : currentNovedad);
+
+    const hoveredDestacadoProduct = destacados.find(p => p.idProducto === hoveredDestacadoId);
+    const hoveredImgUrl = hoveredDestacadoProduct ? (hoveredDestacadoProduct.imagen || hoveredDestacadoProduct.imagenes || hoveredDestacadoProduct.image) : null;
 
     const renderCarouselBox = (novedad, type) => {
         if (!novedad) return <div className="hidden md:block w-64 h-40 bg-slate-800/50 rounded-lg border border-white/20"></div>;
@@ -136,28 +140,52 @@ const Home = () => {
                     <>
                         {/* Destacados (Filtrados por esDestacado) */}
                         {destacados.length > 0 && (
-                            <div className="mb-20">
-                                <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
-                                <div className="relative group md:px-12">
-                                    <button 
-                                        onClick={handlePrevDestacado}
-                                        disabled={destacadoIndex === 0}
-                                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
-                                    >
-                                        <ChevronLeft size={30} />
-                                    </button>
-                                    
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                                        {destacados.slice(destacadoIndex, destacadoIndex + 4).map(p => <ProductCard key={p.idProducto} product={p} />)}
-                                    </div>
+                            <div className={`mb-20 relative py-10 px-4 -mx-4 md:px-12 md:-mx-12 rounded-3xl transition-colors duration-700 ${hoveredImgUrl ? 'bg-slate-50' : 'bg-transparent'}`}>
+                                {/* Fondo dinámico cuando se hace hover */}
+                                <div 
+                                    className={`absolute inset-0 z-0 overflow-hidden rounded-3xl transition-opacity duration-700 pointer-events-none ${hoveredImgUrl ? 'opacity-100' : 'opacity-0'}`}
+                                >
+                                    {hoveredImgUrl && (
+                                        <img 
+                                            src={hoveredImgUrl} 
+                                            alt="" 
+                                            className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 transform scale-110" 
+                                        />
+                                    )}
+                                    {/* Overlay sutil para mejorar el contraste */}
+                                    <div className="absolute inset-0 bg-white/40"></div>
+                                </div>
 
-                                    <button 
-                                        onClick={handleNextDestacado}
-                                        disabled={destacadoIndex >= Math.max(0, destacados.length - 4)}
-                                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
-                                    >
-                                        <ChevronRight size={30} />
-                                    </button>
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
+                                    <div className="relative md:px-12">
+                                        <button 
+                                            onClick={handlePrevDestacado}
+                                            disabled={destacadoIndex === 0}
+                                            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
+                                        >
+                                            <ChevronLeft size={30} />
+                                        </button>
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                                            {destacados.slice(destacadoIndex, destacadoIndex + 4).map(p => (
+                                                <ProductCard 
+                                                    key={p.idProducto} 
+                                                    product={p} 
+                                                    onMouseEnter={() => setHoveredDestacadoId(p.idProducto)}
+                                                    onMouseLeave={() => setHoveredDestacadoId(null)}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        <button 
+                                            onClick={handleNextDestacado}
+                                            disabled={destacadoIndex >= Math.max(0, destacados.length - 4)}
+                                            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg shadow-slate-200/50 rounded-full p-2 text-slate-800 hover:text-brand-red hover:bg-slate-50 disabled:opacity-0 disabled:cursor-not-allowed transition duration-300"
+                                        >
+                                            <ChevronRight size={30} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

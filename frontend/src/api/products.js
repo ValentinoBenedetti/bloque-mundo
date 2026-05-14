@@ -12,11 +12,8 @@ export const getProductsRequest = async () => {
             const combosAsProducts = combos.map(c => ({
                 ...c,
                 idProducto: `combo-${c.idCombo}`,
-                codigoProducto: `CMB-${c.idCombo}`,
+                codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
                 esCombo: true,
-                estado: 'Publicado',
-                esDestacado: false,
-                esNovedad: false,
                 imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop' // placeholder
             }));
             return [...productos, ...combosAsProducts];
@@ -36,11 +33,8 @@ export const getProductRequest = async (id) => {
         return {
             ...c,
             idProducto: `combo-${c.idCombo}`,
-            codigoProducto: `CMB-${c.idCombo}`,
+            codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
             esCombo: true,
-            estado: 'Publicado',
-            esDestacado: false,
-            esNovedad: false,
             imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
         };
     }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getPedidosRequest } from '../api/pedidos';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getPedidosRequest, confirmarCompraRequest, cancelarPedidoRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ReviewModal from '../components/ReviewModal';
-import { Calendar, Hash, ChevronDown } from 'lucide-react';
+import TrackingModal from '../components/TrackingModal';
+import { Calendar, Hash, ChevronDown, Truck } from 'lucide-react';
 
 const MisCompras = () => {
     const [compras, setCompras] = useState([]);
@@ -15,22 +16,72 @@ const MisCompras = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPurchase, setSelectedPurchase] = useState(null);
 
+    // Estados para el seguimiento
+    const [isTrackingOpen, setIsTrackingOpen] = useState(false);
+    const [trackingPedido, setTrackingPedido] = useState(null);
+
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const fetchHistorial = async () => {
             try {
+                // Verificar si venimos de Mercado Pago
+                const queryParams = new URLSearchParams(location.search);
+                if (queryParams.get('status') === 'success') {
+                    // Confirmar la compra para que vacíe el carrito y cree el pedido
+                    try {
+                        const savedCupon = localStorage.getItem('tempCuponCheckout');
+                        const data = savedCupon ? { codigoCupon: savedCupon } : {};
+                        await confirmarCompraRequest(data);
+                        
+                        // Limpiar la URL para que no lo haga de nuevo si refresca
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        localStorage.removeItem('tempCuponCheckout');
+                    } catch (e) {
+                        // Puede fallar si el carrito ya está vacío (ej. refrescó)
+                        console.log('Compra ya procesada o error:', e);
+                    }
+                } else if (queryParams.get('status') === 'failure') {
+                    // Cancelar el pedido si el pago falló o el usuario volvió atrás
+                    const idPedido = queryParams.get('idPedido');
+                    if (idPedido) {
+                        try {
+                            await cancelarPedidoRequest(idPedido);
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            localStorage.removeItem('tempCuponCheckout');
+                        } catch (e) {
+                            console.log('Error al cancelar pedido:', e);
+                        }
+                    }
+                }
+
                 const data = await getPedidosRequest();
 
                 // Extraer todas las lineas de todos los pedidos y agregarles la fecha del pedido padre
                 let allItems = [];
                 data.forEach(pedido => {
                     if (pedido.lineas) {
+                        // Calculamos el total de la suma de subtotales para saber el factor de descuento
+                        const sumaSubtotales = pedido.lineas.reduce((acc, linea) => 
+                            acc + (Number(linea.precioHistorico) * Number(linea.cantidad)), 0
+                        );
+                        
+                        // Factor de descuento real (Total Pagado / Suma de Subtotales)
+                        const factorDescuento = sumaSubtotales > 0 ? (Number(pedido.total) / sumaSubtotales) : 1;
+
                         pedido.lineas.forEach(linea => {
+                            // Aplicamos el descuento proporcional a cada linea
+                            const precioConDescuento = Number(linea.precioHistorico) * factorDescuento;
+                            
                             allItems.push({
                                 ...linea,
+                                precioRealUnitario: precioConDescuento, // Precio unitario con descuento
+                                totalRealLinea: precioConDescuento * Number(linea.cantidad), // Total linea con descuento
                                 fechaPedido: pedido.fecha,
-                                idPedido: pedido.idPedido
+                                idPedido: pedido.idPedido,
+                                estado: pedido.estado,
+                                pedidoOriginal: pedido // Guardamos todo el pedido para el tracking
                             });
                         });
                     }
@@ -140,10 +191,38 @@ const MisCompras = () => {
                                                 <Calendar size={18} className="text-slate-800" />
                                                 <span>Fecha: {formatDate(item.fechaPedido)}</span>
                                             </div>
+                                            <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                item.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                item.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                item.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                'bg-slate-100 text-slate-700'
+                                            }`}>
+                                                {item.estado}
+                                            </div>
+                                            {item.estado === 'PAGADO' && (
+                                                <div className="flex flex-col gap-0 ml-4">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Pagaste</span>
+                                                    <span className="text-lg font-black text-slate-900 leading-none mt-1">
+                                                        ${(Number(item.totalRealLinea)).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-3 w-full sm:w-48 mt-4 sm:mt-0">
+                                        {item.estado === 'PAGADO' && (
+                                            <button
+                                                onClick={() => {
+                                                    setTrackingPedido(item.pedidoOriginal);
+                                                    setIsTrackingOpen(true);
+                                                }}
+                                                className="w-full flex items-center justify-center gap-2 bg-brand-yellow text-slate-900 font-bold py-2 rounded text-sm hover:bg-yellow-400 transition shadow-sm"
+                                            >
+                                                <Truck size={16} />
+                                                Seguir envío
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => navigate(`/producto/${idStr}`)}
                                             className="w-full text-center border-2 border-slate-300 text-slate-800 font-bold py-2 rounded text-sm hover:border-brand-red hover:text-brand-red transition"
@@ -193,6 +272,15 @@ const MisCompras = () => {
                     }}
                 />
             )}
+
+            <TrackingModal 
+                isOpen={isTrackingOpen}
+                onClose={() => {
+                    setIsTrackingOpen(false);
+                    setTrackingPedido(null);
+                }}
+                pedido={trackingPedido}
+            />
         </div>
     );
 };

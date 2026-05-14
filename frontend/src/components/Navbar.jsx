@@ -8,6 +8,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import ProfileSidebar from './ProfileSidebar';
 import ConfirmModal from './ConfirmModal';
+import StockErrorModal from './StockErrorModal';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -31,7 +32,7 @@ const Navbar = () => {
 
     const searchRef = useRef(null);
 
-    const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen } = useCart();
+    const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen, stockError, setStockError } = useCart();
     const { favoritesIds } = useFavorites();
     const { isAuthenticated, openAuthModal } = useAuth();
 
@@ -236,7 +237,7 @@ const Navbar = () => {
                                                         try {
                                                             await addToCart(item, 1);
                                                         } catch (err) {
-                                                            alert(err.message || "Error al actualizar la cantidad");
+                                                            setStockError(err.message || "No hay suficiente stock");
                                                         }
                                                     }} 
                                                     className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"
@@ -297,6 +298,12 @@ const Navbar = () => {
                 }}
                 title="¿Eliminar producto?"
                 message={`¿Estás seguro que deseas eliminar "${confirmModal.product?.titulo || confirmModal.product?.nombre}" del carrito?`}
+            />
+
+            <StockErrorModal 
+                isOpen={!!stockError}
+                message={stockError}
+                onClose={() => setStockError(null)}
             />
         </>
     );

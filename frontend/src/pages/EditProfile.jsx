@@ -32,6 +32,8 @@ const EditProfile = () => {
         direccion: '',
         telefono: '',
     });
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [originalData, setOriginalData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -59,7 +61,6 @@ const EditProfile = () => {
                 });
                 setOriginalData(data);
                 
-                // Traemos el status real (esto fuerza el recálculo si hubo cambios manuales en la DB)
                 const statusData = await getUserStatusRequest(userId);
                 setStatus(statusData);
             } catch (err) {
@@ -72,6 +73,38 @@ const EditProfile = () => {
 
         fetchUser();
     }, [userId, navigate]);
+
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            if (!userData.direccion || userData.direccion.length < 3) {
+                setSuggestions([]);
+                return;
+            }
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userData.direccion)}&limit=5&countrycodes=ar`, {
+                    headers: {
+                        'Accept-Language': 'es',
+                        'User-Agent': 'BloqueMundo-App/1.0'
+                    }
+                });
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    setSuggestions(data.map(d => d.display_name.replace(', Argentina', '')));
+                } else {
+                    const resLoc = await fetch(`https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(userData.direccion)}&max=5`);
+                    const dataLoc = await resLoc.json();
+                    if (dataLoc.localidades && dataLoc.localidades.length > 0) {
+                        setSuggestions(dataLoc.localidades.map(l => `${l.nombre}, ${l.provincia.nombre}`));
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching suggestions", err);
+            }
+        };
+
+        const timer = setTimeout(fetchSuggestions, 300);
+        return () => clearTimeout(timer);
+    }, [userData.direccion]);
 
     const handleChange = (e) => {
         setUserData({ ...userData, [e.target.name]: e.target.value });
@@ -95,7 +128,6 @@ const EditProfile = () => {
     };
 
     const nivelID = status?.nivelActual?.idNivel || originalData?.nivel?.idNivel || originalData?.idNivel || 1;
-    // Traducir el ID de la DB (6,7,8,9,10) a nivel (1,2,3,4,5)
     const nivelNumero = nivelID >= 6 ? nivelID - 5 : nivelID;
     const nivelNombre = status?.nivelActual?.nombre || originalData?.nivel?.nombre || "Aprendiz";
     const nivelUsuario = `${nivelNumero} - ${nivelNombre}`;
@@ -104,7 +136,6 @@ const EditProfile = () => {
         <div className="min-h-screen flex flex-col bg-slate-50">
             <Navbar />
             
-            {/* Banner Section */}
             <section className="relative h-[250px] bg-slate-900 flex items-center justify-center text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
                 <img
@@ -154,7 +185,7 @@ const EditProfile = () => {
                                             placeholder="Nombre"
                                             className="w-full p-3 pr-10 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm text-slate-800 font-medium"
                                         />
-                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
                                 
@@ -169,23 +200,44 @@ const EditProfile = () => {
                                             placeholder="Apellido"
                                             className="w-full p-3 pr-10 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm text-slate-800 font-medium"
                                         />
-                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
 
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
                                     <div className="relative">
                                         <input
                                             type="text"
                                             name="direccion"
                                             value={userData.direccion}
-                                            onChange={handleChange}
+                                            onChange={(e) => {
+                                                handleChange(e);
+                                                setShowSuggestions(true);
+                                            }}
+                                            onFocus={() => setShowSuggestions(true)}
                                             placeholder="Ingrese su dirección"
                                             className="w-full p-3 pr-10 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm text-slate-800 font-medium"
                                         />
-                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
+
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden">
+                                            {suggestions.map((s, i) => (
+                                                <div 
+                                                    key={i}
+                                                    onClick={() => {
+                                                        setUserData(prev => ({ ...prev, direccion: s }));
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                    className="p-3 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0"
+                                                >
+                                                    {s}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

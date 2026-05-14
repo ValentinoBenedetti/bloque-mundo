@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, OneToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { LineaPedido } from '../../linea-pedido/entities/linea-pedido.entity';
+import { Cupon } from '../../cupones/entities/cupon.entity';
+import { Envio } from '../../envios/entities/envio.entity';
 
 @Entity('pedidos')
 export class Pedido {
@@ -24,4 +26,12 @@ export class Pedido {
     // Un pedido tiene muchas líneas de detalle
     @OneToMany(() => LineaPedido, (linea) => linea.pedido, { cascade: true })
     lineas: LineaPedido[];
+
+    // Relación N:1 con Cupon
+    @ManyToOne(() => Cupon, (cupon) => cupon.pedidos, { nullable: true })
+    @JoinColumn({ name: 'codigoCupon' })
+    cupon?: Cupon;
+
+    @OneToOne(() => Envio, (envio) => envio.pedido)
+    envio: Envio;
 }

@@ -35,6 +35,12 @@ export class UsuariosService {
       if (!userExistente) existe = false;
     }
 
+    const primerNivel = await this.nivelRepository.findOne({
+      where: {},
+      order: { montoMinimo: 'ASC' }
+    });
+    const nivelInicialId = primerNivel ? primerNivel.idNivel : 6;
+
     const nuevoUsuario = this.usuarioRepository.create({
       idUsuario: nuevoId,
       nombre: datos.nombre,
@@ -43,7 +49,8 @@ export class UsuariosService {
       password: datos.password || null, // Google no manda password
       direccion: datos.direccion || '',
       telefono: datos.telefono || '',
-      idNivel: 1
+      idNivel: nivelInicialId,
+      nivel: primerNivel ? primerNivel : undefined
     });
 
     return await this.usuarioRepository.save(nuevoUsuario);

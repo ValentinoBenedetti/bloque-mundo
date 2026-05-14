@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
     const navigate = useNavigate();
     const { isAuthenticated, openAuthModal } = useAuth();
 
@@ -41,7 +41,12 @@ const ProductCard = ({ product }) => {
     };
 
     return (
-        <div onClick={() => navigate(`/producto/${idSeguro}`)} className="bg-white border border-slate-200 rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col h-full relative">
+        <div 
+            onClick={() => navigate(`/producto/${idSeguro}`)} 
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            className="bg-white border border-slate-200 rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col h-full relative"
+        >
 
             {/* BOTÓN CORAZÓN */}
             <button onClick={handleHeartClick} className="absolute top-3 right-3 z-20 transition-all hover:scale-110">

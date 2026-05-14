@@ -1,22 +1,14 @@
-const { DataSource } = require('typeorm');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 
-const dataSource = new DataSource({
-  type: 'postgres',
-  host: 'localhost',
-  port: 5433,
-  username: 'postgres',
-  password: 'adminpassword',
-  database: 'bloquemundo_db',
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || 'TEST-0000000000000000-000000-00000000000000000000000000000000-000000000'
 });
 
 async function run() {
   await dataSource.initialize();
   
-  const productos = await dataSource.query('SELECT "idProducto", "precio" FROM productos LIMIT 2');
-  console.log('Productos:', productos);
-  
-  const usuario = await dataSource.query('SELECT "idUsuario" FROM usuarios WHERE "idUsuario" = \'45445\'');
-  console.log('Usuario:', usuario);
+  const products = await dataSource.query(`SELECT "idProducto" FROM productos LIMIT 1;`);
+  console.log('Products:', products);
 
   await dataSource.destroy();
 }

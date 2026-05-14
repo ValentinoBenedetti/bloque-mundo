@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import ProductModal from '../components/ProductModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ComboModal from '../components/ComboModal';
+import CuponModal from '../components/CuponModal';
 import { getProductsRequest, updateProductRequest, deleteProductRequest, createProductRequest } from '../api/products';
 import { getCombosRequest, createComboRequest, updateComboRequest, deleteComboRequest } from '../api/combos';
 import bgImage from '../assets/background-lego.jpg';
@@ -24,6 +25,7 @@ const GestionProductos = () => {
     const [selectedCombo, setSelectedCombo] = useState(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
+    const [isCuponModalOpen, setIsCuponModalOpen] = useState(false);
 
     const formatPrice = (p) => new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -163,7 +165,7 @@ const GestionProductos = () => {
     };
 
     const filteredProducts = products.filter(p => {
-        const idStr = p.esCombo ? `CMB-${p.idCombo}` : (p.idProducto || p.id).toString();
+        const idStr = p.codigoProducto ? p.codigoProducto.toString() : (p.esCombo ? `CMB-${p.idCombo}` : (p.idProducto || p.id).toString());
         const matchSearch = idStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (p.titulo || p.nombre).toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = filterType === 'all' ? true : 
@@ -244,18 +246,24 @@ const GestionProductos = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="max-w-7xl mx-auto w-full py-8 px-6 flex justify-center gap-6">
+            <div className="max-w-7xl mx-auto w-full py-8 px-6 flex flex-wrap justify-center gap-6">
                 <button 
                     onClick={() => handleCreateComboClick()}
                     className="flex items-center gap-3 bg-white border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm hover:bg-slate-900 hover:text-white transition group shadow-sm"
                 >
-                    Crear nuevo combo <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+                    Crear nuevo combo <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 </button>
                 <button 
                     onClick={() => handleCreateClick()}
                     className="flex items-center gap-3 bg-white border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm hover:bg-slate-900 hover:text-white transition group shadow-sm"
                 >
-                    Cargar nuevo producto <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+                    Cargar nuevo producto <Plus size={18} className="transition-transform group-hover:rotate-90" />
+                </button>
+                <button 
+                    onClick={() => setIsCuponModalOpen(true)}
+                    className="flex items-center gap-3 bg-brand-yellow border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm text-slate-900 hover:bg-slate-900 hover:text-brand-yellow transition group shadow-sm"
+                >
+                    Gestionar cupones <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 </button>
             </div>
 
@@ -371,6 +379,11 @@ const GestionProductos = () => {
                 onConfirm={confirmDelete}
                 title={productToDelete?.esCombo ? "¿Eliminar combo?" : "¿Eliminar producto?"}
                 message={`¿Estás seguro que deseas eliminar "${productToDelete?.titulo || productToDelete?.nombre}"? Esta acción no se puede deshacer.`}
+            />
+
+            <CuponModal 
+                isOpen={isCuponModalOpen}
+                onClose={() => setIsCuponModalOpen(false)}
             />
         </div>
     );

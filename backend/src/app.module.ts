@@ -14,6 +14,8 @@ import { AuthModule } from './auth/auth.module';
 import { FavoritosModule } from './favoritos/favoritos.module';
 import { ResenasModule } from './resenas/resenas.module';
 import { CombosModule } from './combos/combos.module';
+import { CuponesModule } from './cupones/cupones.module';
+import { EnviosModule } from './envios/envios.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { CombosModule } from './combos/combos.module';
     FavoritosModule,
     ResenasModule,
     CombosModule,
+    CuponesModule,
+    EnviosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
