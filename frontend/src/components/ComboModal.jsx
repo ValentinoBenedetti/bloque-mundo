@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { getProductsRequest } from '../api/products';
+import { X, Search, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { getProductsRequest, uploadProductImageRequest } from '../api/products';
 
 const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
     const [productosDisponibles, setProductosDisponibles] = useState([]);
@@ -12,8 +12,13 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
         precio: '',
         fechaInicio: '',
         fechaFin: '',
-        productosIds: []
+        productosIds: [],
+        imagen: ''
     });
+
+    const [allImages, setAllImages] = useState([]); // Array de { id, url, file, isNew }
+    const [isUploading, setIsUploading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -37,8 +42,12 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
                 precio: combo.precio || '',
                 fechaInicio: combo.fechaInicio || '',
                 fechaFin: combo.fechaFin || '',
-                productosIds: combo.productos?.map(p => p.idProducto) || []
+                productosIds: combo.productos?.map(p => p.idProducto) || [],
+                imagen: combo.imagen || ''
             });
+            const initialImages = (combo.imagenes?.length > 0 ? combo.imagenes : (combo.imagen ? [combo.imagen] : []))
+                .map((url, idx) => ({ id: `existing-${idx}-${url}`, url, isNew: false }));
+            setAllImages(initialImages);
         } else {
             setFormData({
                 codigoCombo: '',
@@ -47,10 +56,14 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
                 precio: '',
                 fechaInicio: '',
                 fechaFin: '',
-                productosIds: []
+                productosIds: [],
+                imagen: ''
             });
+            setAllImages([]);
         }
     }, [combo, isOpen]);
+
+    const [error, setError] = useState(null);
 
     if (!isOpen) return null;
 
@@ -69,22 +82,99 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
             }
         });
     };
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            const newImages = files.map(file => ({
+                id: `new-${Math.random()}`,
+                url: URL.createObjectURL(file),
+                file: file,
+                isNew: true
+            }));
+            setAllImages(prev => [...prev, ...newImages]);
+        }
+        e.target.value = null;
+    };
 
+    const removeImage = (id) => {
+        setAllImages(prev => prev.filter(img => img.id !== id));
+    };
+
+    const handleDragStart = (e, index) => {
+        e.dataTransfer.setData('index', index);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e, targetIndex) => {
+        const sourceIndex = e.dataTransfer.getData('index');
+        if (sourceIndex === "" || sourceIndex === undefined) return;
+        
+        const updatedImages = [...allImages];
+        const [movedImage] = updatedImages.splice(sourceIndex, 1);
+        updatedImages.splice(targetIndex, 0, movedImage);
+        setAllImages(updatedImages);
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Since stock is dynamically calculated, we don't send it to backend,
-        // but we ensure it's not present if not needed or we send a dummy value 0.
-        // The DB schema might require it, so we can send 0 if the backend validation expects it.
-        onSave({ ...formData, stock: 0 });
+        setError(null);
+        
+        let finalImageUrls = [];
+
+        try {
+            setIsUploading(true);
+            for (let img of allImages) {
+                if (img.isNew) {
+                    const uploadRes = await uploadProductImageRequest(img.file);
+                    finalImageUrls.push(uploadRes.url);
+                } else {
+                    finalImageUrls.push(img.url);
+                }
+            }
+        } catch (err) {
+            setError("Error al subir las imágenes. Por favor, intente de nuevo.");
+            setIsUploading(false);
+            return;
+        } finally {
+            setIsUploading(false);
+        }
+
+        const imagen = finalImageUrls.length > 0 ? finalImageUrls[0] : '';
+
+        try {
+            // Since stock is dynamically calculated, we don't send it to backend,
+            // but we ensure it's not present if not needed or we send a dummy value 0.
+            // The DB schema might require it, so we can send 0 if the backend validation expects it.
+            await onSave({ ...formData, stock: 0, imagen: imagen, imagenes: finalImageUrls });
+        } catch (err) {
+            let msg = err.response?.data?.message || err.message || "Error al guardar el combo";
+            if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("already in use")) {
+                msg = "El código del combo ya está en uso. Por favor, cambie el código.";
+            }
+            setError(msg);
+
+            // Scroll automático al error
+            setTimeout(() => {
+                const errorElement = document.getElementById('error-card-combo');
+                if (errorElement) errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     };
 
     // Calculate dynamic stock based on selected products
     const calculateStock = () => {
-        if (formData.productosIds.length === 0) return 0;
+        if (!formData.productosIds || formData.productosIds.length === 0) return 0;
         const selectedProducts = productosDisponibles.filter(p => formData.productosIds.includes(p.idProducto));
         if (selectedProducts.length === 0) return 0;
         return Math.min(...selectedProducts.map(p => p.stock || 0));
     };
+
+    const filteredProductos = productosDisponibles.filter(p => 
+        p.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.codigoProducto?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
@@ -100,7 +190,46 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
                     </button>
                 </div>
 
+
+
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="space-y-3">
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex justify-between">
+                            Imágenes del Combo
+                            <span className="text-[9px] font-bold text-slate-400 italic">Arrastra para reordenar</span>
+                        </label>
+                        <div className="flex flex-wrap gap-4">
+                            {allImages.map((img, idx) => (
+                                <div 
+                                    key={img.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, idx)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, idx)}
+                                    className={`relative w-24 h-24 rounded-xl overflow-hidden border-2 group shadow-sm cursor-move active:scale-95 transition-transform ${img.isNew ? 'border-brand-red/20' : 'border-slate-100'}`}
+                                >
+                                    <img src={img.url} className="w-full h-full object-cover pointer-events-none" alt="Preview" />
+                                    {img.isNew && (
+                                        <div className="absolute top-1 left-1 bg-brand-red text-[8px] font-black text-white px-1.5 py-0.5 rounded-full uppercase">Nuevo</div>
+                                    )}
+                                    <button
+                                        type="button" onClick={() => removeImage(img.id)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg z-10"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none"></div>
+                                </div>
+                            ))}
+
+                            {/* Add Button */}
+                            <label className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-brand-red hover:bg-red-50 transition text-slate-400 hover:text-brand-red group shadow-sm bg-slate-50/50">
+                                <ImageIcon size={20} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-black uppercase">Añadir</span>
+                                <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                            </label>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Codigo del Combo */}
                         <div className="space-y-2 md:col-span-1">
@@ -177,24 +306,57 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
 
                     {/* Selector de Productos */}
                     <div className="space-y-4 pt-4 border-t border-slate-100">
-                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Seleccionar Productos ({formData.productosIds.length} seleccionados)</label>
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                                Seleccionar Productos ({formData.productosIds.length} seleccionados)
+                            </label>
+                            <div className="relative flex-1 max-w-xs">
+                                <input 
+                                    type="text"
+                                    placeholder="Buscar por nombre o código..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-xs font-bold"
+                                />
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            </div>
+                        </div>
+                        
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 border-2 border-slate-100 rounded-xl">
-                            {productosDisponibles.map(p => (
-                                <label key={p.idProducto} className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition ${formData.productosIds.includes(p.idProducto) ? 'border-brand-red bg-red-50' : 'border-slate-100 hover:border-slate-200'}`}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={formData.productosIds.includes(p.idProducto)}
-                                        onChange={() => handleProductToggle(p.idProducto)}
-                                        className="w-5 h-5 accent-brand-red cursor-pointer"
-                                    />
-                                    <div className="flex flex-col overflow-hidden">
-                                        <span className="text-sm font-bold text-slate-800 truncate">{p.titulo}</span>
-                                        <span className="text-xs font-black text-slate-400">${p.precio}</span>
-                                    </div>
-                                </label>
-                            ))}
+                            {filteredProductos.length > 0 ? (
+                                filteredProductos.map(p => (
+                                    <label key={p.idProducto} className={`flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition ${formData.productosIds.includes(p.idProducto) ? 'border-brand-red bg-red-50' : 'border-slate-100 hover:border-slate-200'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.productosIds.includes(p.idProducto)}
+                                            onChange={() => handleProductToggle(p.idProducto)}
+                                            className="w-5 h-5 accent-brand-red cursor-pointer"
+                                        />
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="text-sm font-bold text-slate-800 truncate">{p.titulo}</span>
+                                            <span className="text-xs font-black text-slate-400">${p.precio}</span>
+                                        </div>
+                                    </label>
+                                ))
+                            ) : (
+                                <div className="col-span-2 py-8 text-center">
+                                    <p className="text-sm font-bold text-slate-400 italic">No se encontraron productos con "{searchTerm}"</p>
+                                </div>
+                            )}
                         </div>
                     </div>
+
+                    {error && (
+                        <div id="error-card-combo" className="bg-red-50 border-2 border-red-100 p-5 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="bg-red-500 text-white p-2 rounded-xl shrink-0 shadow-lg shadow-red-200">
+                                <X size={20} strokeWidth={3} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-black text-red-700 uppercase tracking-widest mb-1">¡Atención!</span>
+                                <p className="text-sm font-bold text-red-600/80 leading-tight">{error}</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex gap-4 pt-6 border-t border-slate-100">
                         <button
@@ -205,9 +367,11 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-8 py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-black transition shadow-lg flex items-center justify-center gap-2"
+                            disabled={isUploading}
+                            className="flex-1 px-8 py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-sm rounded-xl hover:bg-black transition shadow-lg disabled:bg-slate-400 flex items-center justify-center gap-2"
                         >
-                            Guardar Combo
+                            {isUploading ? <Loader2 className="animate-spin" size={18} /> : null}
+                            {isUploading ? 'Subiendo...' : 'Guardar Combo'}
                         </button>
                     </div>
                 </form>

@@ -1,6 +1,5 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { ChevronRight } from 'lucide-react';
 import { FaWhatsapp, FaEnvelope, FaInstagram, FaFacebook } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,17 +14,19 @@ const Nosotros = () => {
             <section className="relative h-[250px] md:h-[350px] flex items-center justify-center bg-slate-900 text-white overflow-hidden">
                 <div className="absolute inset-0 bg-black/60 z-10"></div>
                 <img
-                    src="https://images.unsplash.com/photo-1518331647614-7a1f04cd34ce?q=80&w=1920&auto=format&fit=crop"
+                    src="/assets/banners/nosotros.png"
                     className="absolute inset-0 w-full h-full object-cover opacity-70 scale-105"
                     alt="Lego Background"
                 />
-                <div className="relative z-20 text-center mt-6">
-                    <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight mb-4 drop-shadow-lg">Nosotros</h1>
-                    <div className="flex items-center justify-center text-xs font-bold uppercase tracking-widest text-slate-300 gap-2">
-                        <span className="cursor-pointer hover:text-white transition" onClick={() => navigate('/')}>Inicio</span>
-                        <ChevronRight size={14} />
-                        <span className="text-white">Nosotros</span>
-                    </div>
+                <div className="relative z-20 text-center">
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Nosotros
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Nosotros
+                    </p>
                 </div>
             </section>
 
@@ -44,7 +45,7 @@ const Nosotros = () => {
                     </div>
                     <div className="flex-1 w-full">
                         <img
-                            src="https://images.unsplash.com/photo-1611002214172-1082ceb03516?q=80&w=800&auto=format&fit=crop"
+                            src="/assets/banners/quienes_somos.png"
                             alt="Tienda LEGO"
                             className="rounded-2xl shadow-2xl w-full h-[320px] object-cover transform hover:scale-105 transition duration-500"
                         />
@@ -63,7 +64,7 @@ const Nosotros = () => {
                     </div>
                     <div className="flex-1 w-full">
                         <img
-                            src="https://images.unsplash.com/photo-1587304193504-20a7b4526017?q=80&w=800&auto=format&fit=crop"
+                            src="/assets/banners/mision.png"
                             alt="Colección LEGO"
                             className="rounded-2xl shadow-2xl w-full h-[320px] object-cover transform hover:scale-105 transition duration-500"
                         />

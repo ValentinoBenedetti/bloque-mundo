@@ -21,8 +21,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
         imagen: ''
     });
 
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState('');
+    const [allImages, setAllImages] = useState([]); // Array de { id, url, file, isNew }
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -54,8 +53,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                 estado: product.estado || 'Publicado',
                 imagen: product.imagen || ''
             });
-            setPreviewUrl(product.imagen || '');
-            setSelectedFile(null);
+            const initialImages = (product.imagenes?.length > 0 ? product.imagenes : (product.imagen ? [product.imagen] : []))
+                .map((url, idx) => ({ id: `existing-${idx}-${url}`, url, isNew: false }));
+            setAllImages(initialImages);
         } else {
             setFormData({
                 codigoProducto: '',
@@ -72,10 +72,11 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                 estado: 'Publicado',
                 imagen: ''
             });
-            setPreviewUrl('');
-            setSelectedFile(null);
+            setAllImages([]);
         }
     }, [product, isOpen]);
+
+    const [error, setError] = useState(null);
 
     if (!isOpen) return null;
 
@@ -88,33 +89,86 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
     };
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            setPreviewUrl(URL.createObjectURL(file));
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            const newImages = files.map(file => ({
+                id: `new-${Math.random()}`,
+                url: URL.createObjectURL(file),
+                file: file,
+                isNew: true
+            }));
+            setAllImages(prev => [...prev, ...newImages]);
         }
+        e.target.value = null;
+    };
+
+    const removeImage = (id) => {
+        setAllImages(prev => prev.filter(img => img.id !== id));
+    };
+
+    const handleDragStart = (e, index) => {
+        e.dataTransfer.setData('index', index);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e, targetIndex) => {
+        const sourceIndex = e.dataTransfer.getData('index');
+        if (sourceIndex === "" || sourceIndex === undefined) return;
+        
+        const updatedImages = [...allImages];
+        const [movedImage] = updatedImages.splice(sourceIndex, 1);
+        updatedImages.splice(targetIndex, 0, movedImage);
+        setAllImages(updatedImages);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
 
-        let finalImageUrl = formData.imagen;
+        let finalImageUrls = [];
 
-        if (selectedFile) {
-            try {
-                setIsUploading(true);
-                const uploadRes = await uploadProductImageRequest(selectedFile);
-                finalImageUrl = uploadRes.url;
-            } catch (err) {
-                alert("Error al subir la imagen");
-                setIsUploading(false);
-                return;
-            } finally {
-                setIsUploading(false);
+        try {
+            setIsUploading(true);
+            for (let img of allImages) {
+                if (img.isNew) {
+                    const uploadRes = await uploadProductImageRequest(img.file);
+                    finalImageUrls.push(uploadRes.url);
+                } else {
+                    finalImageUrls.push(img.url);
+                }
             }
+        } catch (err) {
+            setError("Error al subir las imágenes. Por favor, intente de nuevo.");
+            setIsUploading(false);
+            return;
+        } finally {
+            setIsUploading(false);
         }
 
-        onSave({ ...formData, imagen: finalImageUrl });
+        const imagen = finalImageUrls.length > 0 ? finalImageUrls[0] : '';
+        try {
+            await onSave({ ...formData, imagen: imagen, imagenes: finalImageUrls });
+        } catch (err) {
+            let msg = err.response?.data?.message || err.message || "Error al guardar el producto";
+            
+            if (msg.toLowerCase().includes("duplicate") || 
+                msg.toLowerCase().includes("unique") || 
+                msg.toLowerCase().includes("already in use") ||
+                msg.toLowerCase().includes("crear el producto")
+            ) {
+                msg = "El código del producto ya está en uso. Por favor, cambie el código por uno nuevo.";
+            }
+            
+            setError(msg);
+            
+            setTimeout(() => {
+                const errorElement = document.getElementById('error-card');
+                if (errorElement) errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     };
 
     return (
@@ -131,38 +185,46 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                     </button>
                 </div>
 
+
+
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Image Selector */}
-                    <div className="flex justify-center">
-                        <input
-                            type="file" id="product-image" className="hidden"
-                            accept="image/*" onChange={handleFileChange}
-                        />
-                        <label
-                            htmlFor="product-image"
-                            className="w-48 h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition overflow-hidden relative group"
-                        >
-                            {previewUrl ? (
-                                <img src={previewUrl} className="w-full h-full object-contain" alt="Preview" />
-                            ) : (
-                                <>
-                                    <ImageIcon size={40} strokeWidth={1.5} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-center px-4">Insertar imagen</span>
-                                </>
-                            )}
-
-                            {previewUrl && (
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
-                                    Cambiar imagen
-                                </div>
-                            )}
-
-                            {isUploading && (
-                                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                                    <Loader2 className="animate-spin text-brand-red" size={32} />
-                                </div>
-                            )}
+                    <div className="space-y-3">
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex justify-between">
+                            Imágenes del Producto
+                            <span className="text-[9px] font-bold text-slate-400 italic">Arrastra para reordenar</span>
                         </label>
+                        <div className="flex flex-wrap gap-4">
+                            {allImages.map((img, idx) => (
+                                <div 
+                                    key={img.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, idx)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, idx)}
+                                    className={`relative w-24 h-24 rounded-xl overflow-hidden border-2 group shadow-sm cursor-move active:scale-95 transition-transform ${img.isNew ? 'border-brand-red/20' : 'border-slate-100'}`}
+                                >
+                                    <img src={img.url} className="w-full h-full object-cover pointer-events-none" alt="Preview" />
+                                    {img.isNew && (
+                                        <div className="absolute top-1 left-1 bg-brand-red text-[8px] font-black text-white px-1.5 py-0.5 rounded-full uppercase">Nuevo</div>
+                                    )}
+                                    <button
+                                        type="button" onClick={() => removeImage(img.id)}
+                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg z-10"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none"></div>
+                                </div>
+                            ))}
+
+                            {/* Add Button */}
+                            <label className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-brand-red hover:bg-red-50 transition text-slate-400 hover:text-brand-red group shadow-sm bg-slate-50/50">
+                                <ImageIcon size={20} className="group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-black uppercase tracking-tighter">Añadir</span>
+                                <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                            </label>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -234,10 +296,15 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white"
                             >
                                 <option value="">Seleccione categoría</option>
-                                <option value="Vehículos">Vehículos</option>
-                                <option value="Edificios">Edificios</option>
-                                <option value="Espacio">Espacio</option>
-                                <option value="Fantasía">Fantasía</option>
+                                {[
+                                    "Animales", "Arquitectura", "Botánica", "Castillos", "Ciudad", 
+                                    "Construcción Básica", "Edificios", "Espacio", "Fantasía", "Mecanismos", 
+                                    "Minifiguras", "Naves", "Películas y TV", "Piratas", 
+                                    "Robótica", "Series", "Sets de Colección", "Superhéroes", "Trenes", 
+                                    "Vehículos", "Videojuegos"
+                                ].map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -289,6 +356,18 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                             <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Novedad</span>
                         </label>
                     </div>
+ 
+                    {error && (
+                        <div id="error-card" className="bg-red-50 border-2 border-red-100 p-5 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="bg-red-500 text-white p-2 rounded-xl shrink-0 shadow-lg shadow-red-200">
+                                <X size={20} strokeWidth={3} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-black text-red-700 uppercase tracking-widest mb-1">¡Atención!</span>
+                                <p className="text-sm font-bold text-red-600/80 leading-tight">{error}</p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex gap-4 pt-6 border-t border-slate-100">
                         <button

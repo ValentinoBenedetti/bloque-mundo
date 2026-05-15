@@ -105,8 +105,14 @@ const HistorialVentas = () => {
                     alt="Banner Historial de ventas"
                 />
                 <div className="relative z-10 text-center">
-                    <h2 className="text-4xl font-bold mb-2">Historial de ventas</h2>
-                    <p className="text-sm font-medium opacity-80">Inicio {'>'} Historial de ventas</p>
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Historial de ventas
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Historial de ventas
+                    </p>
                 </div>
             </section>
 
@@ -136,9 +142,9 @@ const HistorialVentas = () => {
                                 setSearchTerm(e.target.value);
                                 setVisibleCount(5); // Reset al buscar
                             }}
-                            className="w-full pl-4 pr-10 py-2 rounded-full text-sm text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand-red shadow-sm border border-slate-200 transition"
+                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
                         />
-                        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
                     </div>
 
                     {/* Resultados */}

@@ -36,6 +36,12 @@ export class Combo {
     @Column({ type: 'boolean', default: false })
     esNovedad: boolean;
 
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    imagen: string;
+
+    @Column({ type: 'text', array: true, nullable: true })
+    imagenes: string[];
+
     @ManyToMany(() => Producto)
     @JoinTable({
         name: 'pertenece',

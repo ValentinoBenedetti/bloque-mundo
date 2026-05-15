@@ -5,16 +5,22 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ReviewModal from '../components/ReviewModal';
 import TrackingModal from '../components/TrackingModal';
-import { Calendar, Hash, ChevronDown, Truck } from 'lucide-react';
+import SuccessModal from '../components/SuccessModal';
+import { Calendar, Hash, ChevronDown, Truck, Search } from 'lucide-react';
 
 const MisCompras = () => {
     const [compras, setCompras] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('fecha'); // 'fecha' o 'monto'
     
     // Estados para la reseña
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPurchase, setSelectedPurchase] = useState(null);
+
+    // Estado para el modal de éxito
+    const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
     // Estados para el seguimiento
     const [isTrackingOpen, setIsTrackingOpen] = useState(false);
@@ -98,10 +104,22 @@ const MisCompras = () => {
         fetchHistorial();
     }, []);
 
-    const comprasOrdenadas = [...compras].sort((a, b) => {
-        const dateA = new Date(a.fechaPedido).getTime();
-        const dateB = new Date(b.fechaPedido).getTime();
-        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    const comprasFiltradas = compras.filter(item => {
+        const itemComprado = item.producto || item.combo;
+        if (!itemComprado) return false;
+        return itemComprado.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const comprasOrdenadas = [...comprasFiltradas].sort((a, b) => {
+        if (sortBy === 'fecha') {
+            const dateA = new Date(a.fechaPedido).getTime();
+            const dateB = new Date(b.fechaPedido).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        } else {
+            const totalA = Number(a.totalRealLinea);
+            const totalB = Number(b.totalRealLinea);
+            return sortOrder === 'desc' ? totalB - totalA : totalA - totalB;
+        }
     });
 
     const formatDate = (dateString) => {
@@ -124,28 +142,63 @@ const MisCompras = () => {
                     alt="Banner Mis Compras"
                 />
                 <div className="relative z-10 text-center">
-                    <h2 className="text-4xl font-bold mb-2">Mis compras</h2>
-                    <p className="text-sm font-medium opacity-80">Inicio {'>'} Mis compras</p>
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Mis compras
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Mis compras
+                    </p>
                 </div>
             </section>
 
             <div className="bg-brand-yellow w-full py-4 px-10 shadow-sm border-b border-yellow-500">
-                <div className="max-w-4xl mx-auto flex justify-between items-center gap-4">
-                    <div className="relative w-48">
-                        <select
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(e.target.value)}
-                            className="bg-white appearance-none w-full pr-10 pl-4 py-2 rounded text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 border border-slate-200 transition outline-none focus:border-brand-red cursor-pointer"
-                        >
-                            <option value="desc">Descendente</option>
-                            <option value="asc">Ascendente</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        {/* Agregamos una etiqueta arriba visual como en el diseño (opcional) */}
-                        <div className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Orden por fecha</div>
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex gap-4 w-full sm:w-auto">
+                        {/* Selector de Criterio */}
+                        <div className="relative w-36 shrink-0">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="bg-white appearance-none w-full pr-10 pl-4 py-2 rounded text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 border border-slate-200 transition outline-none focus:border-brand-red cursor-pointer"
+                            >
+                                <option value="fecha">Fecha</option>
+                                <option value="monto">Monto</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <div className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Ordenar por</div>
+                        </div>
+
+                        {/* Selector de Dirección */}
+                        <div className="relative w-40 shrink-0">
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="bg-white appearance-none w-full pr-10 pl-4 py-2 rounded text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 border border-slate-200 transition outline-none focus:border-brand-red cursor-pointer"
+                            >
+                                <option value="desc">Descendente</option>
+                                <option value="asc">Ascendente</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <div className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Dirección</div>
+                        </div>
                     </div>
-                    <div className="text-sm font-bold text-slate-800">
-                        Total: {compras.length}
+
+                    {/* Barra de búsqueda */}
+                    <div className="relative w-full sm:w-80">
+                        <input
+                            type="text"
+                            placeholder="Buscar por nombre..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
+                        />
+                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+
+                    <div className="text-sm font-bold text-slate-800 shrink-0">
+                        Total: {comprasFiltradas.length}
                     </div>
                 </div>
             </div>
@@ -268,10 +321,18 @@ const MisCompras = () => {
                     product={selectedPurchase.producto || selectedPurchase.combo}
                     idPedido={selectedPurchase.idPedido}
                     onSuccess={() => {
-                        alert("¡Gracias por tu reseña!");
+                        setIsSuccessOpen(true);
                     }}
                 />
             )}
+
+            <SuccessModal 
+                isOpen={isSuccessOpen}
+                onClose={() => setIsSuccessOpen(false)}
+                title="¡Reseña enviada!"
+                message="Tu opinión es muy importante para nosotros y para toda la comunidad de Bloque Mundo."
+                buttonText="Genial"
+            />
 
             <TrackingModal 
                 isOpen={isTrackingOpen}

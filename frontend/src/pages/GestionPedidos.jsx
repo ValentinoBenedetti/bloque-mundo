@@ -97,13 +97,19 @@ const GestionPedidos = () => {
 
             <section className="relative h-64 bg-slate-900 flex flex-col items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1586528116311-ad8ed7c159f8?q=80&w=2070&auto=format&fit=crop"
+                    src="/assets/banners/envios.png"
                     className="absolute inset-0 w-full h-full object-cover opacity-40"
                     alt="Banner Gestión de Pedidos"
                 />
                 <div className="relative z-10 text-center">
-                    <h2 className="text-4xl font-bold mb-2">Gestión de Envíos</h2>
-                    <p className="text-sm font-medium opacity-80">Administración {'>'} Envíos</p>
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Gestión de Envíos
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Administración{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Envíos
+                    </p>
                 </div>
             </section>
 
@@ -128,9 +134,9 @@ const GestionPedidos = () => {
                             placeholder="Buscar por ID Pedido, ID Envío o Nombre"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-4 pr-10 py-2 rounded-full text-sm text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand-red shadow-sm border border-slate-200 transition"
+                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
                         />
-                        <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
                     </div>
 
                     <div className="text-sm font-bold text-slate-800 shrink-0">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Trash2, Edit, CheckCircle, Circle, ChevronDown, ChevronUp, Layers, Package } from 'lucide-react';
+import { Search, Plus, Trash2, Edit, CheckCircle, Circle, ChevronDown, ChevronUp, Layers, Package, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductModal from '../components/ProductModal';
@@ -10,6 +10,7 @@ import CuponModal from '../components/CuponModal';
 import { getProductsRequest, updateProductRequest, deleteProductRequest, createProductRequest } from '../api/products';
 import { getCombosRequest, createComboRequest, updateComboRequest, deleteComboRequest } from '../api/combos';
 import bgImage from '../assets/background-lego.jpg';
+import Swal from 'sweetalert2';
 
 const GestionProductos = () => {
     const navigate = useNavigate();
@@ -18,6 +19,8 @@ const GestionProductos = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('desc'); // Descendente por defecto
     const [filterType, setFilterType] = useState('all'); // Producto individual / Combo
+    const [filterStatus, setFilterStatus] = useState('all'); // all / publicado / nopublicado / destacado / novedad
+    const [visibleCount, setVisibleCount] = useState(5);
 
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -49,15 +52,27 @@ const GestionProductos = () => {
         fetchProducts();
     }, []);
 
+    useEffect(() => {
+        setVisibleCount(5);
+    }, [searchTerm, sortBy, filterType, filterStatus]);
+
     const handleToggleStatus = async (product) => {
         const nuevoEstado = product.estado === 'Publicado' ? 'NoPublicado' : 'Publicado';
+        
+        // Si apagamos el estado, automáticamente apagamos destacados y novedades
+        const updates = { estado: nuevoEstado };
+        if (nuevoEstado === 'NoPublicado') {
+            updates.esDestacado = false;
+            updates.esNovedad = false;
+        }
+
         try {
             if (product.esCombo) {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, estado: nuevoEstado } : p));
-                await updateComboRequest(product.idCombo, { estado: nuevoEstado });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateComboRequest(product.idCombo, updates);
             } else {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, estado: nuevoEstado } : p));
-                await updateProductRequest(product.idProducto, { estado: nuevoEstado });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateProductRequest(product.idProducto, updates);
             }
         } catch (err) {
             alert('Error al actualizar el estado');
@@ -110,6 +125,14 @@ const GestionProductos = () => {
             }
             setIsConfirmModalOpen(false);
             fetchProducts(false);
+            Swal.fire({
+                icon: 'success',
+                title: productToDelete.esCombo ? 'Combo eliminado' : 'Producto eliminado',
+                text: 'La operación se realizó con éxito',
+                timer: 2000,
+                showConfirmButton: false,
+                borderRadius: '20px'
+            });
         } catch (err) {
             alert(err.message || 'Error al eliminar');
             setIsConfirmModalOpen(false);
@@ -145,8 +168,16 @@ const GestionProductos = () => {
             }
             setIsComboModalOpen(false);
             fetchProducts(false);
+            Swal.fire({
+                icon: 'success',
+                title: selectedCombo ? 'Combo actualizado' : 'Combo creado',
+                text: 'Los cambios se guardaron correctamente',
+                timer: 2000,
+                showConfirmButton: false,
+                borderRadius: '20px'
+            });
         } catch (err) {
-            alert('Error al guardar el combo: ' + err.message);
+            throw err;
         }
     };
 
@@ -159,8 +190,16 @@ const GestionProductos = () => {
             }
             setIsProductModalOpen(false);
             fetchProducts(false);
+            Swal.fire({
+                icon: 'success',
+                title: selectedProduct ? 'Producto actualizado' : 'Producto creado',
+                text: 'Los cambios se guardaron correctamente',
+                timer: 2000,
+                showConfirmButton: false,
+                borderRadius: '20px'
+            });
         } catch (err) {
-            alert('Error al guardar el producto: ' + err.message);
+            throw err;
         }
     };
 
@@ -170,7 +209,14 @@ const GestionProductos = () => {
                           (p.titulo || p.nombre).toLowerCase().includes(searchTerm.toLowerCase());
         const matchType = filterType === 'all' ? true : 
                          filterType === 'combo' ? p.esCombo : !p.esCombo;
-        return matchSearch && matchType;
+        
+        let matchStatus = true;
+        if (filterStatus === 'publicado') matchStatus = p.estado === 'Publicado';
+        else if (filterStatus === 'nopublicado') matchStatus = p.estado === 'NoPublicado';
+        else if (filterStatus === 'destacado') matchStatus = p.esDestacado;
+        else if (filterStatus === 'novedad') matchStatus = p.esNovedad;
+
+        return matchSearch && matchType && matchStatus;
     }).sort((a, b) => {
         const idA = a.esCombo ? a.idCombo : a.idProducto;
         const idB = b.esCombo ? b.idCombo : b.idProducto;
@@ -178,8 +224,10 @@ const GestionProductos = () => {
         return idB - idA;
     });
 
+    const displayedProducts = filteredProducts.slice(0, visibleCount);
+
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50">
+        <div className="min-h-screen flex flex-col bg-slate-50 relative">
             <Navbar />
 
             {/* Banner Section */}
@@ -190,10 +238,14 @@ const GestionProductos = () => {
                     className="absolute inset-0 w-full h-full object-cover opacity-80"
                     alt="Banner"
                 />
-                <div className="relative z-20 text-center space-y-2">
-                    <h1 className="text-5xl font-black tracking-tight italic uppercase">Gestionar productos</h1>
-                    <p className="text-sm font-medium tracking-widest uppercase opacity-80">
-                        Inicio <span className="mx-2">&gt;</span> Gestionar productos
+                <div className="relative z-20 text-center">
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Gestionar productos
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Gestionar productos
                     </p>
                 </div>
             </section>
@@ -226,6 +278,21 @@ const GestionProductos = () => {
                             </select>
                             <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
+
+                        <div className="relative bg-white rounded border border-slate-200">
+                            <select 
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="appearance-none bg-transparent pl-4 pr-10 py-2 text-sm font-bold text-slate-700 outline-none cursor-pointer"
+                            >
+                                <option value="all">Por estado: Todos</option>
+                                <option value="publicado">Solo Publicados</option>
+                                <option value="nopublicado">Solo No Publicados</option>
+                                <option value="destacado">Solo Destacados</option>
+                                <option value="novedad">Solo Novedades</option>
+                            </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
                     </div>
 
                     <div className="relative flex-1 max-w-md">
@@ -234,9 +301,9 @@ const GestionProductos = () => {
                             placeholder="Buscar productos (por código o nombre)" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-4 pr-10 py-2 rounded-full border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red transition shadow-sm"
+                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
                         />
-                        <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
                     </div>
 
                     <div className="text-sm font-black text-slate-900 uppercase">
@@ -275,7 +342,7 @@ const GestionProductos = () => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {filteredProducts.map((product) => (
+                        {displayedProducts.map((product) => (
                             <div key={product.idProducto} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
                                 <div className="flex flex-wrap items-center">
                                     {/* Code Section */}
@@ -347,14 +414,21 @@ const GestionProductos = () => {
                                 </div>
                             </div>
                         ))}
+
+                {visibleCount < filteredProducts.length && (
+                    <div className="flex justify-center pt-8 pb-12">
+                        <button 
+                            onClick={() => setVisibleCount(prev => prev + 5)}
+                            className="bg-white border-2 border-slate-200 text-slate-900 font-black uppercase tracking-widest px-12 py-4 rounded-xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm active:scale-95"
+                        >
+                            Ver más productos
+                        </button>
+                    </div>
+                )}
                     </div>
                 )}
 
-                <div className="mt-12 flex justify-center">
-                    <button className="bg-white border-2 border-slate-300 text-slate-800 px-10 py-3 font-black uppercase tracking-widest rounded-lg hover:border-slate-900 transition shadow-sm">
-                        Ver más
-                    </button>
-                </div>
+
             </main>
 
             <Footer />

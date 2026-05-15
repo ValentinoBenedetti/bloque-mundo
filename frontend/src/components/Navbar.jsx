@@ -54,9 +54,10 @@ const Navbar = () => {
             setIsDropdownOpen(false);
             return;
         }
-        const fuse = new Fuse(products, { keys: ['titulo', 'categoria'], threshold: 0.4, distance: 100 });
+        const fuse = new Fuse(products, { keys: ['titulo', 'categoria'], threshold: 0.3, distance: 100 });
         const results = fuse.search(searchTerm);
-        setSuggestions(results.map(result => result.item).slice(0, 5));
+        const filteredResults = results.map(result => result.item).filter(item => item.estado === 'Publicado');
+        setSuggestions(filteredResults.slice(0, 5));
         setIsDropdownOpen(true);
     }, [searchTerm, products]);
 
@@ -139,12 +140,15 @@ const Navbar = () => {
 
                     <div className="relative ml-4" ref={searchRef}>
                         <input
-                            type="text" placeholder="Buscar productos..." value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
+                            type="text"
+                            placeholder="Buscar productos..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             onFocus={() => searchTerm.trim() !== '' && setIsDropdownOpen(true)}
-                            className="py-1.5 pl-4 pr-10 rounded-full text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-72 transition-all"
+                            className="bg-white py-2 pl-5 pr-10 rounded-full text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-72 transition-all shadow-lg border-none placeholder:text-slate-400 font-medium"
                         />
-                        <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer hover:text-brand-red" onClick={() => searchTerm.trim() !== '' && navigate(`/tienda?q=${searchTerm}`)} />
+                        <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-red" onClick={() => searchTerm.trim() !== '' && navigate(`/tienda?q=${searchTerm}`)} />
 
                         {isDropdownOpen && suggestions.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden flex flex-col">

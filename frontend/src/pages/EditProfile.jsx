@@ -143,10 +143,14 @@ const EditProfile = () => {
                     className="absolute inset-0 w-full h-full object-cover opacity-80"
                     alt="Banner"
                 />
-                <div className="relative z-20 text-center space-y-2">
-                    <h1 className="text-4xl font-bold tracking-tight">Editar mi perfil</h1>
-                    <p className="text-sm font-medium tracking-widest uppercase opacity-80">
-                        Inicio <span className="mx-2">&gt;</span> Editar mi perfil
+                <div className="relative z-20 text-center">
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Editar mi perfil
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Editar mi perfil
                     </p>
                 </div>
             </section>

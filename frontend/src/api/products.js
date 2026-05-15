@@ -14,7 +14,7 @@ export const getProductsRequest = async () => {
                 idProducto: `combo-${c.idCombo}`,
                 codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
                 esCombo: true,
-                imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop' // placeholder
+                imagen: c.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop' // fallback
             }));
             return [...productos, ...combosAsProducts];
         }
@@ -35,7 +35,7 @@ export const getProductRequest = async (id) => {
             idProducto: `combo-${c.idCombo}`,
             codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
             esCombo: true,
-            imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+            imagen: c.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
         };
     }
 

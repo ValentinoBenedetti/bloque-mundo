@@ -5,4 +5,7 @@ export class CreateComboDto {
     fechaInicio?: string;
     fechaFin?: string;
     productosIds: number[];
+    imagen?: string;
+    imagenes?: string[];
+    codigoCombo?: string;
 }

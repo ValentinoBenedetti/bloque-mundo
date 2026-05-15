@@ -70,8 +70,8 @@ export class CuponesService {
             }
         }
 
-        if (cupon.montoMinimo > 0 && subtotal !== undefined) {
-            if (subtotal < cupon.montoMinimo) {
+        if (Number(cupon.montoMinimo) > 0 && subtotal !== undefined) {
+            if (Number(subtotal) < Number(cupon.montoMinimo)) {
                 throw new BadRequestException(`Para usar este cupón tu compra debe superar los $${cupon.montoMinimo}`);
             }
         }

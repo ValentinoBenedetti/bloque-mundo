@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Param, UseGuards, Request, Body } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Param, UseGuards, Request, Body, Redirect } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -51,6 +51,21 @@ export class PedidosController {
   @Patch(':id/confirmar')
   async confirmarPagoAdmin(@Param('id') id: string) {
     return this.pedidosService.confirmarPago(Number(id));
+  }
+
+  // GET: http://localhost:3000/pedidos/retorno
+  // Este endpoint sirve de puente para que Mercado Pago acepte el auto_return (que requiere HTTPS)
+  // y luego redirija al usuario a su localhost:5173 (que es HTTP)
+  @Get('retorno')
+  @Redirect('http://localhost:5173/perfil/compras', 302)
+  async retornoMercadoPago(@Request() req: any) {
+    // Obtenemos los parametros de la URL original
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const status = url.searchParams.get('status');
+    const idPedido = url.searchParams.get('idPedido');
+    
+    // Redirigimos al frontend local con los parametros
+    return { url: `http://localhost:5173/perfil/compras?status=${status}&idPedido=${idPedido}` };
   }
 
   // PATCH: http://localhost:3000/pedidos/:id/cancelar

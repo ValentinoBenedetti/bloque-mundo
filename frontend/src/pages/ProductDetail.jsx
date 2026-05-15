@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, Calendar, Package, Hash, Star, StarHalf, Minus, Plus, Maximize } from 'lucide-react';
+import { Heart, Calendar, Package, Hash, Star, StarHalf, Minus, Plus, Maximize, Shapes, Tag, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -27,6 +27,23 @@ const ProductDetail = () => {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
+
+    const imagesCount = product?.imagenes?.length || 1;
+
+    useEffect(() => {
+        if (!isLightboxOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') setIsLightboxOpen(false);
+            if (e.key === 'ArrowRight') setLightboxIndex((prev) => (prev + 1) % imagesCount);
+            if (e.key === 'ArrowLeft') setLightboxIndex((prev) => (prev - 1 + imagesCount) % imagesCount);
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLightboxOpen, imagesCount]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -84,14 +101,20 @@ const ProductDetail = () => {
         );
     }
 
-    if (!product) {
+    if (!product || product.estado === 'NoPublicado') {
         return (
             <div className="min-h-screen flex flex-col bg-slate-50">
                 <Navbar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="text-center bg-white p-12 rounded-2xl shadow-sm border border-slate-100 max-w-md mx-auto">
-                        <p className="text-2xl font-bold text-slate-800 mb-4">Set no encontrado</p>
-                        <p className="text-slate-500 mb-8">El producto que buscas no existe o fue eliminado.</p>
+                        <p className="text-2xl font-bold text-slate-800 mb-4">
+                            {product?.estado === 'NoPublicado' ? 'Publicación en pausa' : 'Set no encontrado'}
+                        </p>
+                        <p className="text-slate-500 mb-8">
+                            {product?.estado === 'NoPublicado' 
+                                ? 'Lo sentimos, este set no se encuentra disponible para la venta en este momento.' 
+                                : 'El producto que buscas no existe o fue eliminado.'}
+                        </p>
                         <button
                             onClick={() => navigate('/tienda')}
                             className="bg-brand-red text-white px-8 py-3 rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition"
@@ -153,33 +176,54 @@ const ProductDetail = () => {
         toggleFavorite(idReal);
     };
 
+    const allImages = product.imagenes && product.imagenes.length > 0 
+        ? product.imagenes 
+        : [imagen];
+
     return (
         <div className="min-h-screen flex flex-col bg-white">
             <Navbar />
 
-            <div className="bg-brand-yellow w-full py-3 px-10 border-b border-yellow-500">
-                <div className="max-w-7xl mx-auto flex text-[10px] font-black text-slate-800 uppercase tracking-widest gap-2 items-center">
+            <div className="bg-brand-yellow w-full py-4 px-10 border-b border-yellow-500">
+                <div className="max-w-7xl mx-auto flex text-sm text-slate-800 gap-2 items-center">
                     <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate('/')}>Inicio</span>
-                    <span className="text-yellow-700">/</span>
-                    <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate('/tienda')}>Tienda</span>
-                    <span className="text-yellow-700">/</span>
-                    <span className="text-slate-500 truncate max-w-[150px]">{titulo}</span>
+                    <span className="font-bold text-xs">&gt;</span>
+                    {product.tema?.nombre && (
+                        <>
+                            <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate(`/tienda?tema=${encodeURIComponent(product.tema.nombre)}`)}>{product.tema.nombre}</span>
+                            <span className="font-bold text-xs">&gt;</span>
+                        </>
+                    )}
+                    <span className="font-bold truncate">{titulo}</span>
                 </div>
             </div>
 
             <main className="flex-1 max-w-7xl mx-auto w-full py-12 px-6">
                 <div className="flex flex-col md:flex-row gap-16 mb-24">
                     <div className="flex gap-6 md:w-3/5">
-                        <div className="hidden lg:flex flex-col gap-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="w-20 h-20 bg-slate-50 rounded border border-slate-200 p-2 cursor-pointer hover:border-brand-red transition">
-                                    <img src={imagen} className="w-full h-full object-contain mix-blend-multiply" alt="thumb" />
-                                </div>
-                            ))}
-                        </div>
+                        {allImages.length > 1 && (
+                            <div className="hidden lg:flex flex-col gap-4">
+                                {allImages.map((imgUrl, i) => (
+                                    <div 
+                                        key={i} 
+                                        onClick={() => setMainImage(imgUrl)}
+                                        className={`w-20 h-20 bg-slate-50 rounded border p-2 cursor-pointer transition ${mainImage === imgUrl ? 'border-brand-red ring-2 ring-brand-red/20' : 'border-slate-200 hover:border-brand-red'}`}
+                                    >
+                                        <img src={imgUrl} className="w-full h-full object-contain mix-blend-multiply" alt="thumb" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         <div className="flex-1 bg-slate-50 rounded-xl relative flex items-center justify-center p-12 group border border-slate-100 min-h-[500px]">
                             <img src={mainImage} alt={titulo} className="w-full h-full object-contain mix-blend-multiply transform group-hover:scale-110 transition-transform duration-700" />
-                            <button className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-brand-red">
+                            <button 
+                                onClick={() => {
+                                    const idx = allImages.indexOf(mainImage);
+                                    setLightboxIndex(idx !== -1 ? idx : 0);
+                                    setIsLightboxOpen(true);
+                                }}
+                                className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-brand-red"
+                            >
                                 <Maximize size={24} />
                             </button>
                         </div>
@@ -229,9 +273,22 @@ const ProductDetail = () => {
                                 <span className="text-slate-400 text-xs font-bold italic">Este producto aún no tiene reseñas</span>
                             )}
                         </div>
+                        
+                        {product.stock > 0 && product.stock <= 3 && (
+                            <div className="mb-6">
+                                <span className="bg-brand-yellow/20 text-slate-900 text-[11px] font-black uppercase tracking-[0.1em] px-4 py-2 rounded-lg border border-brand-yellow/30 inline-flex items-center gap-2 animate-pulse">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-yellow shadow-[0_0_8px_rgba(251,191,36,0.8)]"></div>
+                                    {product.stock === 1 ? '¡Última unidad disponible!' : 'Últimas unidades disponibles'}
+                                </span>
+                            </div>
+                        )}
 
-                        <p className="text-slate-500 text-sm leading-relaxed mb-10">
-                            Este set de colección de <span className="font-bold text-slate-800">Bloque Mundo</span> es perfecto para aquellos que buscan un desafío de construcción único. Con detalles realistas y piezas de alta calidad, es ideal tanto para jugar como para exhibir.
+                        <p className="text-slate-500 text-sm leading-relaxed mb-10 whitespace-pre-wrap">
+                            {product.descripcion || (
+                                <>
+                                    Este set de colección de <span className="font-bold text-slate-800">Bloque Mundo</span> es perfecto para aquellos que buscan un desafío de construcción único. Con detalles realistas y piezas de alta calidad, es ideal tanto para jugar como para exhibir.
+                                </>
+                            )}
                         </p>
 
                         <div className="grid grid-cols-3 gap-4 mb-10 py-8 border-y border-slate-100">
@@ -361,6 +418,44 @@ const ProductDetail = () => {
                 </section>
             </main>
             <Footer />
+
+            {/* LIGHTBOX MODAL */}
+            {isLightboxOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/95 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsLightboxOpen(false)}>
+                    <button className="absolute top-6 right-6 text-slate-400 hover:text-brand-red transition p-3 bg-slate-100 hover:bg-slate-200 rounded-full shadow-sm" onClick={() => setIsLightboxOpen(false)}>
+                        <X size={28} />
+                    </button>
+                    
+                    {allImages.length > 1 && (
+                        <button className="absolute left-6 md:left-12 text-slate-400 hover:text-brand-red transition p-4 bg-slate-100 hover:bg-slate-200 rounded-full shadow-sm" onClick={(e) => { e.stopPropagation(); setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length); }}>
+                            <ChevronLeft size={32} />
+                        </button>
+                    )}
+
+                    <div className="w-[80vw] h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <img src={allImages[lightboxIndex]} className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl animate-in zoom-in-95 duration-300" alt="Fullscreen" />
+                    </div>
+
+                    {allImages.length > 1 && (
+                        <button className="absolute right-6 md:right-12 text-slate-400 hover:text-brand-red transition p-4 bg-slate-100 hover:bg-slate-200 rounded-full shadow-sm" onClick={(e) => { e.stopPropagation(); setLightboxIndex((prev) => (prev + 1) % allImages.length); }}>
+                            <ChevronRight size={32} />
+                        </button>
+                    )}
+
+                    {allImages.length > 1 && (
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 bg-white px-6 py-3 rounded-full shadow-md border border-slate-100" onClick={(e) => e.stopPropagation()}>
+                            {allImages.map((_, i) => (
+                                <button 
+                                    key={i} 
+                                    onClick={() => setLightboxIndex(i)}
+                                    className={`w-2.5 h-2.5 rounded-full transition-all ${i === lightboxIndex ? 'bg-brand-red scale-125' : 'bg-slate-200 hover:bg-slate-300'}`} 
+                                    aria-label={`Ver imagen ${i + 1}`}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

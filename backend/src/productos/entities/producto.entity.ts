@@ -46,6 +46,9 @@ export class Producto {
     @Column({ type: 'varchar', length: 255, nullable: true })
     imagen: string;
 
+    @Column({ type: 'text', array: true, nullable: true })
+    imagenes: string[];
+
     // Muchos Productos pertenecen a un Tema
     @ManyToOne(() => Tema, (tema) => tema.productos)
     @JoinColumn({ name: 'idTema' })

@@ -42,10 +42,10 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
 
     return (
         <div 
-            onClick={() => navigate(`/producto/${idSeguro}`)} 
+            onClick={() => product.estado !== 'NoPublicado' && navigate(`/producto/${idSeguro}`)} 
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
-            className="bg-white border border-slate-200 rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col h-full relative"
+            className={`bg-white border border-slate-200 rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 group ${product.estado === 'NoPublicado' ? 'cursor-default' : 'cursor-pointer'} flex flex-col h-full relative`}
         >
 
             {/* BOTÓN CORAZÓN */}
@@ -53,8 +53,26 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                 <Heart size={24} strokeWidth={1.5} className={`transition-colors duration-300 ${isFav ? 'text-brand-red fill-brand-red' : 'text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-brand-red'}`} />
             </button>
 
+            {/* BADGE DE STOCK BAJO */}
+            {product.estado === 'Publicado' && product.stock > 0 && product.stock <= 3 && (
+                <div className="absolute top-3 left-3 z-20">
+                    <span className="bg-brand-yellow text-slate-900 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-sm border border-brand-yellow/50">
+                        {product.stock === 1 ? '¡Última unidad!' : 'Últimas unidades'}
+                    </span>
+                </div>
+            )}
+
             <div className="h-64 bg-slate-100 flex items-center justify-center relative overflow-hidden">
                 <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                
+                {product.estado === 'NoPublicado' && (
+                    <div className="absolute inset-0 z-30 bg-white/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                         <span className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded shadow-xl rotate-[-5deg] border-2 border-white">
+                            Publicación en pausa
+                        </span>
+                    </div>
+                )}
+
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
                     <button className="bg-white border border-slate-900 text-slate-900 text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded hover:bg-slate-900 hover:text-white transition-colors">
                         Ver detalles

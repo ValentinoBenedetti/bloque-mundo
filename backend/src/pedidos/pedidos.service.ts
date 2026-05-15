@@ -73,15 +73,15 @@ export class PedidosService {
       }
     }
 
-    // No redondeamos, dejamos que Mercado Pago cobre los centavos exactos
-    // totalFinal = Math.round(totalFinal);
+    // Redondeamos a 2 decimales para evitar errores de validación en Mercado Pago
+    const totalFinalRedondeado = Number(totalFinal.toFixed(2));
 
     // 3. Mapeamos todo a un solo item consolidado para que el total coincida exactamente
     const items = [{
       id: `PEDIDO-${carrito.idCarrito}`,
       title: 'Compra en Bloque Mundo',
       quantity: 1,
-      unit_price: totalFinal,
+      unit_price: totalFinalRedondeado,
       currency_id: 'ARS',
     }];
 
@@ -93,14 +93,18 @@ export class PedidosService {
     // Esto hace que aparezca en la DB, pero no resta stock ni vacía el carrito
     const pedidoPendiente = await this.crearPedidoPendiente(idUsuario, codigoCupon);
 
+    // Usamos el link de ngrok como puente (bridge) para que Mercado Pago acepte el auto_return (que requiere HTTPS)
+    const bridgeUrl = (process.env.WEBHOOK_URL || '').replace('/webhook', '/retorno');
+    const bridgeParams = `?idPedido=${(pedidoPendiente as any).idPedido}`;
+
     try {
       const response = await preference.create({
         body: {
           items: items,
           back_urls: {
-            success: `https://httpbin.org/redirect-to?url=http%3A%2F%2Flocalhost%3A5173%2Fperfil%2Fcompras%3Fstatus%3Dsuccess%26idPedido%3D${(pedidoPendiente as any).idPedido}`,
-            failure: `https://httpbin.org/redirect-to?url=http%3A%2F%2Flocalhost%3A5173%2Fperfil%2Fcompras%3Fstatus%3Dfailure%26idPedido%3D${(pedidoPendiente as any).idPedido}`,
-            pending: `https://httpbin.org/redirect-to?url=http%3A%2F%2Flocalhost%3A5173%2Fperfil%2Fcompras%3Fstatus%3Dsuccess%26idPedido%3D${(pedidoPendiente as any).idPedido}`,
+            success: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `http://localhost:5173/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
+            failure: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=failure` : `http://localhost:5173/perfil/compras?status=failure&idPedido=${(pedidoPendiente as any).idPedido}`,
+            pending: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `http://localhost:5173/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
           },
           auto_return: 'approved',
           external_reference: (pedidoPendiente as any).idPedido.toString(), 
@@ -147,6 +151,8 @@ export class PedidosService {
         totalFinal -= descuento;
       } catch (e) {}
     }
+
+    totalFinal = Number(totalFinal.toFixed(2));
 
     const nuevoPedido = this.pedidoRepository.create({
       usuario: { idUsuario } as any,

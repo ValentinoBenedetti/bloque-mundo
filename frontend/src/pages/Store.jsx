@@ -5,15 +5,22 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
+import { getTemasRequest } from '../api/temas';
 import { SlidersHorizontal, ChevronDown, XCircle, ChevronRight } from 'lucide-react';
 
 const Store = () => {
     const [products, setProducts] = useState([]);
+    const [temasAPI, setTemasAPI] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const query = searchParams.get('q') || '';
+    const temaQuery = searchParams.get('tema') || '';
+    const catQuery = searchParams.get('categoria') || '';
+
     const [filters, setFilters] = useState({
-        categoria: '',
-        tema: '',
+        categoria: catQuery,
+        tema: temaQuery,
         precio: '',
         rangoEdad: ''
     });
@@ -23,9 +30,6 @@ const Store = () => {
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
     const priceRef = useRef(null);
-
-    const [searchParams, setSearchParams] = useSearchParams();
-    const query = searchParams.get('q') || '';
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -38,17 +42,21 @@ const Store = () => {
     }, []);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchAll = async () => {
             try {
-                const data = await getProductsRequest();
-                setProducts(data);
+                const [prodsData, temasData] = await Promise.all([
+                    getProductsRequest(),
+                    getTemasRequest()
+                ]);
+                setProducts(prodsData);
+                setTemasAPI(temasData);
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProducts();
+        fetchAll();
     }, []);
 
     useEffect(() => {
@@ -58,7 +66,7 @@ const Store = () => {
         if (query) {
             const fuse = new Fuse(results, {
                 keys: ['titulo', 'categoria', 'tema.nombre'],
-                threshold: 0.4,
+                threshold: 0.3,
                 distance: 100,
             });
             results = fuse.search(query).map(result => result.item);
@@ -96,10 +104,23 @@ const Store = () => {
     const clearFilters = () => {
         setFilters({ categoria: '', tema: '', precio: '', rangoEdad: '' });
         setSortBy('');
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('tema');
+        newParams.delete('categoria');
+        setSearchParams(newParams);
     };
 
-    const categoriasUnicas = Array.from(new Set(products.map(p => p.categoria).filter(Boolean)));
-    const temasUnicos = Array.from(new Set(products.map(p => p.tema?.nombre).filter(Boolean)));
+    const categoriasBase = [
+        "Animales", "Arquitectura", "Botánica", "Castillos", "Ciudad", 
+        "Construcción Básica", "Edificios", "Espacio", "Fantasía", "Mecanismos", 
+        "Minifiguras", "Naves", "Películas y TV", "Piratas", 
+        "Robótica", "Series", "Sets de Colección", "Superhéroes", "Trenes", 
+        "Vehículos", "Videojuegos"
+    ];
+    const categoriasUnicas = Array.from(new Set([...categoriasBase, ...products.map(p => p.categoria).filter(Boolean)])).sort();
+    const temasUnicos = temasAPI.length > 0 
+        ? temasAPI.map(t => t.nombre) 
+        : Array.from(new Set(products.map(p => p.tema?.nombre).filter(Boolean)));
     const edadesUnicas = Array.from(new Set(products.map(p => p.rangoEdad).filter(Boolean)));
 
     return (
@@ -108,13 +129,19 @@ const Store = () => {
 
             <section className="relative h-64 bg-slate-900 flex flex-col items-center justify-center text-white">
                 <img
-                    src="https://www.lego.com/cdn/cs/set/assets/blt8446b5d63ec200d6/City_Main_Hero_Standard_Background.jpg"
+                    src="/assets/banners/tienda.png"
                     className="absolute inset-0 w-full h-full object-cover opacity-40"
                     alt="Banner Tienda"
                 />
                 <div className="relative z-10 text-center">
-                    <h2 className="text-4xl font-bold mb-2">Tienda</h2>
-                    <p className="text-sm font-medium opacity-80">Inicio {'>'} Tienda</p>
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
+                        Tienda
+                    </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        Inicio{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        Tienda
+                    </p>
                 </div>
             </section>
 
