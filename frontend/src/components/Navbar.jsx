@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, User, Heart, ShoppingCart, X, Plus, Minus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Fuse from 'fuse.js';
 import { getProductsRequest } from '../api/products';
 import { useCart } from '../context/CartContext';
@@ -32,7 +33,7 @@ const Navbar = () => {
 
     const searchRef = useRef(null);
 
-    const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen, stockError, setStockError } = useCart();
+    const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen, stockError, setStockError, successMessage } = useCart();
     const { favoritesIds } = useFavorites();
     const { isAuthenticated, openAuthModal } = useAuth();
 
@@ -108,14 +109,14 @@ const Navbar = () => {
     if (isAuthPage) {
         return (
             <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <h1 className="text-3xl font-logo text-white tracking-widest select-none cursor-default uppercase">
+                <h1 className="text-4xl font-logo text-white tracking-widest select-none cursor-default uppercase">
                     Bloque Mundo
                 </h1>
 
                 {/* BOTÓN "CONTINUAR A LA TIENDA" */}
                 <button
                     onClick={() => navigate('/tienda')}
-                    className="text-white font-bold text-sm tracking-widest uppercase hover:opacity-80 transition cursor-pointer underline underline-offset-4"
+                    className="text-white font-extrabold text-[15px] tracking-widest uppercase hover:text-brand-yellow hover:scale-105 transition duration-200 cursor-pointer underline underline-offset-4"
                 >
                     Continuar a la tienda
                 </button>
@@ -129,14 +130,32 @@ const Navbar = () => {
     return (
         <>
             <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <h1 className="text-3xl font-logo text-white tracking-widest cursor-pointer uppercase" onClick={() => navigate('/')}>
+                <h1 
+                    className="text-4xl font-logo text-white tracking-widest cursor-pointer uppercase hover:text-brand-yellow transition duration-200" 
+                    onClick={() => navigate('/')}
+                >
                     Bloque Mundo
                 </h1>
 
-                <div className="hidden md:flex gap-10 text-white font-medium text-sm tracking-tight items-center">
-                    <button onClick={() => navigate('/')} className="hover:opacity-80 transition cursor-pointer">Inicio</button>
-                    <button onClick={() => navigate('/tienda')} className="hover:opacity-80 transition cursor-pointer">Tienda</button>
-                    <button onClick={() => navigate('/nosotros')} className="hover:opacity-80 transition cursor-pointer">Nosotros</button>
+                <div className="hidden md:flex gap-10 text-white font-bold text-[16px] tracking-wide items-center">
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className={`transition duration-200 cursor-pointer ${location.pathname === '/' ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                    >
+                        Inicio
+                    </button>
+                    <button 
+                        onClick={() => navigate('/tienda')} 
+                        className={`transition duration-200 cursor-pointer ${location.pathname.startsWith('/tienda') ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                    >
+                        Tienda
+                    </button>
+                    <button 
+                        onClick={() => navigate('/nosotros')} 
+                        className={`transition duration-200 cursor-pointer ${location.pathname.startsWith('/nosotros') ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                    >
+                        Nosotros
+                    </button>
 
                     <div className="relative ml-4" ref={searchRef}>
                         <input
@@ -166,11 +185,11 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-6 text-white items-center">
-                    <User size={20} className="cursor-pointer hover:scale-110 transition" onClick={handleProfileClick} />
+                <div className="flex gap-7 text-white items-center">
+                    <User size={22} className="cursor-pointer hover:text-brand-yellow hover:scale-110 transition duration-200" onClick={handleProfileClick} />
 
-                    <div className="relative cursor-pointer hover:scale-110 transition" onClick={handleFavoritesNav}>
-                        <Heart size={20} />
+                    <div className="relative cursor-pointer hover:text-brand-yellow hover:scale-110 transition duration-200" onClick={handleFavoritesNav}>
+                        <Heart size={22} />
                         {favoritesIds.length > 0 && (
                             <span className="absolute -top-2 -right-2 bg-white text-brand-red text-[9px] font-black rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-sm">
                                 {favoritesIds.length}
@@ -178,8 +197,8 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    <div className="relative cursor-pointer hover:scale-110 transition" onClick={() => setIsCartOpen(true)}>
-                        <ShoppingCart size={20} />
+                    <div className="relative cursor-pointer hover:text-brand-yellow hover:scale-110 transition duration-200" onClick={() => setIsCartOpen(true)}>
+                        <ShoppingCart size={22} />
                         {totalItems > 0 && (
                             <span className="absolute -top-2 -right-3 bg-brand-yellow text-slate-900 text-[10px] font-black rounded-full h-4 w-4 flex items-center justify-center">
                                 {totalItems}
@@ -191,8 +210,11 @@ const Navbar = () => {
 
             {/* CARRITO Y SIDEBAR */}
             {isCartOpen && (
-                <div className="fixed inset-0 z-100 flex justify-end">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
+                <div className="fixed inset-0 z-[100] flex justify-end">
+                    <div 
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+                        onClick={() => setIsCartOpen(false)}
+                    />
                     <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
                         <div className="flex justify-between items-center p-6 border-b border-slate-100">
                             <h2 className="text-2xl font-black text-slate-900 uppercase italic">Carrito</h2>
@@ -213,10 +235,10 @@ const Navbar = () => {
                                         <div className="w-20 h-20 bg-slate-100 rounded-lg p-2 shrink-0">
                                             <img src={item.imagen || item.imagenes || item.image} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-sm font-bold text-slate-800 leading-tight mb-1">{item.titulo || item.nombre}</h3>
-                                            <div className="text-xs text-slate-500 mb-2">
-                                                {item.quantity} x <span className="font-bold text-slate-900">{formatPrice(item.precio || item.price)}</span>
+                                        <div className="flex-grow">
+                                            <h3 className="text-base font-extrabold text-slate-800 leading-tight mb-1.5">{item.titulo || item.nombre}</h3>
+                                            <div className="text-sm font-medium text-slate-500 mb-3">
+                                                {item.quantity} x <span className="font-extrabold text-slate-950">{formatPrice(item.precio || item.price)}</span>
                                             </div>
                                             <div className="flex items-center border border-slate-200 rounded w-max bg-white">
                                                 <button 
@@ -231,11 +253,11 @@ const Navbar = () => {
                                                             addToCart(item, -1);
                                                         }
                                                     }} 
-                                                    className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                    className="px-2.5 py-1.5 text-slate-400 hover:text-slate-900 transition"
                                                 >
                                                     <Minus size={12} />
                                                 </button>
-                                                <span className="px-2 text-xs font-black text-slate-800">{item.quantity}</span>
+                                                <span className="px-3 text-sm font-black text-slate-800">{item.quantity}</span>
                                                 <button 
                                                     onClick={async () => {
                                                         try {
@@ -244,7 +266,7 @@ const Navbar = () => {
                                                             setStockError(err.message || "No hay suficiente stock");
                                                         }
                                                     }} 
-                                                    className="px-2 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                    className="px-2.5 py-1.5 text-slate-400 hover:text-slate-900 transition"
                                                 >
                                                     <Plus size={12} />
                                                 </button>
@@ -270,14 +292,20 @@ const Navbar = () => {
                         {cart.length > 0 && (
                             <div className="p-6 border-t border-slate-100 bg-white">
                                 <div className="flex justify-between items-end mb-6">
-                                    <span className="font-bold text-slate-500 text-sm">Subtotal</span>
-                                    <span className="text-xl font-black text-slate-900">{formatPrice(totalPrice)}</span>
+                                    <span className="font-bold text-slate-500 text-base">Subtotal</span>
+                                    <span className="text-2xl font-black text-slate-900">{formatPrice(totalPrice)}</span>
                                 </div>
                                 <button
                                     onClick={() => { setIsCartOpen(false); navigate('/carrito'); }}
-                                    className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-sm italic"
+                                    className="w-full bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all uppercase tracking-widest text-base italic mb-3"
                                 >
                                     Ver carrito
+                                </button>
+                                <button
+                                    onClick={() => { setIsCartOpen(false); navigate('/tienda'); }}
+                                    className="w-full bg-white text-brand-red border-2 border-brand-red font-black py-3 rounded-lg shadow-sm hover:bg-slate-50 transition-all uppercase tracking-widest text-base italic"
+                                >
+                                    Seguir comprando
                                 </button>
                             </div>
                         )}

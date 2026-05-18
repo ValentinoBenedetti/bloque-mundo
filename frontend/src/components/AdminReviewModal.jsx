@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, X, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { getReviewForAdminRequest, deleteReviewAdminRequest } from '../api/resenas';
 
 const AdminReviewModal = ({ isOpen, onClose, idUsuario, idProducto, idPedido, productoNombre }) => {
@@ -34,7 +35,12 @@ const AdminReviewModal = ({ isOpen, onClose, idUsuario, idProducto, idPedido, pr
             setResena({ ...resena, eliminadaPorAdmin: true });
             setShowConfirm(false);
         } catch (err) {
-            alert("No se pudo eliminar la reseña.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo eliminar la reseña.',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
@@ -112,10 +118,12 @@ const AdminReviewModal = ({ isOpen, onClose, idUsuario, idProducto, idPedido, pr
                                 <p className="text-sm text-slate-600 mb-6 wrap-break-word">{resena.comentario}</p>
                                 
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0"></div>
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 flex items-center justify-center font-bold text-slate-500 text-xs">
+                                        {resena.usuario?.nombre?.charAt(0) || 'U'}
+                                    </div>
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold text-slate-700">
-                                            {resena.esAnonima ? "Anónimo" : `${resena.usuario?.nombre} ${resena.usuario?.apellido || ''}`}
+                                            {resena.usuario?.nombre} {resena.usuario?.apellido || ''}
                                         </span>
                                         <span className="text-[10px] text-slate-400">Producto: {productoNombre}</span>
                                     </div>

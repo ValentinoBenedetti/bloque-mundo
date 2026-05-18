@@ -20,7 +20,8 @@ export class AuthService {
       const payload = {
         sub: usuario.idUsuario,
         nombre: usuario.nombre,
-        email: usuario.email
+        email: usuario.email,
+        esAdmin: usuario.esAdmin // 🔥 Agregado para que no se pierda al iniciar sesión con Google
       };
 
       return {
@@ -40,7 +41,8 @@ export class AuthService {
     const payload = {
       sub: nuevoUsuario.idUsuario,
       nombre: nuevoUsuario.nombre,
-      email: nuevoUsuario.email
+      email: nuevoUsuario.email,
+      esAdmin: nuevoUsuario.esAdmin // 🔥 Agregado para que no se pierda al registrarse con Google
     };
 
     return {

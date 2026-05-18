@@ -28,7 +28,7 @@ export class Pedido {
     lineas: LineaPedido[];
 
     // Relación N:1 con Cupon
-    @ManyToOne(() => Cupon, (cupon) => cupon.pedidos, { nullable: true })
+    @ManyToOne(() => Cupon, (cupon) => cupon.pedidos, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'codigoCupon' })
     cupon?: Cupon;
 

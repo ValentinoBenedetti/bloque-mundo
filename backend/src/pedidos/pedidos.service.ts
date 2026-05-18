@@ -130,11 +130,129 @@ export class PedidosService {
   async crearPedidoPendiente(idUsuario: string, codigoCupon?: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto', 'lineas.combo'],
+      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'usuario', 'usuario.nivel'],
     });
 
     if (!carrito || !carrito.lineas || carrito.lineas.length === 0) {
       throw new BadRequestException('Carrito vacío');
+    }
+
+    // Validar Precios
+    let precioCambiado = false;
+    let errorDetalle: any = null;
+
+    for (const linea of carrito.lineas) {
+      const item = linea.producto || linea.combo;
+      if (!item) continue;
+      
+      const isCombo = !!linea.combo;
+      const idStr = isCombo ? `combo-${linea.combo.idCombo}` : linea.producto.idProducto.toString();
+      const titulo = isCombo ? linea.combo.titulo : linea.producto.titulo;
+      const precioDB = Number(item.precio);
+      const precioCarrito = Number(linea.precioUnitario);
+
+      if (precioCarrito !== precioDB) {
+        linea.precioUnitario = precioDB;
+        await this.lineaCarritoRepository.save(linea);
+        precioCambiado = true;
+
+        if (!errorDetalle) {
+          errorDetalle = {
+            message: `El precio de "${titulo}" fue actualizado. (Antes: $${precioCarrito}, Ahora: $${precioDB}).`,
+            errorType: 'PRICE_ERROR',
+            productoId: idStr,
+            titulo: titulo,
+            oldPrice: precioCarrito,
+            newPrice: precioDB
+          };
+        }
+      }
+    }
+
+    if (precioCambiado) {
+      const lineasActualizadas = await this.lineaCarritoRepository.find({ where: { carrito: { idCarrito: carrito.idCarrito } } });
+      const totalBruto = lineasActualizadas.reduce((acc, l) => acc + (Number(l.precioUnitario) * l.cantidad), 0);
+      carrito.total = totalBruto;
+      
+      const porcentaje = Number(carrito.usuario?.nivel?.porcentajeDescuento || 0);
+      carrito.descuentoAplicado = totalBruto * (porcentaje / 100);
+      carrito.totalConDescuento = totalBruto - carrito.descuentoAplicado;
+      
+      await this.carritoRepository.save(carrito);
+
+      throw new BadRequestException(errorDetalle);
+    }
+
+    // Validar Stock
+    const demandaProductos = new Map<number, { 
+      titulo: string; 
+      solicitada: number; 
+      stockActual: number; 
+      combosInvolucrados: Set<string>; 
+    }>();
+
+    for (const linea of carrito.lineas) {
+      const cant = Number(linea.cantidad) || 0;
+      if (linea.producto) {
+        const prod = linea.producto;
+        const stockActual = Number(prod.stock) || 0;
+        const actual = demandaProductos.get(prod.idProducto) || { 
+          titulo: prod.titulo, 
+          solicitada: 0, 
+          stockActual: stockActual, 
+          combosInvolucrados: new Set<string>() 
+        };
+        actual.solicitada += cant;
+        demandaProductos.set(prod.idProducto, actual);
+      } else if (linea.combo) {
+        const comboCompleto = await this.comboRepository.findOne({ 
+          where: { idCombo: linea.combo.idCombo }, 
+          relations: ['productos'] 
+        });
+        if (comboCompleto && comboCompleto.productos) {
+          for (const p of comboCompleto.productos) {
+            const stockActual = Number(p.stock) || 0;
+            const actual = demandaProductos.get(p.idProducto) || { 
+              titulo: p.titulo, 
+              solicitada: 0, 
+              stockActual: stockActual, 
+              combosInvolucrados: new Set<string>() 
+            };
+            actual.solicitada += cant;
+            actual.combosInvolucrados.add(comboCompleto.titulo);
+            demandaProductos.set(p.idProducto, actual);
+          }
+        }
+      }
+    }
+
+    // Console log para ver la validacion internamente en el backend
+    console.log("Validando stock para checkout:", Array.from(demandaProductos.values()));
+
+    for (const [id, info] of demandaProductos.entries()) {
+      if (info.solicitada > info.stockActual) {
+        console.warn(`Stock insuficiente detectado: ${info.titulo} - Solicitada: ${info.solicitada}, Stock: ${info.stockActual}`);
+        
+        let comboSuffix = '';
+        if (info.combosInvolucrados.size > 0) {
+          const list = Array.from(info.combosInvolucrados).map(c => `"${c}"`).join(', ');
+          comboSuffix = info.combosInvolucrados.size === 1
+            ? ` (incluido en el combo ${list})`
+            : ` (incluido en los combos ${list})`;
+        }
+
+        const messageText = info.stockActual === 0 
+          ? `El producto "${info.titulo}"${comboSuffix} no tiene stock suficiente (Solicitaste ${info.solicitada}, pero no queda stock).`
+          : `El producto "${info.titulo}"${comboSuffix} no tiene stock suficiente (Solicitaste ${info.solicitada}, pero quedan ${info.stockActual} disponibles).`;
+
+        throw new BadRequestException({
+          message: messageText,
+          errorType: 'STOCK_ERROR',
+          productoId: id,
+          stockActual: info.stockActual,
+          solicitada: info.solicitada
+        });
+      }
     }
 
     let totalFinal = Number(carrito.totalConDescuento || carrito.total);
@@ -207,7 +325,7 @@ export class PedidosService {
       if (linea.producto) {
         linea.producto.stock = Math.max(0, linea.producto.stock - linea.cantidad);
         await this.productoRepository.save(linea.producto);
-      } else if (linea.combo && linea.combo.productos) {
+      } else if (linea.combo) {
          // Cargar productos del combo si no están
          const comboCompleto = await this.comboRepository.findOne({ 
            where: { idCombo: linea.combo.idCombo }, 

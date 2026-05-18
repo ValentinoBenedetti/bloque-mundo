@@ -20,8 +20,9 @@ export class CombosService {
     const combo = this.comboRepository.create(comboData);
 
     if (productosIds && productosIds.length > 0) {
+      const numericIds = productosIds.map(id => Number(id));
       combo.productos = await this.productoRepository.findBy({
-        idProducto: In(productosIds),
+        idProducto: In(numericIds),
       });
     }
 
@@ -71,8 +72,9 @@ export class CombosService {
     Object.assign(combo, comboData);
 
     if (productosIds) {
+      const numericIds = productosIds.map(id => Number(id));
       combo.productos = await this.productoRepository.findBy({
-        idProducto: In(productosIds),
+        idProducto: In(numericIds),
       });
     }
 

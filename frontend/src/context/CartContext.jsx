@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getCarritoRequest, agregarAlCarritoRequest, quitarDelCarritoRequest, vaciarCarritoRequest } from '../api/carrito';
+import Swal from 'sweetalert2';
 
 export const CartContext = createContext();
 
@@ -16,53 +17,54 @@ export const CartProvider = ({ children }) => {
     const [cartMetadata, setCartMetadata] = useState({ total: 0, descuentoAplicado: 0, totalConDescuento: 0, usuario: null });
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [stockError, setStockError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
+
+    const refreshCart = async () => {
+        if (isAuthenticated) {
+            try {
+                const data = await getCarritoRequest();
+                const mappedCart = (data.lineas || []).map(l => {
+                    const item = l.combo ? {
+                        ...l.combo,
+                        idProducto: `combo-${l.combo.idCombo}`,
+                        esCombo: true,
+                        imagen: l.combo.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                    } : l.producto;
+                    return { ...item, quantity: l.cantidad, precioUnitario: l.precioUnitario }; // Added precioUnitario
+                });
+                setCart(mappedCart);
+                setCartMetadata({
+                    total: data.total,
+                    descuentoAplicado: data.descuentoAplicado,
+                    totalConDescuento: data.totalConDescuento,
+                    usuario: data.usuario
+                });
+            } catch (error) {
+                console.error("Error cargando el carrito:", error);
+            }
+        } else {
+            setCart([]);
+        }
+    };
 
     // 1. Efecto para cargar el carrito del backend al iniciar sesin
     useEffect(() => {
-        const fetchCart = async () => {
-            if (isAuthenticated) {
-                try {
-                    const data = await getCarritoRequest();
-                    // Transformamos el formato del backend (lineas) al formato del frontend
-                    const mappedCart = (data.lineas || []).map(l => {
-                        const item = l.combo ? {
-                            ...l.combo,
-                            idProducto: `combo-${l.combo.idCombo}`,
-                            esCombo: true,
-                            imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
-                        } : l.producto;
-                        return { ...item, quantity: l.cantidad };
-                    });
-                    setCart(mappedCart);
-                    setCartMetadata({
-                        total: data.total,
-                        descuentoAplicado: data.descuentoAplicado,
-                        totalConDescuento: data.totalConDescuento,
-                        usuario: data.usuario
-                    });
-                } catch (error) {
-                    console.error("Error cargando el carrito:", error);
-                }
-            } else {
-                setCart([]);
-            }
-        };
-        fetchCart();
+        refreshCart();
     }, [isAuthenticated]);
 
     const addToCart = async (product, quantity = 1) => {
         const productId = product.id || product.idProducto || product.id_producto;
         
-        // Si est logueado, sincronizamos con el backend
-        if (isAuthenticated) {
-            try {
+        try {
+            // Si est logueado, sincronizamos con el backend
+            if (isAuthenticated) {
                 const updatedData = await agregarAlCarritoRequest(productId, quantity);
                 const mappedCart = (updatedData.lineas || []).map(l => {
                     const item = l.combo ? {
                         ...l.combo,
                         idProducto: `combo-${l.combo.idCombo}`,
                         esCombo: true,
-                        imagen: 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
+                        imagen: l.combo.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
                     } : l.producto;
                     return { ...item, quantity: l.cantidad };
                 });
@@ -73,28 +75,49 @@ export const CartProvider = ({ children }) => {
                     totalConDescuento: updatedData.totalConDescuento,
                     usuario: updatedData.usuario
                 });
-            } catch (error) {
-                console.error("Error al agregar al carrito en backend:", error);
-                throw error;
-            }
-        } else {
-            // Si no est logueado (aunque las rutas estǸn protegidas), manejo local opcional
-            setCart((prevCart) => {
-                const existingItem = prevCart.find(item => {
-                    const itemId = item.id || item.idProducto || item.id_producto;
-                    return String(itemId) === String(productId);
-                });
-
-                if (existingItem) {
-                    const newQuantity = existingItem.quantity + quantity;
-                    if (newQuantity <= 0) return prevCart.filter(item => String(item.id || item.idProducto) !== String(productId));
-                    return prevCart.map(item => {
+            } else {
+                // Si no est logueado (aunque las rutas estǸn protegidas), manejo local opcional
+                setCart((prevCart) => {
+                    const existingItem = prevCart.find(item => {
                         const itemId = item.id || item.idProducto || item.id_producto;
-                        return String(itemId) === String(productId) ? { ...item, quantity: newQuantity } : item;
+                        return String(itemId) === String(productId);
                     });
-                }
-                return quantity > 0 ? [...prevCart, { ...product, quantity }] : prevCart;
-            });
+
+                    if (existingItem) {
+                        const newQuantity = existingItem.quantity + quantity;
+                        if (newQuantity <= 0) return prevCart.filter(item => String(item.id || item.idProducto) !== String(productId));
+                        return prevCart.map(item => {
+                            const itemId = item.id || item.idProducto || item.id_producto;
+                            return String(itemId) === String(productId) ? { ...item, quantity: newQuantity } : item;
+                        });
+                    }
+                    return quantity > 0 ? [...prevCart, { ...product, quantity }] : prevCart;
+                });
+            }
+
+            if (quantity > 0) {
+                setSuccessMessage(`Agregaste al carrito: ${product.titulo || product.nombre}`);
+                setTimeout(() => setSuccessMessage(null), 3000);
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: `<span style="font-family: sans-serif; font-weight: 800; font-style: italic; text-transform: uppercase; color: #FFD500; font-size: 14px; tracking-tight">¡Agregado al carrito!</span>`,
+                    html: `<div style="font-family: sans-serif; font-size: 13px; color: #4b5563; font-weight: 700; margin-top: 4px; line-height: 1.4;">Agregaste <strong style="color: #1a1a1a; font-weight: 900;">${product.titulo || product.nombre}</strong> al carrito</div>`,
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: false,
+                    background: '#ffffff',
+                    iconColor: '#FFD500',
+                    customClass: {
+                        popup: 'rounded-2xl shadow-2xl border-2 border-[#FFD500]/30 p-4'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Error al agregar al carrito:", error);
+            throw error;
         }
     };
 
@@ -153,8 +176,8 @@ export const CartProvider = ({ children }) => {
     return (
         // Ahora compartimos isCartOpen y setIsCartOpen con toda la app
         <CartContext.Provider value={{
-            cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice,
-            isCartOpen, setIsCartOpen, cartMetadata, stockError, setStockError
+            cart, addToCart, removeFromCart, clearCart, refreshCart, totalItems, totalPrice,
+            isCartOpen, setIsCartOpen, cartMetadata, stockError, setStockError, successMessage, setSuccessMessage
         }}>
             {children}
         </CartContext.Provider>

@@ -215,52 +215,51 @@ const AdminUsuarios = () => {
             </section>
 
             {/* ── Barra de filtros ──────────────────────────────── */}
-            <div className="bg-brand-yellow w-full py-4 px-6 shadow-sm border-b border-yellow-500">
-                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
                     {/* Selector orden */}
-                    <div className="relative w-56 shrink-0">
+                    <div className="relative w-56 shrink-0 group">
                         <select
                             value={sortOrder}
                             onChange={(e) => {
                                 setSortOrder(e.target.value);
                                 setVisibleCount(6);
                             }}
-                            className="bg-white appearance-none w-full pr-10 pl-4 py-2.5 rounded text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 border border-slate-200 transition outline-none focus:border-brand-red cursor-pointer"
+                            className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                         >
-                            <option value="desc">Descendente</option>
-                            <option value="asc">Ascendente</option>
+                            <option value="desc" className="bg-slate-900 text-slate-100">Descendente</option>
+                            <option value="asc" className="bg-slate-900 text-slate-100">Ascendente</option>
                         </select>
                         <ChevronDown
                             size={14}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                            className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`}
                         />
-                        <div className="absolute -top-2.5 left-3 bg-brand-yellow px-1 text-[10px] text-slate-700 font-black uppercase tracking-widest pointer-events-none">
+                        <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>
                             Orden por fecha de registro
                         </div>
                     </div>
 
                     {/* Búsqueda */}
-                    <div className="relative w-full sm:w-80">
+                    <div className="relative w-full sm:w-80 group">
                         <input
                             type="text"
-                            placeholder="Buscar usuarios (por ID)"
+                            placeholder="Buscar usuarios..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setVisibleCount(6);
                             }}
-                            className="w-full pl-4 pr-10 py-2.5 rounded-full text-sm text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand-red shadow-sm border border-slate-200 transition bg-white"
+                            className={`w-full pl-6 pr-12 py-2.5 rounded-full text-sm font-semibold bg-slate-800 border ${searchTerm ? 'border-brand-yellow text-brand-yellow focus:ring-brand-yellow' : 'border-slate-700 text-slate-100 placeholder:text-slate-400 hover:border-brand-yellow focus:ring-brand-yellow'} outline-none focus:ring-2 transition`}
                         />
                         <Search
                             size={16}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                            className={`absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${searchTerm ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`}
                         />
                     </div>
 
                     {/* Resultados */}
-                    <div className="text-sm font-black text-slate-800 shrink-0">
-                        Resultados:{' '}
-                        <span className="text-slate-900 text-base">{usuariosFiltrados.length}</span>
+                    <div className="text-sm font-semibold text-slate-400 shrink-0">
+                        Mostrando <span className="text-brand-yellow font-black text-base">{Math.min(visibleCount, usuariosFiltrados.length)}</span> de <span className="text-brand-yellow font-black text-base">{usuariosFiltrados.length}</span> {usuariosFiltrados.length === 1 ? 'resultado' : 'resultados'}
                     </div>
                 </div>
             </div>
@@ -346,7 +345,7 @@ const AdminUsuarios = () => {
                             <div className="flex justify-center mt-6">
                                 <button
                                     onClick={() => setVisibleCount((prev) => prev + 6)}
-                                    className="bg-white border border-slate-300 text-slate-700 px-10 py-2.5 font-black rounded text-sm hover:bg-slate-50 hover:border-slate-400 transition shadow-sm uppercase tracking-widest"
+                                    className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
                                 >
                                     Ver más
                                 </button>

@@ -97,10 +97,10 @@ const Login = () => {
     };
 
     return (
-        <div className="h-screen w-full flex flex-col overflow-hidden">
+        <div className="min-h-screen w-full flex flex-col">
             <Header />
 
-            <main className="flex-1 flex items-center justify-center relative bg-slate-400">
+            <main className="flex-1 flex items-center justify-center relative py-16 md:py-24 px-4 min-h-[650px]">
 
                 <div
                     className="absolute inset-0 bg-cover bg-center z-0"
@@ -111,11 +111,11 @@ const Login = () => {
 
                 <div className="absolute inset-0 bg-black/40 z-10"></div>
 
-                <div className="bg-white p-8 md:p-10 rounded-lg shadow-2xl w-full max-w-lg relative z-20 mx-4 animate-fade-in-up">
+                <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-md relative z-20 animate-fade-in-up border border-slate-150">
 
                     <button
                         onClick={() => navigate('/')}
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition"
+                        className="absolute top-5 right-5 text-slate-400 hover:text-slate-900 transition"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

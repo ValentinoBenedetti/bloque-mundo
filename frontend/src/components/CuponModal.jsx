@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Trash2, Plus, Percent, Calendar } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { getCuponesRequest, createCuponRequest, deleteCuponRequest } from '../api/cupones';
 
 const CuponModal = ({ isOpen, onClose }) => {
@@ -66,19 +67,56 @@ const CuponModal = ({ isOpen, onClose }) => {
                 montoMinimo: '',
                 idTemaRequerido: '',
             });
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: 'Cupón creado correctamente',
+                confirmButtonColor: '#10b981',
+                timer: 1500,
+                showConfirmButton: false
+            });
             fetchCupones();
         } catch (err) {
-            alert(err.message || 'Error al crear cupón');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'Error al crear cupón',
+                confirmButtonColor: '#dc2626'
+            });
         }
     };
 
     const handleDelete = async (codigo) => {
-        if (window.confirm(`¿Eliminar cupón ${codigo}?`)) {
+        const result = await Swal.fire({
+            title: `¿Eliminar cupón ${codigo}?`,
+            text: "Esta acción no se puede deshacer",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
             try {
                 await deleteCuponRequest(codigo);
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Eliminado!',
+                    text: 'El cupón ha sido eliminado.',
+                    confirmButtonColor: '#10b981',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
                 fetchCupones();
             } catch (err) {
-                alert('Error al eliminar cupón');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message || 'Error al eliminar cupón',
+                    confirmButtonColor: '#dc2626'
+                });
             }
         }
     };

@@ -7,9 +7,10 @@ import { useState, useEffect } from 'react';
 import { crearPreferenciaRequest, confirmarCompraRequest } from '../api/pedidos';
 import ConfirmModal from '../components/ConfirmModal';
 import logoMercadoPago from '../assets/logo mercado pago byn.png';
+import Swal from 'sweetalert2';
 
 const Cart = () => {
-    const { cart, addToCart, removeFromCart, totalPrice, cartMetadata, setStockError } = useCart();
+    const { cart, addToCart, removeFromCart, refreshCart, totalPrice, cartMetadata, setStockError } = useCart();
     const navigate = useNavigate();
 
     // ESTADO PARA EL MODAL DE CONFIRMACI"N
@@ -26,6 +27,7 @@ const Cart = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [loadingCheckout, setLoadingCheckout] = useState(false);
+    const [priceChanges, setPriceChanges] = useState({});
 
     const userSavedAddress = cartMetadata?.usuario?.direccion || '';
     const [useSavedAddress, setUseSavedAddress] = useState(true);
@@ -146,7 +148,71 @@ const Cart = () => {
             window.location.href = init_point;
         } catch (error) {
             console.error(error);
-            setCouponError('No se pudo inicializar Mercado Pago. Intenta nuevamente.');
+            const errorPayload = error.data || {};
+
+            if (errorPayload.errorType === 'PRICE_ERROR') {
+                setPriceChanges(prev => ({
+                    ...prev,
+                    [errorPayload.productoId]: { oldPrice: errorPayload.oldPrice, newPrice: errorPayload.newPrice }
+                }));
+                await refreshCart();
+
+                const result = await Swal.fire({
+                    icon: 'info',
+                    title: 'Precio Actualizado',
+                    text: `Antes de continuar, te avisamos que el precio del producto "${errorPayload.titulo || 'seleccionado'}" fue actualizado.`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Comprar igualmente',
+                    cancelButtonText: 'Ver carrito',
+                    confirmButtonColor: '#0f172a',
+                    cancelButtonColor: '#64748b'
+                });
+
+                if (result.isConfirmed) {
+                    handleCheckout();
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No pudimos procesar tu compra',
+                    text: error.message || 'No se pudo inicializar Mercado Pago. Intenta nuevamente.',
+                    confirmButtonColor: '#dc2626'
+                }).then(async () => {
+                    if (errorPayload.errorType === 'STOCK_ERROR') {
+                        // Buscar el item del carrito que contiene este producto (directo o dentro de un combo)
+                        const itemToRemove = cart.find(item => {
+                            if (String(item.idProducto) === String(errorPayload.productoId)) {
+                                return true;
+                            }
+                            if (item.esCombo && item.productos) {
+                                return item.productos.some(p => String(p.idProducto) === String(errorPayload.productoId));
+                            }
+                            return false;
+                        });
+
+                        if (itemToRemove) {
+                            if (errorPayload.stockActual <= 0 || itemToRemove.esCombo) {
+                                await removeFromCart(itemToRemove.idProducto);
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Carrito actualizado',
+                                    text: `El ${itemToRemove.esCombo ? 'combo' : 'producto'} "${itemToRemove.titulo || 'seleccionado'}" ha sido eliminado del carrito por falta de stock.`,
+                                    confirmButtonColor: '#0f172a'
+                                });
+                            } else {
+                                const delta = errorPayload.stockActual - errorPayload.solicitada;
+                                await addToCart(itemToRemove, delta);
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Cantidad ajustada',
+                                    text: `La cantidad de "${itemToRemove.titulo}" fue ajustada al stock disponible (${errorPayload.stockActual} unidades).`,
+                                    confirmButtonColor: '#0f172a'
+                                });
+                            }
+                        }
+                    }
+                });
+            }
         } finally {
             setLoadingCheckout(false);
         }
@@ -202,9 +268,21 @@ const Cart = () => {
                                         <h3 className="text-lg font-black text-slate-800 leading-tight mb-1 uppercase italic">
                                             {item.titulo || item.nombre}
                                         </h3>
-                                        <p className="text-brand-red font-black text-sm mb-4">
-                                            {formatPrice(item.precio || item.price)} c/u
-                                        </p>
+                                        
+                                        {priceChanges[item.idProducto || item.id_producto || item.id] ? (
+                                            <div className="flex flex-col mb-4">
+                                                <span className="text-slate-400 font-bold text-sm line-through">
+                                                    {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].oldPrice)} c/u
+                                                </span>
+                                                <span className="text-brand-red font-black text-sm">
+                                                    {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].newPrice)} c/u
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-brand-red font-black text-sm mb-4">
+                                                {formatPrice(item.precioUnitario || item.precio || item.price)} c/u
+                                            </p>
+                                        )}
 
                                         <div className="flex items-center border-2 border-slate-100 rounded-lg w-max">
                                             <button

@@ -16,7 +16,24 @@ const ProductDetail = () => {
     const navigate = useNavigate();
 
     const { addToCart, setIsCartOpen, setStockError } = useCart();
-    const { isAuthenticated, openAuthModal } = useAuth();
+    const { isAuthenticated, openAuthModal, user } = useAuth();
+
+    // Función para decodificar el token y verificar si es admin
+    const isAdmin = (() => {
+        try {
+            if (!user) return false;
+            if (typeof user === 'object') return user.esAdmin === true;
+            const base64Url = user.split('.')[1];
+            if (!base64Url) return false;
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload).esAdmin === true;
+        } catch (e) {
+            return false;
+        }
+    })();
 
     // 🔥 2. TRAEMOS LAS FUNCIONES GLOBALES
     const { toggleFavorite, isFavorite } = useFavorites();
@@ -283,6 +300,15 @@ const ProductDetail = () => {
                             </div>
                         )}
 
+                        {product.stock === 0 && (
+                            <div className="mb-6">
+                                <span className="bg-red-50 text-brand-red text-[11px] font-black uppercase tracking-[0.1em] px-4 py-2 rounded-lg border border-brand-red/30 inline-flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-red shadow-[0_0_8px_rgba(220,38,38,0.8)]"></div>
+                                    Sin stock
+                                </span>
+                            </div>
+                        )}
+
                         <p className="text-slate-500 text-sm leading-relaxed mb-10 whitespace-pre-wrap">
                             {product.descripcion || (
                                 <>
@@ -291,11 +317,77 @@ const ProductDetail = () => {
                             )}
                         </p>
 
+                        {/* DETALLES DEL COMBO (PRODUCTOS INCLUIDOS Y AHORRO) */}
+                        {product.esCombo && product.productos && product.productos.length > 0 && (
+                            <div className="mb-8 p-5 bg-gradient-to-br from-yellow-50/50 to-orange-50/20 rounded-2xl border-2 border-dashed border-brand-yellow/30 shadow-sm">
+                                <h3 className="text-sm font-black text-slate-800 uppercase italic mb-4 tracking-wider flex items-center gap-2">
+                                    <Shapes size={18} className="text-brand-yellow" />
+                                    Este combo incluye:
+                                </h3>
+                                <div className="space-y-3 mb-5">
+                                    {product.productos.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-white/60 p-2.5 rounded-xl border border-slate-100">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 shrink-0 flex items-center justify-center border border-slate-100">
+                                                    <img 
+                                                        src={item.imagen || item.imagenes || item.image || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'} 
+                                                        className="w-full h-full object-contain mix-blend-multiply" 
+                                                        alt="combo-item" 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h4 className="text-xs font-extrabold text-slate-800 leading-tight">{item.titulo || item.nombre}</h4>
+                                                        {Number(item.stock) === 0 && (
+                                                            <span className="bg-red-50 text-brand-red text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border border-brand-red/10">
+                                                                Sin stock
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">Cantidad: 1 u.</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-extrabold text-slate-500">{formatPrice(item.precio)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                {(() => {
+                                    const sumPrices = product.productos.reduce((sum, p) => sum + Number(p.precio), 0);
+                                    const savings = sumPrices - Number(product.precio);
+                                    if (savings > 0) {
+                                        return (
+                                            <div className="border-t border-slate-200 pt-4 space-y-3">
+                                                <div className="flex justify-between items-center text-xs text-slate-500 font-bold">
+                                                    <span>PRECIO REGULAR COMPRADO POR SEPARADO:</span>
+                                                    <span className="line-through text-slate-400 text-sm font-extrabold">{formatPrice(sumPrices)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                                                    <span>PRECIO FINAL DE ESTE COMBO:</span>
+                                                    <span className="text-slate-900 text-sm font-extrabold">{formatPrice(product.precio)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center bg-brand-red/5 p-3 rounded-xl border border-brand-red/10">
+                                                    <div className="flex items-center gap-2">
+                                                        <Tag size={16} className="text-brand-red animate-pulse" />
+                                                        <span className="text-xs font-black text-brand-red uppercase italic">¡TU AHORRO COMPRANDO EL COMBO!</span>
+                                                    </div>
+                                                    <span className="text-base font-black text-brand-red bg-white px-3 py-1 rounded-lg shadow-sm border border-brand-red/10">
+                                                        {formatPrice(savings)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-3 gap-4 mb-10 py-8 border-y border-slate-100">
                             <div className="flex flex-col items-center text-center">
                                 <Calendar size={28} className="text-slate-800 mb-2" />
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Edad</span>
-                                <span className="text-sm font-bold text-slate-800">+{edad}</span>
+                                <span className="text-sm font-bold text-slate-800">{String(edad).includes('+') ? edad : `${edad}+`}</span>
                             </div>
                             <div className="flex flex-col items-center text-center">
                                 <Package size={28} className="text-slate-800 mb-2" />
@@ -317,10 +409,15 @@ const ProductDetail = () => {
                             </div>
 
                             <button
-                                onClick={handleAddToCart}
-                                className="flex-1 bg-brand-red text-white font-black py-4 rounded-lg shadow-lg hover:bg-red-700 transition-all active:scale-95 uppercase tracking-widest text-sm italic"
+                                onClick={product.stock === 0 ? null : handleAddToCart}
+                                disabled={product.stock === 0}
+                                className={`flex-1 font-black py-4 rounded-lg shadow-lg uppercase tracking-widest text-sm italic transition-all ${
+                                    product.stock === 0 
+                                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
+                                    : 'bg-brand-red text-white hover:bg-red-700 active:scale-95'
+                                }`}
                             >
-                                Añadir al carrito
+                                {product.stock === 0 ? 'Sin stock' : 'Añadir al carrito'}
                             </button>
                         </div>
                     </div>
@@ -373,11 +470,11 @@ const ProductDetail = () => {
 
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-black text-xs">
-                                                {resena.usuario.nombre.charAt(0)}
+                                                {isAdmin ? resena.usuario.nombre.charAt(0) : 'A'}
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-black text-slate-800 italic uppercase">
-                                                    {resena.esAnonima ? 'Anónimo' : `${resena.usuario.nombre} ${resena.usuario.apellido}`}
+                                                    {isAdmin ? `${resena.usuario.nombre} ${resena.usuario.apellido}` : 'Anónimo'}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Comprador verificado</span>
                                             </div>
@@ -387,7 +484,7 @@ const ProductDetail = () => {
                                 
                                 {resenas.length > 3 && (
                                     <div className="flex justify-center mt-8">
-                                        <button className="bg-white border-2 border-slate-200 text-slate-400 font-black px-10 py-3 rounded-lg hover:border-brand-red hover:text-brand-red transition uppercase tracking-widest text-xs italic">
+                                        <button className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm">
                                             Ver más reseñas
                                         </button>
                                     </div>

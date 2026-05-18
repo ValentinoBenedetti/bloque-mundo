@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2'; // 🔥 Importamos SweetAlert2
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -20,6 +21,7 @@ const Home = () => {
     const [error, setError] = useState(false);
     const [destacadoIndex, setDestacadoIndex] = useState(0);
     const [hoveredDestacadoId, setHoveredDestacadoId] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(8);
 
     const navigate = useNavigate();
 
@@ -30,6 +32,23 @@ const Home = () => {
             minimumFractionDigits: 0
         }).format(price);
     };
+
+    // 🔥 Detectar sesión expirada (401 global)
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('session_expired') === 'true') {
+            Swal.fire({
+                icon: 'warning',
+                title: '¡Sesión Expirada!',
+                text: 'Tu sesión ha expirado por seguridad o inactividad. Por favor, iniciá sesión nuevamente.',
+                confirmButtonColor: '#E11D48',
+                confirmButtonText: 'Entendido'
+            });
+            // Limpiar la URL sin recargar la página
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    }, []);
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -50,11 +69,10 @@ const Home = () => {
     }, []);
 
     // --- Lógica del Carrusel de Novedades ---
-    const novedades = products.filter(p => p.esNovedad && p.estado === 'Publicado');
-
+    const novedades = products.filter(p => p.esNovedad && p.estado === 'Publicado').sort((a,b) => (a.stock===0?1:0) - (b.stock===0?1:0));
 
     // --- Lógica del Carrusel de Destacados ---
-    const destacados = products.filter(p => p.esDestacado && p.estado === 'Publicado');
+    const destacados = products.filter(p => p.esDestacado && p.estado === 'Publicado').sort((a,b) => (a.stock===0?1:0) - (b.stock===0?1:0));
 
     const handlePrevDestacado = () => {
         setDestacadoIndex(prev => Math.max(prev - 1, 0));
@@ -266,8 +284,23 @@ const Home = () => {
                         <div>
                             <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Todos los productos</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                                {products.filter(p => p.estado === 'Publicado').map(p => <ProductCard key={p.idProducto} product={p} />)}
+                                {products
+                                    .filter(p => p.estado === 'Publicado')
+                                    .sort((a, b) => (a.stock === 0 ? 1 : 0) - (b.stock === 0 ? 1 : 0))
+                                    .slice(0, visibleCount)
+                                    .map(p => <ProductCard key={p.idProducto} product={p} />)}
                             </div>
+
+                            {visibleCount < products.filter(p => p.estado === 'Publicado').length && (
+                                <div className="flex justify-center mt-12">
+                                    <button 
+                                        onClick={() => setVisibleCount(prev => prev + 8)}
+                                        className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        Ver más
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

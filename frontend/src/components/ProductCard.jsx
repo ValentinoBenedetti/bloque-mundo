@@ -1,4 +1,4 @@
-import { Calendar, Package, Heart } from 'lucide-react';
+import { Calendar, Package, Heart, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -53,14 +53,29 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                 <Heart size={24} strokeWidth={1.5} className={`transition-colors duration-300 ${isFav ? 'text-brand-red fill-brand-red' : 'text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-brand-red'}`} />
             </button>
 
-            {/* BADGE DE STOCK BAJO */}
-            {product.estado === 'Publicado' && product.stock > 0 && product.stock <= 3 && (
-                <div className="absolute top-3 left-3 z-20">
+            {/* CONTENEDOR DE BADGES (APILADOS VERTICALMENTE) */}
+            <div className="absolute top-3 left-3 z-20 flex flex-col gap-1 items-start pointer-events-none">
+                {/* BADGE DE NOVEDAD */}
+                {product.esNovedad && (
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-md border border-indigo-500/30 flex items-center gap-1 animate-pulse">
+                        <Sparkles size={10} className="fill-white text-white" /> Novedad
+                    </span>
+                )}
+
+                {/* BADGE DE STOCK BAJO */}
+                {product.estado === 'Publicado' && product.stock > 0 && product.stock <= 3 && (
                     <span className="bg-brand-yellow text-slate-900 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-sm border border-brand-yellow/50">
                         {product.stock === 1 ? '¡Última unidad!' : 'Últimas unidades'}
                     </span>
-                </div>
-            )}
+                )}
+
+                {/* BADGE DE SIN STOCK */}
+                {product.estado === 'Publicado' && product.stock === 0 && (
+                    <span className="bg-brand-red text-white text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-sm border border-brand-red/50">
+                        Sin stock
+                    </span>
+                )}
+            </div>
 
             <div className="h-64 bg-slate-100 flex items-center justify-center relative overflow-hidden">
                 <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />

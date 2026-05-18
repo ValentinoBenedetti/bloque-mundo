@@ -6,7 +6,6 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [comment, setComment] = useState('');
-    const [isAnonymous, setIsAnonymous] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
@@ -25,15 +24,12 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
                         } else {
                             setRating(res.resena.estrellas);
                             setComment(res.resena.comentario);
-                            setIsAnonymous(res.resena.esAnonima);
                             setIsReadOnly(true);
                             setIsDeleted(false);
                         }
                     } else {
-                        // Reset form for new review
                         setRating(0);
                         setComment('');
-                        setIsAnonymous(true);
                         setIsReadOnly(false);
                         setIsDeleted(false);
                         setError(null);
@@ -75,7 +71,7 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
                 idPedido: idPedido,
                 comentario: comment,
                 estrellas: rating,
-                esAnonima: isAnonymous
+                esAnonima: true
             });
             onSuccess();
             onClose();
@@ -158,19 +154,7 @@ const ReviewModal = ({ isOpen, onClose, product, idPedido, onSuccess }) => {
                                     )}
                                 </div>
 
-                                <div className="flex items-center gap-3 py-2">
-                                    <label className={`relative inline-flex items-center ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}>
-                                        <input
-                                            type="checkbox"
-                                            checked={isAnonymous}
-                                            onChange={(e) => !isReadOnly && setIsAnonymous(e.target.checked)}
-                                            disabled={isReadOnly}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-2px after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-red opacity-80"></div>
-                                    </label>
-                                    <span className="text-sm font-medium text-slate-600">Publicada como reseña anónima</span>
-                                </div>
+
 
                                 {error && (
                                     <p className="text-xs font-bold text-brand-red bg-red-50 p-3 rounded-lg border border-red-100 animate-shake">

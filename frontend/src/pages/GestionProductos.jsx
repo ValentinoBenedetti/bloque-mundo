@@ -82,12 +82,17 @@ const GestionProductos = () => {
 
     const handleToggleFeatured = async (product) => {
         try {
+            const updates = { esDestacado: !product.esDestacado };
+            if (!product.esDestacado && product.estado !== 'Publicado') {
+                updates.estado = 'Publicado';
+            }
+
             if (product.esCombo) {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esDestacado: !product.esDestacado } : p));
-                await updateComboRequest(product.idCombo, { esDestacado: !product.esDestacado });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateComboRequest(product.idCombo, updates);
             } else {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esDestacado: !product.esDestacado } : p));
-                await updateProductRequest(product.idProducto, { esDestacado: !product.esDestacado });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateProductRequest(product.idProducto, updates);
             }
         } catch (err) {
             alert('Error al actualizar destacados');
@@ -97,12 +102,17 @@ const GestionProductos = () => {
 
     const handleToggleNew = async (product) => {
         try {
+            const updates = { esNovedad: !product.esNovedad };
+            if (!product.esNovedad && product.estado !== 'Publicado') {
+                updates.estado = 'Publicado';
+            }
+
             if (product.esCombo) {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esNovedad: !product.esNovedad } : p));
-                await updateComboRequest(product.idCombo, { esNovedad: !product.esNovedad });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateComboRequest(product.idCombo, updates);
             } else {
-                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, esNovedad: !product.esNovedad } : p));
-                await updateProductRequest(product.idProducto, { esNovedad: !product.esNovedad });
+                setProducts(prev => prev.map(p => p.idProducto === product.idProducto ? { ...p, ...updates } : p));
+                await updateProductRequest(product.idProducto, updates);
             }
         } catch (err) {
             alert('Error al actualizar novedades');
@@ -250,64 +260,64 @@ const GestionProductos = () => {
                 </div>
             </section>
 
-            {/* Filter Bar (Yellow) */}
-            <div className="bg-brand-yellow py-4 px-10 shadow-md">
-                <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex gap-4">
-                        <div className="relative bg-white rounded border border-slate-200">
+            {/* Filter Bar (Premium Slate-Dark) */}
+            <div className="bg-slate-900 py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6">
+                    <div className="flex flex-wrap gap-4">
+                        <div className="relative min-w-[220px] group">
                             <select 
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-transparent pl-4 pr-10 py-2 text-sm font-bold text-slate-700 outline-none cursor-pointer"
+                                className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortBy !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
                             >
-                                <option value="desc">Por fecha de edición: Descendente</option>
-                                <option value="asc">Por fecha de edición: Ascendente</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">Por fecha de edición: Descendente</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Por fecha de edición: Ascendente</option>
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortBy !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
 
-                        <div className="relative bg-white rounded border border-slate-200">
+                        <div className="relative min-w-[180px] group">
                             <select 
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="appearance-none bg-transparent pl-4 pr-10 py-2 text-sm font-bold text-slate-700 outline-none cursor-pointer"
+                                className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${filterType !== "all" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
                             >
-                                <option value="all">Por tipo: Todos</option>
-                                <option value="individual">Producto individual</option>
-                                <option value="combo">Combo</option>
+                                <option value="all" className="bg-slate-900 text-slate-100">Por tipo: Todos</option>
+                                <option value="individual" className="bg-slate-900 text-slate-100">Producto individual</option>
+                                <option value="combo" className="bg-slate-900 text-slate-100">Combo</option>
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${filterType !== "all" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
 
-                        <div className="relative bg-white rounded border border-slate-200">
+                        <div className="relative min-w-[180px] group">
                             <select 
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="appearance-none bg-transparent pl-4 pr-10 py-2 text-sm font-bold text-slate-700 outline-none cursor-pointer"
+                                className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${filterStatus !== "all" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
                             >
-                                <option value="all">Por estado: Todos</option>
-                                <option value="publicado">Solo Publicados</option>
-                                <option value="nopublicado">Solo No Publicados</option>
-                                <option value="destacado">Solo Destacados</option>
-                                <option value="novedad">Solo Novedades</option>
+                                <option value="all" className="bg-slate-900 text-slate-100">Por estado: Todos</option>
+                                <option value="publicado" className="bg-slate-900 text-slate-100">Solo Publicados</option>
+                                <option value="nopublicado" className="bg-slate-900 text-slate-100">Solo No Publicados</option>
+                                <option value="destacado" className="bg-slate-900 text-slate-100">Solo Destacados</option>
+                                <option value="novedad" className="bg-slate-900 text-slate-100">Solo Novedades</option>
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${filterStatus !== "all" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
                     </div>
 
-                    <div className="relative flex-1 max-w-md">
+                    <div className="relative flex-1 max-w-md group">
                         <input 
                             type="text" 
                             placeholder="Buscar productos (por código o nombre)" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
+                            className={`w-full pl-6 pr-12 py-2.5 rounded-full text-sm font-semibold bg-slate-800 border ${searchTerm ? 'border-brand-yellow text-brand-yellow focus:ring-brand-yellow' : 'border-slate-700 text-slate-100 placeholder:text-slate-400 hover:border-brand-yellow focus:ring-brand-yellow'} outline-none focus:ring-2 transition`}
                         />
-                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={16} className={`absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${searchTerm ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                     </div>
 
-                    <div className="text-sm font-black text-slate-900 uppercase">
-                        Resultados: <span className="text-xl ml-1">{filteredProducts.length}</span>
+                    <div className="text-sm font-semibold text-slate-400">
+                        Mostrando <span className="text-brand-yellow font-black text-base">{Math.min(visibleCount, filteredProducts.length)}</span> de <span className="text-brand-yellow font-black text-base">{filteredProducts.length}</span> {filteredProducts.length === 1 ? 'resultado' : 'resultados'}
                     </div>
                 </div>
             </div>
@@ -419,7 +429,7 @@ const GestionProductos = () => {
                     <div className="flex justify-center pt-8 pb-12">
                         <button 
                             onClick={() => setVisibleCount(prev => prev + 5)}
-                            className="bg-white border-2 border-slate-200 text-slate-900 font-black uppercase tracking-widest px-12 py-4 rounded-xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm active:scale-95"
+                            className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
                         >
                             Ver más productos
                         </button>

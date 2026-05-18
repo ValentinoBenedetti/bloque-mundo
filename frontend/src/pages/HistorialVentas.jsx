@@ -11,6 +11,7 @@ const HistorialVentas = () => {
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
     const [searchTerm, setSearchTerm] = useState('');
+    const [estadoFiltro, setEstadoFiltro] = useState('Todos');
     const [visibleCount, setVisibleCount] = useState(5); // Para el botón Ver más
     const [modalData, setModalData] = useState({ isOpen: false, idUsuario: null, idProducto: null, idPedido: null, productoNombre: '' });
 
@@ -64,6 +65,8 @@ const HistorialVentas = () => {
         const itemComprado = item.producto || item.combo;
         if (!itemComprado) return false;
         
+        if (estadoFiltro !== 'Todos' && item.estado !== estadoFiltro) return false;
+        
         const term = searchTerm.toLowerCase();
         const matchesName = itemComprado.titulo && itemComprado.titulo.toLowerCase().includes(term);
         const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
@@ -116,24 +119,45 @@ const HistorialVentas = () => {
                 </div>
             </section>
 
-            <div className="bg-brand-yellow w-full py-4 px-10 shadow-sm border-b border-yellow-500">
-                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-                    {/* Select de orden */}
-                    <div className="relative w-48 shrink-0">
-                        <select
-                            value={sortOrder}
-                            onChange={(e) => setSortOrder(e.target.value)}
-                            className="bg-white appearance-none w-full pr-10 pl-4 py-2 rounded text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 border border-slate-200 transition outline-none focus:border-brand-red cursor-pointer"
-                        >
-                            <option value="desc">Descendente</option>
-                            <option value="asc">Ascendente</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <div className="absolute -top-2 left-3 bg-white px-1 text-[10px] text-slate-500 font-bold uppercase pointer-events-none">Orden por fecha</div>
+            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
+                    <div className="flex gap-4 w-full sm:w-auto">
+                        {/* Select de orden */}
+                        <div className="relative w-48 shrink-0 group">
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
+                            >
+                                <option value="desc" className="bg-slate-900 text-slate-100">Descendente</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Ascendente</option>
+                            </select>
+                            <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
+                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>Orden por fecha</div>
+                        </div>
+
+                        {/* Select de estado */}
+                        <div className="relative w-40 shrink-0 group">
+                            <select
+                                value={estadoFiltro}
+                                onChange={(e) => {
+                                    setEstadoFiltro(e.target.value);
+                                    setVisibleCount(5);
+                                }}
+                                className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${estadoFiltro !== "Todos" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
+                            >
+                                <option value="Todos" className="bg-slate-900 text-slate-100">Todos</option>
+                                <option value="PAGADO" className="bg-slate-900 text-slate-100">Pagados</option>
+                                <option value="PENDIENTE" className="bg-slate-900 text-slate-100">Pendientes</option>
+                                <option value="CANCELADO" className="bg-slate-900 text-slate-100">Cancelados</option>
+                            </select>
+                            <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
+                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400'}`}>Estado</div>
+                        </div>
                     </div>
 
                     {/* Barra de búsqueda */}
-                    <div className="relative w-full sm:w-96">
+                    <div className="relative w-full sm:w-96 group">
                         <input
                             type="text"
                             placeholder="Buscar por producto (con código)"
@@ -142,14 +166,14 @@ const HistorialVentas = () => {
                                 setSearchTerm(e.target.value);
                                 setVisibleCount(5); // Reset al buscar
                             }}
-                            className="w-full pl-6 pr-12 py-3 rounded-full text-sm font-medium text-slate-700 bg-white shadow-lg focus:ring-2 focus:ring-brand-red outline-none border-none placeholder:text-slate-400"
+                            className={`w-full pl-6 pr-12 py-2.5 rounded-full text-sm font-semibold bg-slate-800 border ${searchTerm ? 'border-brand-yellow text-brand-yellow focus:ring-brand-yellow' : 'border-slate-700 text-slate-100 placeholder:text-slate-400 hover:border-brand-yellow focus:ring-brand-yellow'} outline-none focus:ring-2 transition`}
                         />
-                        <Search size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={16} className={`absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${searchTerm ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                     </div>
 
                     {/* Resultados */}
-                    <div className="text-sm font-bold text-slate-800 shrink-0">
-                        Resultados: {ventasFiltradas.length}
+                    <div className="text-sm font-semibold text-slate-400 shrink-0">
+                        Mostrando <span className="text-brand-yellow font-black text-base">{Math.min(visibleCount, ventasFiltradas.length)}</span> de <span className="text-brand-yellow font-black text-base">{ventasFiltradas.length}</span> {ventasFiltradas.length === 1 ? 'resultado' : 'resultados'}
                     </div>
                 </div>
             </div>
@@ -170,8 +194,8 @@ const HistorialVentas = () => {
                             const itemComprado = item.producto || item.combo;
                             const isCombo = !!item.combo;
                             const imagen = isCombo 
-                                ? 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop'
-                                : (itemComprado?.imagen || itemComprado?.imagenes || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+                                ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
+                                : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
                             
                             const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
                             const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
@@ -255,7 +279,7 @@ const HistorialVentas = () => {
                             <div className="flex justify-center mt-8">
                                 <button 
                                     onClick={handleLoadMore}
-                                    className="bg-white border border-slate-300 text-slate-700 px-8 py-2 font-bold rounded text-sm hover:bg-slate-50 transition"
+                                    className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
                                 >
                                     Ver mas
                                 </button>
