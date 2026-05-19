@@ -21,10 +21,10 @@ async function run() {
   // 3. Crear los 5 niveles
   const niveles = [
     { nombre: 'Aprendiz', beneficio: 'Sin beneficios extra', montoMinimo: 0, porcentajeDescuento: 0 },
-    { nombre: 'Constructor', beneficio: '3% de descuento', montoMinimo: 30000, porcentajeDescuento: 3 },
-    { nombre: 'Arquitecto', beneficio: '5% de descuento', montoMinimo: 80000, porcentajeDescuento: 5 },
-    { nombre: 'Experto', beneficio: '8% de descuento + Regalo sorpresa', montoMinimo: 150000, porcentajeDescuento: 8 },
-    { nombre: 'Maestro', beneficio: '12% de descuento + Envío gratis', montoMinimo: 300000, porcentajeDescuento: 12 },
+    { nombre: 'Constructor', beneficio: '3% de descuento', montoMinimo: 50000, porcentajeDescuento: 3 },
+    { nombre: 'Arquitecto', beneficio: '5% de descuento', montoMinimo: 150000, porcentajeDescuento: 5 },
+    { nombre: 'Experto', beneficio: '8% de descuento', montoMinimo: 350000, porcentajeDescuento: 8 },
+    { nombre: 'Maestro', beneficio: '12% de descuento + Envío gratis', montoMinimo: 750000, porcentajeDescuento: 12 },
   ];
 
   for (const nivel of niveles) {
@@ -42,7 +42,31 @@ async function run() {
   
   await dataSource.query('UPDATE usuarios SET "idNivel" = $1', [defaultNivelId]);
 
-  console.log('5 Niveles de usuario creados y usuarios vinculados al nivel Aprendiz.');
+  // 5. Recalcular el nivel de todos los usuarios basándonos en sus compras reales
+  const usuarios = await dataSource.query('SELECT "idUsuario" FROM usuarios');
+  const dbNiveles = await dataSource.query('SELECT "idNivel", "montoMinimo" FROM niveles_usuario ORDER BY "montoMinimo" ASC');
+  
+  for (const user of usuarios) {
+    const idUsuario = user.idUsuario;
+    const gastoResult = await dataSource.query(
+      'SELECT SUM(total) as total FROM pedidos WHERE "idUsuario" = $1 AND estado = \'PAGADO\'',
+      [idUsuario]
+    );
+    const gastoTotal = parseFloat(gastoResult[0].total || 0);
+    
+    let nivelAlcanzado = dbNiveles[0];
+    for (const lvl of dbNiveles) {
+      if (gastoTotal >= parseFloat(lvl.montoMinimo)) {
+        nivelAlcanzado = lvl;
+      } else {
+        break;
+      }
+    }
+    
+    await dataSource.query('UPDATE usuarios SET "idNivel" = $1 WHERE "idUsuario" = $2', [nivelAlcanzado.idNivel, idUsuario]);
+  }
+
+  console.log('5 Niveles de usuario creados y niveles recalculados para todos los usuarios.');
   await dataSource.destroy();
 }
 run().catch(err => console.error(err));

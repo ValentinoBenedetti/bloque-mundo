@@ -9,6 +9,53 @@ import ConfirmModal from '../components/ConfirmModal';
 import logoMercadoPago from '../assets/logo mercado pago byn.png';
 import Swal from 'sweetalert2';
 
+const extraerCP = (direccion) => {
+    if (!direccion) return '0000';
+    const cpMatch = direccion.match(/(?:CP|C\.P\.)\s*([A-Z]?\d{4}[A-Z]{0,3})/i);
+    if (cpMatch) {
+        const digits = cpMatch[1].match(/(\d{4})/);
+        return digits ? digits[1] : cpMatch[1];
+    }
+    const endMatch = direccion.match(/,\s*([A-Z]?\d{4}[A-Z]{0,3})\s*$/i);
+    if (endMatch) {
+        const digits = endMatch[1].match(/(\d{4})/);
+        return digits ? digits[1] : endMatch[1];
+    }
+    const generalMatch = direccion.match(/\b\d{4}\b/);
+    if (generalMatch) {
+        return generalMatch[0];
+    }
+    return '0000';
+};
+
+const calcularCostoEnvio = (cp) => {
+    if (!cp || cp === '0000') return 1500;
+    const cpNumerico = cp.replace(/\D/g, '');
+    if (cpNumerico === '3260') {
+        return 0;
+    }
+    const cpInt = parseInt(cpNumerico, 10);
+    if (isNaN(cpInt) || cpNumerico.length !== 4) {
+        return 1500;
+    }
+    if (cpNumerico.startsWith('31') || cpNumerico.startsWith('32')) {
+        return 800; // Entre Ríos
+    }
+    if (cpNumerico.startsWith('3')) {
+        return 1200; // Litoral / Norte
+    }
+    if (cpNumerico.startsWith('1') || cpNumerico.startsWith('2')) {
+        return 1500; // Buenos Aires y CABA
+    }
+    if (cpNumerico.startsWith('4') || cpNumerico.startsWith('5')) {
+        return 2000; // Centro / Cuyo / NOA
+    }
+    if (cpNumerico.startsWith('8') || cpNumerico.startsWith('9')) {
+        return 2800; // Patagonia
+    }
+    return 1500;
+};
+
 const Cart = () => {
     const { cart, addToCart, removeFromCart, refreshCart, totalPrice, cartMetadata, setStockError } = useCart();
     const navigate = useNavigate();
@@ -132,14 +179,24 @@ const Cart = () => {
             setLoadingCheckout(true);
             setCouponError(''); // Limpiar errores
             
-            // Llama a la API para crear la preferencia pasándole el código del cupón (si lo hay)
-            const requestData = appliedCoupon ? { codigoCupon: appliedCoupon.codigo } : {};
+            // Llama a la API para crear la preferencia pasándole el código del cupón (si lo hay) y la dirección de envío
+            const requestData = {
+                ...(appliedCoupon ? { codigoCupon: appliedCoupon.codigo } : {}),
+                direccionEnvio: shippingAddress.trim()
+            };
             
             // Guardar el cupón en localStorage para poder aplicarlo a la vuelta de Mercado Pago
             if (appliedCoupon) {
                 localStorage.setItem('tempCuponCheckout', appliedCoupon.codigo);
             } else {
                 localStorage.removeItem('tempCuponCheckout');
+            }
+
+            // Guardar nivel actual para saber si sube de nivel al confirmar la compra
+            if (cartMetadata?.usuario?.nivel) {
+                localStorage.setItem('prevUserLevel', JSON.stringify(cartMetadata.usuario.nivel));
+            } else {
+                localStorage.removeItem('prevUserLevel');
             }
 
             const { init_point } = await crearPreferenciaRequest(requestData);
@@ -224,6 +281,12 @@ const Cart = () => {
     const porcentajeCupon = appliedCoupon ? Number(appliedCoupon.porcentaje) : 0;
     const descuentoCupon = baseParaCupon * (porcentajeCupon / 100);
     const totalFinal = baseParaCupon - descuentoCupon;
+
+    // Calcular costo de envío dinámico
+    const activeAddress = useSavedAddress ? userSavedAddress : shippingAddress;
+    const cpEnvio = extraerCP(activeAddress);
+    const costoEnvio = useSavedAddress ? calcularCostoEnvio(cpEnvio) : (shippingAddress.trim() ? calcularCostoEnvio(cpEnvio) : 0);
+    const totalFinalConEnvio = totalFinal + costoEnvio;
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50">
@@ -485,14 +548,18 @@ const Cart = () => {
 
                                     <div className="flex justify-between text-slate-500 font-bold text-sm">
                                         <span>Envío</span>
-                                        <span className="text-green-500">Gratis</span>
+                                        {costoEnvio === 0 ? (
+                                            <span className="text-green-500 font-black">Gratis</span>
+                                        ) : (
+                                            <span>{formatPrice(costoEnvio)}</span>
+                                        )}
                                     </div>
 
                                     <div className="h-1px bg-slate-100 my-4"></div>
                                     
                                     <div className="flex justify-between text-2xl font-black text-slate-900">
                                         <span>Total</span>
-                                        <span>{formatPrice(totalFinal)}</span>
+                                        <span>{formatPrice(totalFinalConEnvio)}</span>
                                     </div>
                                 </div>
 

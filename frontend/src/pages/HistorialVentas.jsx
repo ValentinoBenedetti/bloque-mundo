@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getHistorialVentasAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -21,35 +21,7 @@ const HistorialVentas = () => {
         const fetchVentas = async () => {
             try {
                 const data = await getHistorialVentasAdminRequest();
-
-                // Extraer todas las lineas de todos los pedidos
-                let allItems = [];
-                data.forEach(pedido => {
-                    if (pedido.lineas) {
-                        // Calculamos el subtotal real (sin descuentos) de todo el pedido
-                        const subtotalPedido = pedido.lineas.reduce((acc, l) => acc + (Number(l.precioHistorico) * Number(l.cantidad)), 0);
-                        
-                        // Factor de descuento (ej: 0.9 si hubo 10% de descuento)
-                        // Si el subtotal es 0, el factor es 1
-                        const discountFactor = subtotalPedido > 0 ? (Number(pedido.total) / subtotalPedido) : 1;
-
-                        pedido.lineas.forEach(linea => {
-                            // Calculamos el total de esta linea aplicado el descuento proporcional del pedido
-                            const totalConDescuentoProporcional = (Number(linea.precioHistorico) * Number(linea.cantidad)) * discountFactor;
-
-                            allItems.push({
-                                ...linea,
-                                totalRealLinea: totalConDescuentoProporcional, // Guardamos el total ya descontado
-                                fechaPedido: pedido.fecha,
-                                idPedido: pedido.idPedido,
-                                estado: pedido.estado, // Guardamos el estado (PENDIENTE, PAGADO, etc)
-                                usuario: pedido.usuario
-                            });
-                        });
-                    }
-                });
-
-                setVentas(allItems);
+                setVentas(data);
             } catch (error) {
                 console.error("Error al traer historial de ventas:", error);
             } finally {
@@ -61,23 +33,26 @@ const HistorialVentas = () => {
     }, []);
 
     // Filtro por búsqueda (nombre de producto o código)
-    const ventasFiltradas = ventas.filter(item => {
-        const itemComprado = item.producto || item.combo;
-        if (!itemComprado) return false;
+    const ventasFiltradas = ventas.filter(pedido => {
+        if (estadoFiltro !== 'Todos' && pedido.estado !== estadoFiltro) return false;
         
-        if (estadoFiltro !== 'Todos' && item.estado !== estadoFiltro) return false;
-        
-        const term = searchTerm.toLowerCase();
-        const matchesName = itemComprado.titulo && itemComprado.titulo.toLowerCase().includes(term);
-        const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
-        
-        return matchesName || matchesCode;
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return pedido.lineas?.some(linea => {
+                const itemComprado = linea.producto || linea.combo;
+                if (!itemComprado) return false;
+                const matchesName = itemComprado.titulo && itemComprado.titulo.toLowerCase().includes(term);
+                const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
+                return matchesName || matchesCode;
+            });
+        }
+        return true;
     });
 
     // Ordenamiento por fecha
     const ventasOrdenadas = [...ventasFiltradas].sort((a, b) => {
-        const dateA = new Date(a.fechaPedido).getTime();
-        const dateB = new Date(b.fechaPedido).getTime();
+        const dateA = new Date(a.fecha).getTime();
+        const dateB = new Date(b.fecha).getTime();
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
@@ -112,9 +87,9 @@ const HistorialVentas = () => {
                         Historial de ventas
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Historial de ventas
+                        <Link to="/historial-ventas" className="hover:text-brand-yellow transition-colors">Historial de ventas</Link>
                     </p>
                 </div>
             </section>
@@ -190,86 +165,108 @@ const HistorialVentas = () => {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {ventasPaginadas.map((item, index) => {
-                            const itemComprado = item.producto || item.combo;
-                            const isCombo = !!item.combo;
-                            const imagen = isCombo 
-                                ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
-                                : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
-                            
-                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
-                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
-
-                            const usuario = item.usuario;
-                            const totalVenta = item.totalRealLinea;
+                        {ventasPaginadas.map((pedido) => {
+                            const usuario = pedido.usuario || {};
 
                             return (
-                                <div key={index} className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
-                                    <div className="h-28 w-28 bg-slate-100 rounded-md overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                        <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
-                                    </div>
-
-                                    <div className="flex-1 space-y-4 w-full">
-                                        <div className="flex justify-between items-start w-full">
-                                            <h3 className="font-bold text-lg text-slate-800">
-                                                {itemComprado?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
-                                            </h3>
-                                            
-                                            {/* Box de Total a la derecha */}
-                                            <div className="flex border border-slate-200 rounded overflow-hidden shadow-sm shadow-slate-100 bg-white">
-                                                <div className="bg-slate-50 px-3 py-1 text-sm font-bold border-r border-slate-200 text-slate-700">
-                                                    Total
-                                                </div>
-                                                <div className="px-3 py-1 text-sm font-bold text-slate-800 min-w-[100px] text-right">
-                                                    {totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                                </div>
+                                <div key={pedido.idPedido} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition duration-300 flex flex-col gap-6">
+                                    {/* Info General del Pedido */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-100 pb-4">
+                                        {/* Info Pedido */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-slate-800">
+                                                <Hash size={20} className="text-brand-red animate-pulse" />
+                                                <h3 className="font-bold text-lg leading-none">Pedido #{pedido.idPedido}</h3>
                                             </div>
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1.5">
+                                                Fecha: {formatDate(pedido.fecha)}
+                                            </p>
+                                            <p className="text-sm font-black text-slate-800 mt-2">
+                                                Total Venta: ${(Number(pedido.total) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                            </p>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm font-medium text-slate-600">
-                                            <div className="flex flex-col gap-1 items-center">
-                                                <Hash size={20} className="text-slate-800" strokeWidth={2.5} />
-                                                <span className="text-xs">Codigo: {codigo}</span>
+                                        {/* Info Usuario */}
+                                        <div className="space-y-2 border-l border-slate-100 pl-4">
+                                            <div className="flex items-center gap-2 text-slate-700">
+                                                <User size={16} />
+                                                <span className="font-bold text-sm">
+                                                    {usuario.nombre || 'Usuario'} {usuario.apellido || ''}
+                                                </span>
                                             </div>
-                                            <div className="flex flex-col gap-1 items-center">
-                                                <Calendar size={20} className="text-slate-800" strokeWidth={2} />
-                                                <span className="text-xs">Fecha: {formatDate(item.fechaPedido)}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 items-center">
-                                                <User size={20} className="text-slate-800" strokeWidth={2} />
-                                                <span className="text-xs">ID usuario: {usuario?.idUsuario}</span>
-                                            </div>
+                                            <p className="text-xs font-semibold text-slate-500">ID Usuario: {usuario.idUsuario || 'N/A'}</p>
+                                            <p className="text-xs font-medium text-slate-500">{usuario.email || usuario.correo}</p>
+                                        </div>
 
-                                            {/* Badge de Estado */}
-                                            <div className="flex flex-col gap-1 items-center">
-                                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                    item.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                    item.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                        {/* Estado del pedido */}
+                                        <div className="space-y-2 border-l border-slate-100 pl-4 flex flex-col justify-start">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
+                                                Estado del Pedido
+                                            </div>
+                                            <div className="mt-1.5">
+                                                <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
+                                                    pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                    pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
                                                     'bg-slate-100 text-slate-700'
                                                 }`}>
-                                                    {item.estado}
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 uppercase font-bold">Estado</span>
-                                            </div>
-
-                                            {/* Botón ver reseña alineado al final */}
-                                            <div className="ml-auto mt-2 sm:mt-0">
-                                                {!isCombo && item.estado === 'PAGADO' && (
-                                                    <button 
-                                                        onClick={() => setModalData({
-                                                            isOpen: true,
-                                                            idUsuario: usuario?.idUsuario,
-                                                            idProducto: itemComprado?.idProducto,
-                                                            idPedido: item.idPedido,
-                                                            productoNombre: itemComprado?.titulo
-                                                        })}
-                                                        className="border border-slate-300 text-slate-600 font-bold py-1.5 px-4 rounded text-xs hover:bg-slate-50 transition shadow-sm"
-                                                    >
-                                                        Ver reseña
-                                                    </button>
-                                                )}
+                                                    {pedido.estado}
+                                                </span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Productos del pedido */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Productos Vendidos</h4>
+                                        {pedido.lineas?.map((linea, idx) => {
+                                            const itemComprado = linea.producto || linea.combo;
+                                            const isCombo = !!linea.combo;
+                                            const imagen = isCombo 
+                                                ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
+                                                : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+
+                                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
+                                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
+
+                                            return (
+                                                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-100 rounded-lg hover:bg-slate-100/50 transition">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-16 w-16 bg-white border border-slate-200 rounded overflow-hidden shrink-0 flex items-center justify-center p-1">
+                                                            <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="font-bold text-sm text-slate-800">
+                                                                {itemComprado?.titulo}
+                                                            </h5>
+                                                            <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                                                                Cantidad: <span className="font-bold text-slate-700">{linea.cantidad}</span> • Código: {codigo}
+                                                            </p>
+                                                            <p className="text-xs font-bold text-slate-600 mt-1">
+                                                                Precio Unitario: ${(Number(linea.precioHistorico)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Acciones individuales (Ver Reseña) */}
+                                                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
+                                                        {!isCombo && pedido.estado === 'PAGADO' && (
+                                                            <button
+                                                                onClick={() => setModalData({
+                                                                    isOpen: true,
+                                                                    idUsuario: usuario?.idUsuario,
+                                                                    idProducto: itemComprado?.idProducto,
+                                                                    idPedido: pedido.idPedido,
+                                                                    productoNombre: itemComprado?.titulo
+                                                                })}
+                                                                className="border-2 border-slate-850 text-slate-800 font-bold py-1.5 px-4 rounded text-xs hover:bg-slate-800 hover:text-white transition shadow-sm bg-white"
+                                                            >
+                                                                Ver reseña
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );

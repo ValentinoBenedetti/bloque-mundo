@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
 import { NivelUsuario } from './entities/nivel-usuario.entity';
+import { MailService } from '../pedidos/mail.service';
 
 @Injectable()
 export class UsuariosService {
@@ -11,6 +12,7 @@ export class UsuariosService {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(NivelUsuario)
     private readonly nivelRepository: Repository<NivelUsuario>,
+    private readonly mailService: MailService,
   ) { }
 
   // 🔥 NUEVO: Función para buscar por email (LA NECESITA EL AUTH SERVICE)
@@ -53,7 +55,11 @@ export class UsuariosService {
       nivel: primerNivel ? primerNivel : undefined
     });
 
-    return await this.usuarioRepository.save(nuevoUsuario);
+    const usuarioCreado = await this.usuarioRepository.save(nuevoUsuario);
+    this.mailService.enviarCorreoRegistro(usuarioCreado).catch(err => {
+      console.error('[Email Welcome Error]', err);
+    });
+    return usuarioCreado;
   }
 
   // Mantenemos los métodos estándar

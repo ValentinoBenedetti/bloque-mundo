@@ -136,24 +136,23 @@ const Home = () => {
                             className="novedades-swiper w-full !overflow-visible py-16"
                         >
                             {novedades.map((item) => (
-                                <SwiperSlide key={item.idProducto} className="!flex items-center justify-center">
+                                <SwiperSlide key={item.idProducto} className="!flex items-center justify-center py-4">
                                     <div 
                                         onClick={() => navigate(`/producto/${item.idProducto}`)}
-                                        className="swiper-card-content bg-white rounded-[50px] p-8 shadow-2xl cursor-pointer transition-all duration-700 mx-auto w-full max-w-[320px]"
+                                        className="bg-white border border-slate-200 rounded-md p-4 hover:shadow-xl transition-all duration-300 group cursor-pointer mx-auto w-full max-w-[340px]"
                                     >
-                                        <div className="aspect-square overflow-hidden rounded-[35px] bg-slate-50 flex items-center justify-center p-6 mb-6">
-                                            <img
-                                                src={item.imagenes?.[0] || item.imagen || '/placeholder.png'}
-                                                className="w-full h-full object-contain"
-                                                alt={item.titulo}
-                                            />
+                                        <div className="aspect-square overflow-hidden rounded-md flex items-center justify-center mb-4">
+                                            <div className="w-full h-full transform group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
+                                                <img
+                                                    src={item.imagenes?.[0] || item.imagen || '/placeholder.png'}
+                                                    className="w-full h-full object-contain mix-blend-multiply"
+                                                    alt={item.titulo}
+                                                />
+                                            </div>
                                         </div>
                                         
                                         <div className="text-center">
-                                            <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight truncate">
-                                                {item.titulo}
-                                            </h3>
-                                            <p className="text-2xl font-black text-brand-red mt-2 drop-shadow-sm">
+                                            <p className="text-2xl font-black text-brand-red drop-shadow-sm">
                                                 {formatPrice(item.precio)}
                                             </p>
                                         </div>
@@ -230,22 +229,7 @@ const Home = () => {
                     <>
                         {/* Destacados (Filtrados por esDestacado) */}
                         {destacados.length > 0 && (
-                            <div className={`mb-20 relative py-10 px-4 -mx-4 md:px-12 md:-mx-12 rounded-3xl transition-colors duration-700 ${hoveredImgUrl ? 'bg-slate-50' : 'bg-transparent'}`}>
-                                {/* Fondo dinámico cuando se hace hover */}
-                                <div 
-                                    className={`absolute inset-0 z-0 overflow-hidden rounded-3xl transition-opacity duration-700 pointer-events-none ${hoveredImgUrl ? 'opacity-100' : 'opacity-0'}`}
-                                >
-                                    {hoveredImgUrl && (
-                                        <img 
-                                            src={hoveredImgUrl} 
-                                            alt="" 
-                                            className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 transform scale-110" 
-                                        />
-                                    )}
-                                    {/* Overlay sutil para mejorar el contraste */}
-                                    <div className="absolute inset-0 bg-white/40"></div>
-                                </div>
-
+                            <div className="mb-20 py-10 px-4 -mx-4 md:px-12 md:-mx-12 rounded-3xl">
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
                                     <div className="relative md:px-12">
@@ -262,8 +246,6 @@ const Home = () => {
                                                 <ProductCard 
                                                     key={p.idProducto} 
                                                     product={p} 
-                                                    onMouseEnter={() => setHoveredDestacadoId(p.idProducto)}
-                                                    onMouseLeave={() => setHoveredDestacadoId(null)}
                                                 />
                                             ))}
                                         </div>

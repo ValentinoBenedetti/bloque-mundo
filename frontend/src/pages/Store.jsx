@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -152,9 +152,9 @@ const Store = () => {
                         Tienda
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Tienda
+                        <Link to="/tienda" className="hover:text-brand-yellow transition-colors">Tienda</Link>
                     </p>
                 </div>
             </section>

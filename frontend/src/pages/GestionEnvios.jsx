@@ -4,8 +4,14 @@ import { getEnviosRequest, updateEnvioEstadoRequest } from '../api/envios';
 import { confirmarPagoAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Package, MapPin, DollarSign, User, Search, ChevronDown, CheckCircle } from 'lucide-react';
+import { Package, MapPin, DollarSign, User, Search, ChevronDown, CheckCircle, Clock, Truck } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+const estadosOrden = {
+    'Pendiente': 0,
+    'En camino': 1,
+    'Entregado': 2
+};
 
 const GestionEnvios = () => {
     const [envios, setEnvios] = useState([]);
@@ -34,7 +40,24 @@ const GestionEnvios = () => {
         fetchEnvios();
     }, []);
 
-    const handleEstadoChange = async (idEnvio, nuevoEstado) => {
+    const handleEstadoChange = async (idEnvio, estadoActual, nuevoEstado) => {
+        if (nuevoEstado === estadoActual) return;
+
+        const result = await Swal.fire({
+            title: '¿Confirmar cambio de estado?',
+            text: `¿Estás seguro de que quieres cambiar el estado de "${estadoActual}" a "${nuevoEstado}"? Esta acción no se puede deshacer para volver al estado anterior.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, cambiar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
         try {
             setUpdatingId(idEnvio);
             await updateEnvioEstadoRequest(idEnvio, nuevoEstado);
@@ -44,12 +67,18 @@ const GestionEnvios = () => {
                 envio.idEnvio === idEnvio ? { ...envio, estado: nuevoEstado } : envio
             ));
 
-            Swal.fire({
+            // Mostrar un Toast no bloqueante para poder apreciar la animación de la barra
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true
+            });
+            Toast.fire({
                 icon: 'success',
                 title: 'Estado actualizado',
-                text: `El pedido pasó a estado: ${nuevoEstado}`,
-                timer: 2000,
-                showConfirmButton: false
+                text: `El pedido pasó a: ${nuevoEstado}`
             });
         } catch (error) {
             console.error("Error al actualizar estado:", error);
@@ -223,7 +252,7 @@ const GestionEnvios = () => {
                                                 <div className="flex items-start gap-2 text-slate-700">
                                                     <MapPin size={16} className="mt-0.5 shrink-0" />
                                                     <span className="font-bold text-sm leading-tight">
-                                                        {usuario.direccion || 'Dirección no registrada'} <br />
+                                                        {envio.direccion || usuario.direccion || 'Dirección no registrada'} <br />
                                                         <span className="text-xs font-medium text-slate-500">CP: {envio.codigoPostal}</span>
                                                     </span>
                                                 </div>
@@ -231,6 +260,53 @@ const GestionEnvios = () => {
                                                     <DollarSign size={16} />
                                                     <span className="font-bold text-sm">Costo Envío: ${(Number(envio.costo) || 0).toLocaleString()}</span>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Recorrido de Envío */}
+                                        <div className="mt-2 bg-slate-50 rounded-lg p-5 border border-slate-100 flex flex-col gap-3">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Recorrido del Envío</h4>
+                                            <div className="relative flex items-center justify-between w-full px-6 pb-2 select-none">
+                                                {/* Línea gris de fondo */}
+                                                <div className="absolute left-6 right-6 top-[20px] h-1 bg-slate-200 rounded-full z-0"></div>
+                                                
+                                                {/* Línea pintada de progreso */}
+                                                <div 
+                                                    className="absolute left-6 top-[20px] h-1 rounded-full z-0 transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
+                                                    style={{ 
+                                                        width: (estadosOrden[envio.estado] ?? 0) === 0 ? '0%' : (estadosOrden[envio.estado] ?? 0) === 1 ? '50%' : '100%' 
+                                                    }}
+                                                ></div>
+
+                                                {/* Pasos del Recorrido */}
+                                                {[
+                                                    { label: 'Pendiente', val: 0, color: 'bg-amber-500 text-white border-amber-500', icon: Clock },
+                                                    { label: 'En camino', val: 1, color: 'bg-blue-500 text-white border-blue-500', icon: Truck },
+                                                    { label: 'Entregado', val: 2, color: 'bg-emerald-500 text-white border-emerald-500', icon: CheckCircle }
+                                                ].map((step, idx) => {
+                                                    const isActive = (estadosOrden[envio.estado] ?? 0) >= step.val;
+                                                    const StepIcon = step.icon;
+                                                    return (
+                                                        <div key={idx} className="relative z-10 flex flex-col items-center">
+                                                            <div 
+                                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
+                                                                    isActive 
+                                                                        ? `${step.color} shadow-md scale-110` 
+                                                                        : 'bg-white text-slate-400 border-slate-200'
+                                                                }`}
+                                                            >
+                                                                <StepIcon size={18} />
+                                                            </div>
+                                                            <span 
+                                                                className={`text-[9px] font-black uppercase tracking-wider mt-2 transition-colors duration-500 ${
+                                                                    isActive ? 'text-slate-800' : 'text-slate-400'
+                                                                }`}
+                                                            >
+                                                                {step.label}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
@@ -288,13 +364,13 @@ const GestionEnvios = () => {
                                         <div className="flex items-center gap-2">
                                             <select
                                                 value={envio.estado}
-                                                onChange={(e) => handleEstadoChange(envio.idEnvio, e.target.value)}
-                                                disabled={updatingId === envio.idEnvio}
-                                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded px-3 py-2 outline-none focus:border-brand-red disabled:opacity-50"
+                                                onChange={(e) => handleEstadoChange(envio.idEnvio, envio.estado, e.target.value)}
+                                                disabled={updatingId === envio.idEnvio || envio.estado === 'Entregado'}
+                                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded px-3 py-2 outline-none focus:border-brand-red disabled:opacity-50 disabled:bg-slate-100 disabled:cursor-not-allowed"
                                             >
-                                                <option value="Pendiente">Pendiente</option>
-                                                <option value="En camino">En camino</option>
-                                                <option value="Entregado">Entregado</option>
+                                                <option value="Pendiente" disabled={estadosOrden['Pendiente'] < estadosOrden[envio.estado]}>Pendiente</option>
+                                                <option value="En camino" disabled={estadosOrden['En camino'] < estadosOrden[envio.estado]}>En camino</option>
+                                                <option value="Entregado" disabled={estadosOrden['Entregado'] < estadosOrden[envio.estado]}>Entregado</option>
                                             </select>
                                         </div>
                                     </div>

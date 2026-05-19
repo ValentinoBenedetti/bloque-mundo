@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Envio, EstadoEnvio } from './entities/envio.entity';
 import { Pedido } from '../pedidos/entities/pedido.entity';
+import { MailService } from '../pedidos/mail.service';
 
 @Injectable()
 export class EnviosService {
@@ -11,6 +12,7 @@ export class EnviosService {
         private envioRepository: Repository<Envio>,
         @InjectRepository(Pedido)
         private pedidoRepository: Repository<Pedido>,
+        private mailService: MailService,
     ) {}
 
     // Traer todos los envíos con info del pedido y usuario
@@ -23,10 +25,26 @@ export class EnviosService {
 
     // Cambiar estado del envío
     async updateEstado(idEnvio: number, estado: EstadoEnvio) {
-        const envio = await this.envioRepository.findOne({ where: { idEnvio } });
+        const envio = await this.envioRepository.findOne({
+            where: { idEnvio },
+            relations: ['pedido', 'pedido.usuario', 'pedido.lineas', 'pedido.lineas.producto', 'pedido.lineas.combo']
+        });
         if (!envio) throw new NotFoundException('Envío no encontrado');
-        envio.estado = estado;
-        return this.envioRepository.save(envio);
+
+        const estadoAnterior = envio.estado;
+        if (estadoAnterior !== estado) {
+            envio.estado = estado;
+            const updatedEnvio = await this.envioRepository.save(envio);
+
+            // Notificar por mail si pasa a "En camino" o "Entregado"
+            if (estado === 'En camino' || estado === 'Entregado') {
+                this.mailService.enviarCorreoEstadoEnvio(updatedEnvio, estadoAnterior).catch(err => {
+                    console.error('[Email Envio Error]', err);
+                });
+            }
+            return updatedEnvio;
+        }
+        return envio;
     }
 
     // Crear envío automáticamente cuando se hace un pedido

@@ -1,7 +1,7 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { FaWhatsapp, FaEnvelope, FaInstagram, FaFacebook } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Nosotros = () => {
     const navigate = useNavigate();
@@ -23,9 +23,9 @@ const Nosotros = () => {
                         Nosotros
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Nosotros
+                        <Link to="/nosotros" className="hover:text-brand-yellow transition-colors">Nosotros</Link>
                     </p>
                 </div>
             </section>

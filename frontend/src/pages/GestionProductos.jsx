@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Search, Plus, Trash2, Edit, CheckCircle, Circle, ChevronDown, ChevronUp, Layers, Package, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -253,9 +253,9 @@ const GestionProductos = () => {
                         Gestionar productos
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Gestionar productos
+                        <Link to="/gestion-productos" className="hover:text-brand-yellow transition-colors">Gestionar productos</Link>
                     </p>
                 </div>
             </section>

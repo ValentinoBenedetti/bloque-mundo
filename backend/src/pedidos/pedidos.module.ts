@@ -13,6 +13,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { EnviosModule } from '../envios/envios.module';
 import { CuponesModule } from '../cupones/cupones.module';
+import { MailService } from './mail.service';
 
 @Module({
   // Importamos todo lo necesario para procesar la compra
@@ -23,6 +24,6 @@ import { CuponesModule } from '../cupones/cupones.module';
     CuponesModule
   ],
   controllers: [PedidosController],
-  providers: [PedidosService],
+  providers: [PedidosService, MailService],
 })
 export class PedidosModule { }

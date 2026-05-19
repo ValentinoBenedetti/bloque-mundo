@@ -4,11 +4,12 @@ import { EnviosController } from './envios.controller';
 import { EnviosService } from './envios.service';
 import { Envio } from './entities/envio.entity';
 import { Pedido } from '../pedidos/entities/pedido.entity';
+import { MailService } from '../pedidos/mail.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Envio, Pedido])],
   controllers: [EnviosController],
-  providers: [EnviosService],
+  providers: [EnviosService, MailService],
   exports: [EnviosService]
 })
 export class EnviosModule {}

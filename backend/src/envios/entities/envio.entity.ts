@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { Pedido } from '../../pedidos/entities/pedido.entity';
 
-export type EstadoEnvio = 'Pendiente' | 'En tránsito' | 'Entregado';
+export type EstadoEnvio = 'Pendiente' | 'En camino' | 'Entregado';
 
 @Entity('correo_argentino')
 export class Envio {

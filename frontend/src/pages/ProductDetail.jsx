@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Heart, Calendar, Package, Hash, Star, StarHalf, Minus, Plus, Maximize, Shapes, Tag, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -203,11 +203,11 @@ const ProductDetail = () => {
 
             <div className="bg-brand-yellow w-full py-4 px-10 border-b border-yellow-500">
                 <div className="max-w-7xl mx-auto flex text-sm text-slate-800 gap-2 items-center">
-                    <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate('/')}>Inicio</span>
+                    <Link to="/" className="hover:text-brand-red transition">Inicio</Link>
                     <span className="font-bold text-xs">&gt;</span>
                     {product.tema?.nombre && (
                         <>
-                            <span className="cursor-pointer hover:text-brand-red transition" onClick={() => navigate(`/tienda?tema=${encodeURIComponent(product.tema.nombre)}`)}>{product.tema.nombre}</span>
+                            <Link to={`/tienda?tema=${encodeURIComponent(product.tema.nombre)}`} className="hover:text-brand-red transition">{product.tema.nombre}</Link>
                             <span className="font-bold text-xs">&gt;</span>
                         </>
                     )}
@@ -231,15 +231,17 @@ const ProductDetail = () => {
                                 ))}
                             </div>
                         )}
-                        <div className="flex-1 bg-slate-50 rounded-xl relative flex items-center justify-center p-12 group border border-slate-100 min-h-[500px]">
-                            <img src={mainImage} alt={titulo} className="w-full h-full object-contain mix-blend-multiply transform group-hover:scale-110 transition-transform duration-700" />
+                        <div className="flex-1 bg-slate-50 rounded-xl relative flex items-center justify-center p-12 group border border-slate-100 min-h-[500px] overflow-hidden">
+                            <div className="w-full h-full transform group-hover:scale-110 transition-transform duration-700 flex items-center justify-center">
+                                <img src={mainImage} alt={titulo} className="w-full h-full object-contain mix-blend-multiply" />
+                            </div>
                             <button 
                                 onClick={() => {
                                     const idx = allImages.indexOf(mainImage);
                                     setLightboxIndex(idx !== -1 ? idx : 0);
                                     setIsLightboxOpen(true);
                                 }}
-                                className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-brand-red"
+                                className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-brand-red z-10"
                             >
                                 <Maximize size={24} />
                             </button>

@@ -17,7 +17,7 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import HistorialVentas from './pages/HistorialVentas';
 import GestionProductos from './pages/GestionProductos';
 import AdminUsuarios from './pages/AdminUsuarios';
-import GestionPedidos from './pages/GestionPedidos';
+import GestionEnvios from './pages/GestionEnvios';
 
 const decodificarToken = (token) => {
   try {
@@ -82,7 +82,7 @@ function App() {
               <Route path="/admin/ventas" element={<ProtectedRoute requireAdmin={true}><HistorialVentas /></ProtectedRoute>} />
               <Route path="/admin/productos" element={<ProtectedRoute requireAdmin={true}><GestionProductos /></ProtectedRoute>} />
               <Route path="/admin/usuarios" element={<ProtectedRoute requireAdmin={true}><AdminUsuarios /></ProtectedRoute>} />
-              <Route path="/admin/pedidos" element={<ProtectedRoute requireAdmin={true}><GestionPedidos /></ProtectedRoute>} />
+              <Route path="/admin/pedidos" element={<ProtectedRoute requireAdmin={true}><GestionEnvios /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

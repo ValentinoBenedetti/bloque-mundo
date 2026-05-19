@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Pencil, Lock } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
@@ -127,9 +127,17 @@ const EditProfile = () => {
         }
     };
 
-    const nivelID = status?.nivelActual?.idNivel || originalData?.nivel?.idNivel || originalData?.idNivel || 1;
-    const nivelNumero = nivelID >= 6 ? nivelID - 5 : nivelID;
     const nivelNombre = status?.nivelActual?.nombre || originalData?.nivel?.nombre || "Aprendiz";
+    const nivelNumero = ((nombre) => {
+        switch (nombre?.toLowerCase()) {
+            case 'aprendiz': return 1;
+            case 'constructor': return 2;
+            case 'arquitecto': return 3;
+            case 'experto': return 4;
+            case 'maestro': return 5;
+            default: return 1;
+        }
+    })(nivelNombre);
     const nivelUsuario = `${nivelNumero} - ${nivelNombre}`;
 
     return (
@@ -148,9 +156,9 @@ const EditProfile = () => {
                         Editar mi perfil
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Editar mi perfil
+                        <Link to="/edit-profile" className="hover:text-brand-yellow transition-colors">Editar mi perfil</Link>
                     </p>
                 </div>
             </section>
@@ -256,6 +264,19 @@ const EditProfile = () => {
                                             className="w-full p-3 pr-10 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm text-slate-800 font-medium"
                                         />
                                         <Pencil size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Correo electrónico</label>
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={originalData?.email || ''}
+                                            readOnly
+                                            className="w-full p-3 pr-10 border-2 border-slate-100 bg-slate-50 rounded-lg outline-none text-sm text-slate-500 font-medium cursor-not-allowed"
+                                        />
+                                        <Lock size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
 

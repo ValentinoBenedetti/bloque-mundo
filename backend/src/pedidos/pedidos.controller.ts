@@ -21,7 +21,7 @@ export class PedidosController {
   @Post('crear-preferencia')
   async crearPreferencia(@Request() req: any, @Body() body: any) {
     const idUsuario = req.user.sub;
-    return this.pedidosService.crearPreferencia(idUsuario, body?.codigoCupon);
+    return this.pedidosService.crearPreferencia(idUsuario, body?.codigoCupon, body?.direccionEnvio);
   }
 
   // GET: http://localhost:3000/pedidos/usuario

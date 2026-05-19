@@ -10,7 +10,55 @@ import { Combo } from '../combos/entities/combo.entity';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { EnviosService } from '../envios/envios.service';
 import { CuponesService } from '../cupones/cupones.service';
+import { MailService } from './mail.service';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+
+export function extraerCP(direccion: string): string {
+  if (!direccion) return '0000';
+  const cpMatch = direccion.match(/(?:CP|C\.P\.)\s*([A-Z]?\d{4}[A-Z]{0,3})/i);
+  if (cpMatch) {
+    const digits = cpMatch[1].match(/(\d{4})/);
+    return digits ? digits[1] : cpMatch[1];
+  }
+  const endMatch = direccion.match(/,\s*([A-Z]?\d{4}[A-Z]{0,3})\s*$/i);
+  if (endMatch) {
+    const digits = endMatch[1].match(/(\d{4})/);
+    return digits ? digits[1] : endMatch[1];
+  }
+  const generalMatch = direccion.match(/\b\d{4}\b/);
+  if (generalMatch) {
+    return generalMatch[0];
+  }
+  return '0000';
+}
+
+export function calcularCostoEnvio(cp: string): number {
+  if (!cp || cp === '0000') return 1500;
+  const cpNumerico = cp.replace(/\D/g, '');
+  if (cpNumerico === '3260') {
+    return 0;
+  }
+  const cpInt = parseInt(cpNumerico, 10);
+  if (isNaN(cpInt) || cpNumerico.length !== 4) {
+    return 1500;
+  }
+  if (cpNumerico.startsWith('31') || cpNumerico.startsWith('32')) {
+    return 800; // Entre Ríos
+  }
+  if (cpNumerico.startsWith('3')) {
+    return 1200; // Litoral / Norte
+  }
+  if (cpNumerico.startsWith('1') || cpNumerico.startsWith('2')) {
+    return 1500; // Buenos Aires y CABA
+  }
+  if (cpNumerico.startsWith('4') || cpNumerico.startsWith('5')) {
+    return 2000; // Centro / Cuyo / NOA
+  }
+  if (cpNumerico.startsWith('8') || cpNumerico.startsWith('9')) {
+    return 2800; // Patagonia
+  }
+  return 1500;
+}
 
 @Injectable()
 export class PedidosService {
@@ -24,6 +72,7 @@ export class PedidosService {
     private usuariosService: UsuariosService,
     private enviosService: EnviosService,
     private cuponesService: CuponesService,
+    private mailService: MailService,
   ) {
     // Inicializar Mercado Pago con el Access Token
     const client = new MercadoPagoConfig({
@@ -34,7 +83,7 @@ export class PedidosService {
 
   private mercadoPagoClient: MercadoPagoConfig;
 
-  async crearPreferencia(idUsuario: string, codigoCupon?: string) {
+  async crearPreferencia(idUsuario: string, codigoCupon?: string, direccionEnvio?: string) {
     // 1. Buscamos el carrito del usuario
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
@@ -73,8 +122,16 @@ export class PedidosService {
       }
     }
 
+    // Calcular costo de envío según el CP
+    let costoEnvio = 0;
+    if (direccionEnvio) {
+      const cp = extraerCP(direccionEnvio);
+      costoEnvio = calcularCostoEnvio(cp);
+    }
+    const totalConEnvio = totalFinal + costoEnvio;
+
     // Redondeamos a 2 decimales para evitar errores de validación en Mercado Pago
-    const totalFinalRedondeado = Number(totalFinal.toFixed(2));
+    const totalFinalRedondeado = Number(totalConEnvio.toFixed(2));
 
     // 3. Mapeamos todo a un solo item consolidado para que el total coincida exactamente
     const items = [{
@@ -91,7 +148,7 @@ export class PedidosService {
     // --- CAMBIO PARA EVITAR ERROR FATAL ---
     // 1. Creamos la orden en estado PENDIENTE antes de ir a MP
     // Esto hace que aparezca en la DB, pero no resta stock ni vacía el carrito
-    const pedidoPendiente = await this.crearPedidoPendiente(idUsuario, codigoCupon);
+    const pedidoPendiente = await this.crearPedidoPendiente(idUsuario, codigoCupon, direccionEnvio);
 
     // Usamos el link de ngrok como puente (bridge) para que Mercado Pago acepte el auto_return (que requiere HTTPS)
     const bridgeUrl = (process.env.WEBHOOK_URL || '').replace('/webhook', '/retorno');
@@ -127,7 +184,7 @@ export class PedidosService {
     }
   }
 
-  async crearPedidoPendiente(idUsuario: string, codigoCupon?: string) {
+  async crearPedidoPendiente(idUsuario: string, codigoCupon?: string, direccionEnvio?: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
       relations: ['lineas', 'lineas.producto', 'lineas.combo', 'usuario', 'usuario.nivel'],
@@ -270,13 +327,22 @@ export class PedidosService {
       } catch (e) {}
     }
 
-    totalFinal = Number(totalFinal.toFixed(2));
+    // Calcular costo de envío según el CP
+    let costoEnvio = 0;
+    if (direccionEnvio) {
+      const cp = extraerCP(direccionEnvio);
+      costoEnvio = calcularCostoEnvio(cp);
+    }
+    const totalConEnvio = totalFinal + costoEnvio;
+
+    const totalFinalRedondeado = Number(totalConEnvio.toFixed(2));
 
     const nuevoPedido = this.pedidoRepository.create({
       usuario: { idUsuario } as any,
-      total: totalFinal,
+      total: totalFinalRedondeado,
       estado: 'PENDIENTE',
       cupon: cuponEntidad,
+      direccionEnvio: direccionEnvio || undefined,
     });
 
     const pedidoGuardado = await this.pedidoRepository.save(nuevoPedido);
@@ -357,7 +423,19 @@ export class PedidosService {
 
     // 4. Recalcular nivel y crear envio
     await this.usuariosService.recalcularNivel(pedido.usuario.idUsuario);
-    await this.enviosService.crearEnvio(pedido.idPedido, '0000', 500, pedido.usuario.direccion);
+    
+    const dir = pedido.direccionEnvio || pedido.usuario.direccion || '';
+    const cp = extraerCP(dir);
+    const costoEnvio = calcularCostoEnvio(cp);
+    
+    await this.enviosService.crearEnvio(pedido.idPedido, cp, costoEnvio, dir);
+
+    // 5. Enviar email de confirmación al usuario
+    try {
+      await this.mailService.enviarCorreoConfirmacion(pedido);
+    } catch (e) {
+      console.error('Error al enviar mail de confirmacion:', e);
+    }
 
     return pedido;
   }

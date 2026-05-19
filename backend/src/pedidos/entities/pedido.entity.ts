@@ -18,6 +18,9 @@ export class Pedido {
     @Column({ type: 'varchar', length: 50, default: 'PENDIENTE' }) // PENDIENTE, PAGADO, CANCELADO
     estado: string;
 
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    direccionEnvio?: string;
+
     // Un usuario puede tener muchos pedidos a lo largo del tiempo
     @ManyToOne(() => Usuario)
     @JoinColumn({ name: 'idUsuario' })

@@ -78,7 +78,9 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
             </div>
 
             <div className="h-64 bg-slate-100 flex items-center justify-center relative overflow-hidden">
-                <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                <div className="h-full w-full transform group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
+                    <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply" />
+                </div>
                 
                 {product.estado === 'NoPublicado' && (
                     <div className="absolute inset-0 z-30 bg-white/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">

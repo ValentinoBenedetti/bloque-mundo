@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ChevronDown, Search, Mail, ShoppingBag, Users, X } from 'lucide-react';
@@ -207,9 +207,9 @@ const AdminUsuarios = () => {
                         Administrar usuarios
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Administrar usuarios
+                        <Link to="/admin-usuarios" className="hover:text-brand-yellow transition-colors">Administrar usuarios</Link>
                     </p>
                 </div>
             </section>
@@ -314,7 +314,16 @@ const AdminUsuarios = () => {
                                     </p>
                                     {u.nivel && (
                                         <span className="inline-block text-[10px] font-black uppercase tracking-wider bg-brand-yellow/30 text-slate-700 px-2 py-0.5 rounded mt-1">
-                                            {u.nivel.idNivel >= 6 ? u.nivel.idNivel - 5 : u.nivel.idNivel} - {u.nivel.nombre}
+                                            {((nombre) => {
+                                                switch (nombre?.toLowerCase()) {
+                                                    case 'aprendiz': return 1;
+                                                    case 'constructor': return 2;
+                                                    case 'arquitecto': return 3;
+                                                    case 'experto': return 4;
+                                                    case 'maestro': return 5;
+                                                    default: return 1;
+                                                }
+                                            })(u.nivel.nombre)} - {u.nivel.nombre}
                                         </span>
                                     )}
                                 </div>

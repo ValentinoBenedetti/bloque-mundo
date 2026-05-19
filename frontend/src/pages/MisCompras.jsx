@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { getPedidosRequest, confirmarCompraRequest, cancelarPedidoRequest } from '../api/pedidos';
+import { getUserStatusRequest } from '../api/usuarios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ReviewModal from '../components/ReviewModal';
 import TrackingModal from '../components/TrackingModal';
 import SuccessModal from '../components/SuccessModal';
+import CheckoutSuccessModal from '../components/CheckoutSuccessModal';
+import LevelUpModal from '../components/LevelUpModal';
+import Swal from 'sweetalert2';
 import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye } from 'lucide-react';
+
+const decodificarToken = (token) => {
+    try {
+        if (!token) return null;
+        if (typeof token === 'object') return token;
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+};
 
 const MisCompras = () => {
     const [compras, setCompras] = useState([]);
@@ -24,6 +43,15 @@ const MisCompras = () => {
     // Estado para el modal de éxito
     const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
+    // Estados para el modal de éxito de la compra (Lego style)
+    const [isCheckoutSuccessOpen, setIsCheckoutSuccessOpen] = useState(false);
+    const [checkoutSuccessPedido, setCheckoutSuccessPedido] = useState(null);
+    const [checkoutSuccessPaymentId, setCheckoutSuccessPaymentId] = useState('N/A');
+
+    // Estados para el modal de nivel ascendido
+    const [isLevelUpOpen, setIsLevelUpOpen] = useState(false);
+    const [levelUpInfo, setLevelUpInfo] = useState(null);
+
     // Estados para el seguimiento
     const [isTrackingOpen, setIsTrackingOpen] = useState(false);
     const [trackingPedido, setTrackingPedido] = useState(null);
@@ -36,66 +64,104 @@ const MisCompras = () => {
             try {
                 // Verificar si venimos de Mercado Pago
                 const queryParams = new URLSearchParams(location.search);
-                if (queryParams.get('status') === 'success') {
+                const statusParam = queryParams.get('status');
+                const idPedidoStr = queryParams.get('idPedido');
+                const idPedido = idPedidoStr ? parseInt(idPedidoStr, 10) : null;
+                
+                let pedidoConfirmado = null;
+
+                if (statusParam === 'success') {
                     // Confirmar la compra para que vacíe el carrito y cree el pedido
                     try {
                         const savedCupon = localStorage.getItem('tempCuponCheckout');
                         const data = savedCupon ? { codigoCupon: savedCupon } : {};
-                        await confirmarCompraRequest(data);
-                        
-                        // Limpiar la URL para que no lo haga de nuevo si refresca
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        localStorage.removeItem('tempCuponCheckout');
+                        pedidoConfirmado = await confirmarCompraRequest(data);
                     } catch (e) {
-                        // Puede fallar si el carrito ya está vacío (ej. refrescó)
-                        console.log('Compra ya procesada o error:', e);
+                        // Puede fallar si el webhook ganó la carrera (lo cual es normal)
+                        console.log('Compra ya procesada o error en confirmación:', e);
                     }
-                } else if (queryParams.get('status') === 'failure') {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    localStorage.removeItem('tempCuponCheckout');
+                } else if (statusParam === 'failure') {
                     // Cancelar el pedido si el pago falló o el usuario volvió atrás
-                    const idPedido = queryParams.get('idPedido');
                     if (idPedido) {
                         try {
                             await cancelarPedidoRequest(idPedido);
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                            localStorage.removeItem('tempCuponCheckout');
                         } catch (e) {
                             console.log('Error al cancelar pedido:', e);
                         }
                     }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Compra cancelada',
+                        text: 'El proceso de pago no fue completado o fue cancelado. Si querés, podés intentarlo de nuevo desde tu carrito.',
+                        confirmButtonColor: '#E11D48',
+                        confirmButtonText: 'Entendido'
+                    });
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    localStorage.removeItem('tempCuponCheckout');
                 }
 
                 const data = await getPedidosRequest();
 
-                // Extraer todas las lineas de todos los pedidos y agregarles la fecha del pedido padre
-                let allItems = [];
-                data.forEach(pedido => {
-                    if (pedido.lineas) {
-                        // Calculamos el total de la suma de subtotales para saber el factor de descuento
-                        const sumaSubtotales = pedido.lineas.reduce((acc, linea) => 
-                            acc + (Number(linea.precioHistorico) * Number(linea.cantidad)), 0
-                        );
-                        
-                        // Factor de descuento real (Total Pagado / Suma de Subtotales)
-                        const factorDescuento = sumaSubtotales > 0 ? (Number(pedido.total) / sumaSubtotales) : 1;
-
-                        pedido.lineas.forEach(linea => {
-                            // Aplicamos el descuento proporcional a cada linea
-                            const precioConDescuento = Number(linea.precioHistorico) * factorDescuento;
-                            
-                            allItems.push({
-                                ...linea,
-                                precioRealUnitario: precioConDescuento, // Precio unitario con descuento
-                                totalRealLinea: precioConDescuento * Number(linea.cantidad), // Total linea con descuento
-                                fechaPedido: pedido.fecha,
-                                idPedido: pedido.idPedido,
-                                estado: pedido.estado,
-                                pedidoOriginal: pedido // Guardamos todo el pedido para el tracking
-                            });
-                        });
+                // Si fue un éxito, y no obtuvimos el pedidoConfirmado de la llamada directa (ej: webhook ya lo procesó),
+                // lo buscamos entre los pedidos recién cargados utilizando el idPedido.
+                if (statusParam === 'success') {
+                    if (!pedidoConfirmado && idPedido && data.length > 0) {
+                        pedidoConfirmado = data.find(p => p.idPedido === idPedido);
                     }
-                });
 
-                setCompras(allItems);
+                    // Configurar y abrir el modal de éxito de la compra
+                    const mpPaymentId = queryParams.get('payment_id') || 'N/A';
+                    setCheckoutSuccessPaymentId(mpPaymentId);
+                    setCheckoutSuccessPedido(pedidoConfirmado || { idPedido: idPedido || 'N/A', total: 0 });
+                    setIsCheckoutSuccessOpen(true);
+
+                    // Verificar si hubo ascenso de nivel
+                    const savedUser = localStorage.getItem('usuarioBloqueMundo');
+                    const token = savedUser ? JSON.parse(savedUser) : null;
+                    const userData = decodificarToken(token);
+                    const userId = userData?.sub || userData?.idUsuario;
+
+                    if (userId) {
+                        try {
+                            const userStatus = await getUserStatusRequest(userId);
+                            const prevLevelStr = localStorage.getItem('prevUserLevel');
+                            if (prevLevelStr && userStatus?.nivelActual) {
+                                const prevLevel = JSON.parse(prevLevelStr);
+                                const newLevel = userStatus.nivelActual;
+
+                                const getLevelNumber = (nombre) => {
+                                    switch (nombre?.toLowerCase()) {
+                                        case 'aprendiz': return 1;
+                                        case 'constructor': return 2;
+                                        case 'arquitecto': return 3;
+                                        case 'experto': return 4;
+                                        case 'maestro': return 5;
+                                        default: return 1;
+                                    }
+                                };
+
+                                const prevNum = getLevelNumber(prevLevel.nombre);
+                                const newNum = getLevelNumber(newLevel.nombre);
+
+                                if (newNum > prevNum) {
+                                    setLevelUpInfo({
+                                        show: true,
+                                        prevLevel: prevLevel,
+                                        newLevel: newLevel
+                                    });
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error al verificar nivel en checkout success:", err);
+                        } finally {
+                            localStorage.removeItem('prevUserLevel');
+                        }
+                    }
+                }
+
+                setCompras(data);
             } catch (error) {
                 console.error("Error al traer compras:", error);
             } finally {
@@ -106,23 +172,27 @@ const MisCompras = () => {
         fetchHistorial();
     }, []);
 
-    const comprasFiltradas = compras.filter(item => {
-        const itemComprado = item.producto || item.combo;
-        if (!itemComprado) return false;
+    const comprasFiltradas = compras.filter(pedido => {
+        if (estadoFiltro !== 'Todos' && pedido.estado !== estadoFiltro) return false;
 
-        if (estadoFiltro !== 'Todos' && item.estado !== estadoFiltro) return false;
-
-        return itemComprado.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return pedido.lineas?.some(linea => {
+                const item = linea.producto || linea.combo;
+                return item?.titulo?.toLowerCase().includes(term);
+            });
+        }
+        return true;
     });
 
     const comprasOrdenadas = [...comprasFiltradas].sort((a, b) => {
         if (sortBy === 'fecha') {
-            const dateA = new Date(a.fechaPedido).getTime();
-            const dateB = new Date(b.fechaPedido).getTime();
+            const dateA = new Date(a.fecha).getTime();
+            const dateB = new Date(b.fecha).getTime();
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
         } else {
-            const totalA = Number(a.totalRealLinea);
-            const totalB = Number(b.totalRealLinea);
+            const totalA = Number(a.total);
+            const totalB = Number(b.total);
             return sortOrder === 'desc' ? totalB - totalA : totalA - totalB;
         }
     });
@@ -153,9 +223,9 @@ const MisCompras = () => {
                         Mis compras
                     </h1>
                     <p className="text-sm font-medium text-slate-300 mt-2">
-                        Inicio{' '}
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
                         <span className="text-slate-400 mx-1">›</span>
-                        Mis compras
+                        <Link to="/mis-compras" className="hover:text-brand-yellow transition-colors">Mis compras</Link>
                     </p>
                 </div>
             </section>
@@ -242,94 +312,123 @@ const MisCompras = () => {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {visibleCompras.map((item, index) => {
-                            const itemComprado = item.producto || item.combo;
-                            const isCombo = !!item.combo;
-                            const imagen = isCombo 
-                                ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
-                                : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
-                            
-                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
-                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
-
+                        {visibleCompras.map((pedido) => {
                             return (
-                                <div key={index} className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
-                                    <div className="h-28 w-28 bg-slate-100 rounded-md overflow-hidden shrink-0 flex items-center justify-center p-2">
-                                        <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
-                                    </div>
+                                <div key={pedido.idPedido} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition duration-300 flex flex-col gap-6">
+                                    {/* Cabecera del Pedido */}
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 text-slate-800">
+                                                <Truck size={20} className="text-brand-red" />
+                                                <h3 className="font-bold text-lg leading-none">Pedido #{pedido.idPedido}</h3>
+                                            </div>
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1.5">
+                                                Fecha de compra: {formatDate(pedido.fecha)}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex-1 space-y-4">
-                                        <h3 className="font-bold text-lg text-slate-800">
-                                            {itemComprado?.titulo} <span className="text-slate-500 text-sm font-medium">x{item.cantidad}</span>
-                                        </h3>
-                                        <div className="flex items-center gap-8 text-sm font-medium text-slate-600">
-                                            <div className="flex flex-col gap-1">
-                                                <Hash size={18} className="text-slate-800" />
-                                                <span>Codigo: {codigo}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <Calendar size={18} className="text-slate-800" />
-                                                <span>Fecha: {formatDate(item.fechaPedido)}</span>
-                                            </div>
-                                            <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                                                item.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                item.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
-                                                item.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                        <div className="flex items-center gap-6">
+                                            {/* Badge de Estado */}
+                                            <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide ${
+                                                pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
                                                 'bg-slate-100 text-slate-700'
                                             }`}>
-                                                {item.estado}
+                                                {pedido.estado}
+                                            </span>
+
+                                            {/* Total Pagado */}
+                                            <div className="flex flex-col gap-0 text-right">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Total Pagado</span>
+                                                <span className="text-xl font-black text-slate-900 leading-none mt-1">
+                                                    ${(Number(pedido.total)).toLocaleString()}
+                                                </span>
                                             </div>
-                                            {item.estado === 'PAGADO' && (
-                                                <div className="flex flex-col gap-0 ml-4">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Pagaste</span>
-                                                    <span className="text-lg font-black text-slate-900 leading-none mt-1">
-                                                        ${(Number(item.totalRealLinea)).toLocaleString()}
-                                                    </span>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-3 w-full sm:w-48 mt-4 sm:mt-0">
-                                        {item.estado === 'PAGADO' && (
+                                    {/* Cuerpo: Listado de Productos */}
+                                    <div className="space-y-4">
+                                        {pedido.lineas?.map((linea, idx) => {
+                                            const itemComprado = linea.producto || linea.combo;
+                                            const isCombo = !!linea.combo;
+                                            const imagen = isCombo 
+                                                ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
+                                                : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+
+                                            const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
+                                            const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
+
+                                            return (
+                                                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-100 rounded-lg hover:bg-slate-100/50 transition">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-16 w-16 bg-white border border-slate-200 rounded overflow-hidden shrink-0 flex items-center justify-center p-1">
+                                                            <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-sm text-slate-800">
+                                                                {itemComprado?.titulo}
+                                                            </h4>
+                                                            <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                                                                Cantidad: <span className="font-bold text-slate-700">{linea.cantidad}</span> • Código: {codigo}
+                                                            </p>
+                                                            <p className="text-xs font-bold text-slate-600 mt-1">
+                                                                Precio: ${(Number(linea.precioHistorico)).toLocaleString()} c/u
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Acciones individuales por producto */}
+                                                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                                        <button
+                                                            onClick={() => navigate(isCombo ? `/tienda` : `/producto/${idStr}`)}
+                                                            className="flex-1 sm:flex-none border-2 border-slate-800 text-slate-800 font-bold py-1.5 px-4 rounded text-xs hover:bg-slate-800 hover:text-white transition shadow-sm bg-white"
+                                                        >
+                                                            Ver producto
+                                                        </button>
+                                                        {!isCombo && pedido.estado === 'PAGADO' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedPurchase({
+                                                                        producto: itemComprado,
+                                                                        idPedido: pedido.idPedido
+                                                                    });
+                                                                    setIsModalOpen(true);
+                                                                }}
+                                                                disabled={pedido.envio?.estado !== 'Entregado'}
+                                                                className={`flex-1 sm:flex-none font-bold py-1.5 px-4 rounded text-xs transition shadow-sm flex items-center justify-center gap-1.5 ${
+                                                                    pedido.envio?.estado === 'Entregado'
+                                                                    ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white cursor-pointer'
+                                                                    : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                                                                }`}
+                                                                title={pedido.envio?.estado !== 'Entregado' ? 'Podrás opinar cuando tu pedido sea entregado' : ''}
+                                                            >
+                                                                <MessageSquare size={14} />
+                                                                Opinar
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Pie del pedido: Botón de Seguir Envío (sólo si está PAGADO) */}
+                                    {pedido.estado === 'PAGADO' && (
+                                        <div className="flex justify-end border-t border-slate-100 pt-4">
                                             <button
                                                 onClick={() => {
-                                                    setTrackingPedido(item.pedidoOriginal);
+                                                    setTrackingPedido(pedido);
                                                     setIsTrackingOpen(true);
                                                 }}
-                                                className="w-full flex items-center justify-center gap-2 bg-brand-yellow text-slate-900 font-bold py-2 rounded text-sm hover:bg-yellow-400 transition shadow-sm"
+                                                className="flex items-center justify-center gap-2 bg-brand-yellow text-slate-900 font-bold py-2 px-6 rounded-lg text-sm hover:bg-yellow-400 transition shadow-sm"
                                             >
                                                 <Truck size={16} />
                                                 Seguir envío
                                             </button>
-                                        )}
-                                        <button
-                                            onClick={() => navigate(`/producto/${idStr}`)}
-                                            className={`w-full flex items-center justify-center gap-2 font-bold py-2 rounded text-sm transition shadow-sm ${
-                                                item.estado === 'PAGADO' 
-                                                ? 'bg-white border-2 border-slate-800 text-slate-800 hover:bg-slate-800 hover:text-white' 
-                                                : 'bg-slate-800 border-2 border-slate-800 text-white hover:bg-white hover:text-slate-800'
-                                            }`}
-                                        >
-                                            {item.estado === 'PAGADO' ? (
-                                                <><Eye size={16} /> Ver producto</>
-                                            ) : (
-                                                <><ShoppingBag size={16} /> Comprar</>
-                                            )}
-                                        </button>
-                                        {!isCombo && item.estado === 'PAGADO' && (
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedPurchase(item);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 font-bold py-2 rounded text-sm hover:bg-blue-600 hover:text-white transition shadow-sm"
-                                            >
-                                                <MessageSquare size={16} />
-                                                Opinar
-                                            </button>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -371,6 +470,28 @@ const MisCompras = () => {
                 title="¡Reseña enviada!"
                 message="Tu opinión es muy importante para nosotros y para toda la comunidad de Bloque Mundo."
                 buttonText="Genial"
+            />
+
+            <CheckoutSuccessModal 
+                isOpen={isCheckoutSuccessOpen}
+                onClose={() => {
+                    setIsCheckoutSuccessOpen(false);
+                    if (levelUpInfo && levelUpInfo.show) {
+                        setIsLevelUpOpen(true);
+                    }
+                }}
+                pedido={checkoutSuccessPedido}
+                paymentId={checkoutSuccessPaymentId}
+            />
+
+            <LevelUpModal
+                isOpen={isLevelUpOpen}
+                onClose={() => {
+                    setIsLevelUpOpen(false);
+                    setLevelUpInfo(null);
+                }}
+                prevLevel={levelUpInfo?.prevLevel}
+                newLevel={levelUpInfo?.newLevel}
             />
 
             <TrackingModal 

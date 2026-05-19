@@ -95,7 +95,16 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                                     <div className="flex flex-col">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">Nivel Actual</span>
                                         <span className="text-sm font-black text-slate-800 uppercase italic leading-none mt-1">
-                                            {status.nivelActual?.idNivel >= 6 ? status.nivelActual.idNivel - 5 : status.nivelActual?.idNivel} - {status.nivelActual?.nombre}
+                                            {((nombre) => {
+                                                switch (nombre?.toLowerCase()) {
+                                                    case 'aprendiz': return 1;
+                                                    case 'constructor': return 2;
+                                                    case 'arquitecto': return 3;
+                                                    case 'experto': return 4;
+                                                    case 'maestro': return 5;
+                                                    default: return 1;
+                                                }
+                                            })(status.nivelActual?.nombre)} - {status.nivelActual?.nombre}
                                         </span>
                                     </div>
                                 </div>
@@ -105,7 +114,12 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
                                         <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
                                             <div 
                                                 className="h-full bg-brand-red transition-all duration-1000" 
-                                                style={{ width: `${Math.min(100, (status.gastoTotal / status.proximoNivel.montoMinimo) * 100)}%` }}
+                                                style={{
+                                                    width: `${Math.min(100, Math.max(0, 
+                                                        ((status.gastoTotal - parseFloat(status.nivelActual?.montoMinimo || 0)) / 
+                                                        (parseFloat(status.proximoNivel.montoMinimo) - parseFloat(status.nivelActual?.montoMinimo || 0))) * 100
+                                                    ))}%`
+                                                }}
                                             ></div>
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-500">
