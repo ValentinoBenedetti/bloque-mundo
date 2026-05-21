@@ -4,7 +4,7 @@ import { getEnviosRequest, updateEnvioEstadoRequest } from '../api/envios';
 import { confirmarPagoAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Package, MapPin, DollarSign, User, Search, ChevronDown, CheckCircle, Clock, Truck } from 'lucide-react';
+import { Package, MapPin, DollarSign, User, Search, ChevronDown, CheckCircle, Clock, Truck, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const estadosOrden = {
@@ -110,6 +110,13 @@ const GestionEnvios = () => {
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
+    const hasActiveFilters = searchTerm !== '' || estadoEnvioFiltro !== 'Todos' || sortOrder !== 'desc';
+    const clearFilters = () => {
+        setSearchTerm('');
+        setEstadoEnvioFiltro('Todos');
+        setSortOrder('desc');
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return 'Sin fecha';
         const date = new Date(dateString);
@@ -151,39 +158,47 @@ const GestionEnvios = () => {
                 </div>
             </section>
 
-            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
-                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="flex gap-4 w-full sm:w-auto">
-                        <div className="relative w-48 shrink-0 group">
+            <div className="bg-slate-900 w-full py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap justify-between items-center gap-6">
+                    <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
+                        <button
+                            onClick={clearFilters}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
+                                hasActiveFilters 
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                            }`}
+                        >
+                            <X size={16} /> Limpiar Filtros
+                        </button>
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select
                                 value={sortOrder}
                                 onChange={(e) => setSortOrder(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="desc" className="bg-slate-900 text-slate-100">Más recientes primero</option>
-                                <option value="asc" className="bg-slate-900 text-slate-100">Más antiguos primero</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">Orden por fecha: Más recientes</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Orden por fecha: Más antiguos</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>Orden por fecha</div>
                         </div>
 
-                        <div className="relative w-48 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select
                                 value={estadoEnvioFiltro}
                                 onChange={(e) => setEstadoEnvioFiltro(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${estadoEnvioFiltro !== "Todos" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="Todos" className="bg-slate-900 text-slate-100">Todos</option>
-                                <option value="Pendiente" className="bg-slate-900 text-slate-100">Pendiente</option>
-                                <option value="En camino" className="bg-slate-900 text-slate-100">En camino</option>
-                                <option value="Entregado" className="bg-slate-900 text-slate-100">Entregado</option>
+                                <option value="Todos" className="bg-slate-900 text-slate-100">Estado de envío: Todos</option>
+                                <option value="Pendiente" className="bg-slate-900 text-slate-100">Estado de envío: Pendientes</option>
+                                <option value="En camino" className="bg-slate-900 text-slate-100">Estado de envío: En camino</option>
+                                <option value="Entregado" className="bg-slate-900 text-slate-100">Estado de envío: Entregados</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoEnvioFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${estadoEnvioFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400'}`}>Estado de envío</div>
                         </div>
                     </div>
 
-                    <div className="relative w-full sm:w-96 group">
+                    <div className="relative flex-1 min-w-[250px] max-w-md group">
                         <input
                             type="text"
                             placeholder="Buscar por ID Pedido, ID Envío o Nombre"
@@ -267,16 +282,19 @@ const GestionEnvios = () => {
                                         <div className="mt-2 bg-slate-50 rounded-lg p-5 border border-slate-100 flex flex-col gap-3">
                                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Recorrido del Envío</h4>
                                             <div className="relative flex items-center justify-between w-full px-6 pb-2 select-none">
-                                                {/* Línea gris de fondo */}
-                                                <div className="absolute left-6 right-6 top-[20px] h-1 bg-slate-200 rounded-full z-0"></div>
-                                                
-                                                {/* Línea pintada de progreso */}
-                                                <div 
-                                                    className="absolute left-6 top-[20px] h-1 rounded-full z-0 transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
-                                                    style={{ 
-                                                        width: (estadosOrden[envio.estado] ?? 0) === 0 ? '0%' : (estadosOrden[envio.estado] ?? 0) === 1 ? '50%' : '100%' 
-                                                    }}
-                                                ></div>
+                                                {/* Contenedor de las líneas de progreso */}
+                                                <div className="absolute left-6 right-6 top-[20px] h-1 z-0">
+                                                    {/* Línea gris de fondo */}
+                                                    <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
+                                                    
+                                                    {/* Línea pintada de progreso */}
+                                                    <div 
+                                                        className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
+                                                        style={{ 
+                                                            width: (estadosOrden[envio.estado] ?? 0) === 0 ? '0%' : (estadosOrden[envio.estado] ?? 0) === 1 ? '50%' : '100%' 
+                                                        }}
+                                                    ></div>
+                                                </div>
 
                                                 {/* Pasos del Recorrido */}
                                                 {[

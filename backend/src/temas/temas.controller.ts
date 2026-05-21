@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { TemasService } from './temas.service';
 
 @Controller('temas')
@@ -13,5 +13,10 @@ export class TemasController {
   @Get()
   findAll() {
     return this.temasService.findAll();
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.temasService.remove(+id);
   }
 }

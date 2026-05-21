@@ -68,7 +68,7 @@ export class ProductosService {
     } catch (error) {
       // 23503 es el código de error de Postgres para violación de llave foránea
       if (error.code === '23503' || error.message?.includes('foreign key') || error.message?.includes('violates')) {
-        throw new BadRequestException('No se puede eliminar el producto porque ya tiene compras, reseñas o está en un carrito. Por favor, cambia su estado a "NoPublicado".');
+        throw new BadRequestException('No se puede eliminar el producto porque ya cuenta con compras registradas, opiniones de usuarios o se encuentra en carritos activos.');
       }
       throw error;
     }

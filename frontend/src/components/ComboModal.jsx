@@ -68,8 +68,29 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
     if (!isOpen) return null;
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+
+        // Prevent negative values for price input
+        if (type === 'number' && name === 'precio') {
+            if (value !== '') {
+                const numVal = parseFloat(value);
+                if (numVal < 0 || isNaN(numVal)) {
+                    setFormData({
+                        ...formData,
+                        [name]: '0'
+                    });
+                    return;
+                }
+            }
+        }
+
         setFormData({ ...formData, [name]: value });
+    };
+
+    const handleKeyDownNoNegative = (e) => {
+        if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+            e.preventDefault();
+        }
     };
 
     const handleProductToggle = (idProducto) => {
@@ -171,10 +192,12 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
         return Math.min(...selectedProducts.map(p => p.stock || 0));
     };
 
-    const filteredProductos = productosDisponibles.filter(p => 
-        p.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.codigoProducto?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProductos = productosDisponibles
+        .filter(p => !p.esCombo)
+        .filter(p => 
+            p.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.codigoProducto?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
@@ -266,6 +289,9 @@ const ComboModal = ({ isOpen, onClose, onSave, combo }) => {
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Precio Final</label>
                             <input
                                 type="number" name="precio" value={formData.precio} onChange={handleChange} required
+                                min="0"
+                                onKeyDown={handleKeyDownNoNegative}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese el precio"
                             />

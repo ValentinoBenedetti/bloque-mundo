@@ -4,7 +4,7 @@ import { getHistorialVentasAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AdminReviewModal from '../components/AdminReviewModal';
-import { Calendar, Hash, User, ChevronDown, Search } from 'lucide-react';
+import { Calendar, Hash, User, ChevronDown, Search, X } from 'lucide-react';
 
 const HistorialVentas = () => {
     const [ventas, setVentas] = useState([]);
@@ -56,6 +56,14 @@ const HistorialVentas = () => {
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
+    const hasActiveFilters = searchTerm !== '' || estadoFiltro !== 'Todos' || sortOrder !== 'desc';
+    const clearFilters = () => {
+        setSearchTerm('');
+        setEstadoFiltro('Todos');
+        setSortOrder('desc');
+        setVisibleCount(5);
+    };
+
     // Elementos a mostrar limitados por el botón Ver más
     const ventasPaginadas = ventasOrdenadas.slice(0, visibleCount);
 
@@ -94,25 +102,34 @@ const HistorialVentas = () => {
                 </div>
             </section>
 
-            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
-                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="flex gap-4 w-full sm:w-auto">
+            <div className="bg-slate-900 w-full py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap justify-between items-center gap-6">
+                    <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
+                        <button
+                            onClick={clearFilters}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
+                                hasActiveFilters 
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                            }`}
+                        >
+                            <X size={16} /> Limpiar Filtros
+                        </button>
                         {/* Select de orden */}
-                        <div className="relative w-48 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select
                                 value={sortOrder}
                                 onChange={(e) => setSortOrder(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="desc" className="bg-slate-900 text-slate-100">Descendente</option>
-                                <option value="asc" className="bg-slate-900 text-slate-100">Ascendente</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">Orden por fecha: Más nuevo</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Orden por fecha: Más antiguo</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>Orden por fecha</div>
                         </div>
 
                         {/* Select de estado */}
-                        <div className="relative w-40 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
                             <select
                                 value={estadoFiltro}
                                 onChange={(e) => {
@@ -121,18 +138,17 @@ const HistorialVentas = () => {
                                 }}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${estadoFiltro !== "Todos" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="Todos" className="bg-slate-900 text-slate-100">Todos</option>
-                                <option value="PAGADO" className="bg-slate-900 text-slate-100">Pagados</option>
-                                <option value="PENDIENTE" className="bg-slate-900 text-slate-100">Pendientes</option>
-                                <option value="CANCELADO" className="bg-slate-900 text-slate-100">Cancelados</option>
+                                <option value="Todos" className="bg-slate-900 text-slate-100">Por estado: Todos</option>
+                                <option value="PAGADO" className="bg-slate-900 text-slate-100">Por estado: Pagados</option>
+                                <option value="PENDIENTE" className="bg-slate-900 text-slate-100">Por estado: Pendientes</option>
+                                <option value="CANCELADO" className="bg-slate-900 text-slate-100">Por estado: Cancelados</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400'}`}>Estado</div>
                         </div>
                     </div>
 
                     {/* Barra de búsqueda */}
-                    <div className="relative w-full sm:w-96 group">
+                    <div className="relative flex-1 min-w-[250px] max-w-md group">
                         <input
                             type="text"
                             placeholder="Buscar por producto (con código)"

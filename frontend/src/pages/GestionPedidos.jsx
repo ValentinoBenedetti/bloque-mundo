@@ -122,35 +122,33 @@ const GestionEnvios = () => {
                 </div>
             </section>
 
-            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+            <div className="bg-slate-900 w-full py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="flex gap-4 w-full sm:w-auto">
-                        <div className="relative w-48 shrink-0 group">
+                    <div className="flex flex-wrap gap-4 w-full sm:w-auto justify-center sm:justify-start">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select
                                 value={sortOrder}
                                 onChange={(e) => setSortOrder(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="desc" className="bg-slate-900 text-slate-100">Más recientes primero</option>
-                                <option value="asc" className="bg-slate-900 text-slate-100">Más antiguos primero</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">Orden por fecha: Más recientes</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Orden por fecha: Más antiguos</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>Orden por fecha</div>
                         </div>
 
-                        <div className="relative w-48 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select
                                 value={estadoEnvioFiltro}
                                 onChange={(e) => setEstadoEnvioFiltro(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${estadoEnvioFiltro !== "Todos" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="Todos" className="bg-slate-900 text-slate-100">Todos</option>
-                                <option value="Pendiente" className="bg-slate-900 text-slate-100">Pendiente</option>
-                                <option value="En camino" className="bg-slate-900 text-slate-100">En camino</option>
-                                <option value="Entregado" className="bg-slate-900 text-slate-100">Entregado</option>
+                                <option value="Todos" className="bg-slate-900 text-slate-100">Estado de envío: Todos</option>
+                                <option value="Pendiente" className="bg-slate-900 text-slate-100">Estado de envío: Pendientes</option>
+                                <option value="En camino" className="bg-slate-900 text-slate-100">Estado de envío: En camino</option>
+                                <option value="Entregado" className="bg-slate-900 text-slate-100">Estado de envío: Entregados</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoEnvioFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${estadoEnvioFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400'}`}>Estado de envío</div>
                         </div>
                     </div>
 

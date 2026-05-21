@@ -61,16 +61,19 @@ const TrackingModal = ({ isOpen, onClose, pedido }) => {
                 <div className="p-8">
                     {/* Progress Bar (The 3 dots) */}
                     <div className="relative mb-12 px-6">
-                        {/* Línea gris de fondo */}
-                        <div className="absolute top-1/2 left-6 right-6 h-1 bg-slate-200 -translate-y-1/2 rounded-full"></div>
-                        
-                        {/* Línea pintada de progreso */}
-                        <div 
-                            className="absolute top-1/2 left-6 h-1 rounded-full -translate-y-1/2 transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
-                            style={{ 
-                                width: currentStepIndex === 0 ? '0%' : currentStepIndex === 1 ? '50%' : '100%' 
-                            }}
-                        ></div>
+                        {/* Contenedor de las líneas de progreso */}
+                        <div className="absolute top-1/2 left-6 right-6 h-1 -translate-y-1/2 z-0">
+                            {/* Línea gris de fondo */}
+                            <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
+                            
+                            {/* Línea pintada de progreso */}
+                            <div 
+                                className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
+                                style={{ 
+                                    width: currentStepIndex === 0 ? '0%' : currentStepIndex === 1 ? '50%' : '100%' 
+                                }}
+                            ></div>
+                        </div>
 
                         <div className="relative flex justify-between">
                             {steps.map((step, index) => {

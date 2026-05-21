@@ -44,8 +44,23 @@ const ProductDetail = () => {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [mainImage, setMainImage] = useState('');
+    const [bgColor, setBgColor] = useState('#ffffff');
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+
+    const handleMouseMove = (e) => {
+        if (!isZoomed) return;
+        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
+        setZoomPos({ x, y });
+    };
+
+    useEffect(() => {
+        setIsZoomed(false);
+    }, [isLightboxOpen, lightboxIndex]);
 
     const imagesCount = product?.imagenes?.length || 1;
 
@@ -61,6 +76,42 @@ const ProductDetail = () => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isLightboxOpen, imagesCount]);
+
+    useEffect(() => {
+        if (!mainImage) return;
+        
+        // Reset to white by default
+        setBgColor('#ffffff');
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = mainImage;
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, 100, 100);
+                    // Sample slightly inside the corner (e.g. 5, 5) to avoid edge anti-aliasing or compression artifacts
+                    const data = ctx.getImageData(5, 5, 1, 1).data;
+                    const [r, g, b, a] = data;
+                    if (a > 200) {
+                        setBgColor(`rgb(${r}, ${g}, ${b})`);
+                    } else {
+                        setBgColor('#ffffff');
+                    }
+                }
+            } catch (e) {
+                // If it fails (e.g. CORS), keep default white
+                setBgColor('#ffffff');
+            }
+        };
+        img.onerror = () => {
+            setBgColor('#ffffff');
+        };
+    }, [mainImage]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -85,12 +136,27 @@ const ProductDetail = () => {
                     const prodId = foundProduct.id || foundProduct.idProducto || foundProduct.id_producto || foundProduct.productoId;
                     const res = await getResenasRequest(prodId);
                     setResenas(res);
-                }
 
-                setRelated(allProducts.filter(p => {
-                    const pId = p.id || p.idProducto || p.id_producto || p.productoId || p.ID;
-                    return String(pId) !== String(id);
-                }).slice(0, 4));
+                    const themeId = foundProduct.tema?.idTema;
+                    let relatedProducts = [];
+                    
+                    if (themeId) {
+                        relatedProducts = allProducts.filter(p => {
+                            const pId = p.id || p.idProducto || p.id_producto || p.productoId || p.ID;
+                            return String(pId) !== String(id) && p.tema?.idTema === themeId;
+                        });
+                    }
+
+                    // Si no tiene tema o no hay productos con ese mismo tema, mostramos otros como fallback
+                    if (relatedProducts.length === 0) {
+                        relatedProducts = allProducts.filter(p => {
+                            const pId = p.id || p.idProducto || p.id_producto || p.productoId || p.ID;
+                            return String(pId) !== String(id);
+                        });
+                    }
+
+                    setRelated(relatedProducts.slice(0, 4));
+                }
 
             } catch (err) {
                 console.error("❌ Error fatal cargando productos:", err);
@@ -202,9 +268,15 @@ const ProductDetail = () => {
             <Navbar />
 
             <div className="bg-brand-yellow w-full py-4 px-10 border-b border-yellow-500">
-                <div className="max-w-7xl mx-auto flex text-sm text-slate-800 gap-2 items-center">
+                <div className="max-w-7xl mx-auto flex text-sm text-slate-800 gap-2 items-center flex-wrap">
                     <Link to="/" className="hover:text-brand-red transition">Inicio</Link>
                     <span className="font-bold text-xs">&gt;</span>
+                    {product.categoria && (
+                        <>
+                            <Link to={`/tienda?categoria=${encodeURIComponent(product.categoria)}`} className="hover:text-brand-red transition">{product.categoria}</Link>
+                            <span className="font-bold text-xs">&gt;</span>
+                        </>
+                    )}
                     {product.tema?.nombre && (
                         <>
                             <Link to={`/tienda?tema=${encodeURIComponent(product.tema.nombre)}`} className="hover:text-brand-red transition">{product.tema.nombre}</Link>
@@ -216,8 +288,8 @@ const ProductDetail = () => {
             </div>
 
             <main className="flex-1 max-w-7xl mx-auto w-full py-12 px-6">
-                <div className="flex flex-col md:flex-row gap-16 mb-24">
-                    <div className="flex gap-6 md:w-3/5">
+                <div className="flex flex-col md:flex-row gap-16 mb-24 items-start">
+                    <div className="flex gap-6 w-full md:w-3/5">
                         {allImages.length > 1 && (
                             <div className="hidden lg:flex flex-col gap-4">
                                 {allImages.map((imgUrl, i) => (
@@ -231,9 +303,12 @@ const ProductDetail = () => {
                                 ))}
                             </div>
                         )}
-                        <div className="flex-1 bg-slate-50 rounded-xl relative flex items-center justify-center p-12 group border border-slate-100 min-h-[500px] overflow-hidden">
-                            <div className="w-full h-full transform group-hover:scale-110 transition-transform duration-700 flex items-center justify-center">
-                                <img src={mainImage} alt={titulo} className="w-full h-full object-contain mix-blend-multiply" />
+                        <div 
+                            className="flex-1 rounded-xl relative flex items-center justify-center group border border-slate-100 w-full aspect-square overflow-hidden transition-colors duration-500"
+                            style={{ backgroundColor: bgColor }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <img src={mainImage} alt={titulo} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" />
                             </div>
                             <button 
                                 onClick={() => {
@@ -248,7 +323,7 @@ const ProductDetail = () => {
                         </div>
                     </div>
 
-                    <div className="md:w-2/5 flex flex-col justify-center">
+                    <div className="w-full md:w-2/5 flex flex-col justify-center">
                         <div className="flex justify-between items-start mb-4">
                             <h1 className="text-5xl font-black text-slate-900 leading-none uppercase italic tracking-tighter">{titulo}</h1>
 
@@ -531,8 +606,21 @@ const ProductDetail = () => {
                         </button>
                     )}
 
-                    <div className="w-[80vw] h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <img src={allImages[lightboxIndex]} className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl animate-in zoom-in-95 duration-300" alt="Fullscreen" />
+                    <div 
+                        className="w-[80vw] h-[80vh] flex items-center justify-center overflow-hidden relative select-none" 
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setIsZoomed(!isZoomed); 
+                        }}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setIsZoomed(false)}
+                    >
+                        <img 
+                            src={allImages[lightboxIndex]} 
+                            className={`w-full h-full object-contain mix-blend-multiply drop-shadow-2xl select-none transition-transform duration-200 ${isZoomed ? 'scale-[2.5] cursor-zoom-out' : 'scale-100 cursor-zoom-in animate-in zoom-in-95'}`} 
+                            style={isZoomed ? { transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`, transitionDuration: '50ms' } : {}}
+                            alt="Fullscreen" 
+                        />
                     </div>
 
                     {allImages.length > 1 && (

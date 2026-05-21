@@ -77,7 +77,7 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                 )}
             </div>
 
-            <div className="h-64 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+            <div className="h-64 bg-white flex items-center justify-center relative overflow-hidden">
                 <div className="h-full w-full transform group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
                     <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply" />
                 </div>
@@ -91,7 +91,7 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                 )}
 
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                    <button className="bg-white border border-slate-900 text-slate-900 text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded hover:bg-slate-900 hover:text-white transition-colors">
+                    <button className="bg-slate-900 border border-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded hover:bg-white hover:text-slate-900 transition-colors">
                         Ver detalles
                     </button>
                 </div>

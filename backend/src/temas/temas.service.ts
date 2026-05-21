@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tema } from './entities/tema.entity';
@@ -17,5 +17,19 @@ export class TemasService {
 
   async findAll() {
     return await this.temaRepository.find();
+  }
+
+  async remove(id: number) {
+    const tema = await this.temaRepository.findOne({ 
+      where: { idTema: id }, 
+      relations: ['productos'] 
+    });
+    if (!tema) {
+      throw new NotFoundException(`Tema con ID ${id} no encontrado`);
+    }
+    if (tema.productos && tema.productos.length > 0) {
+      throw new BadRequestException('No se puede eliminar el tema porque tiene productos asociados');
+    }
+    return await this.temaRepository.remove(tema);
   }
 }

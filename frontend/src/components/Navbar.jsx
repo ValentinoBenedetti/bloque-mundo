@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Heart, ShoppingCart, X, Plus, Minus } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, X, Plus, Minus, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Fuse from 'fuse.js';
@@ -23,6 +23,7 @@ const Navbar = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
     // ESTADO PARA MODAL DE CONFIRMACIN
     const [confirmModal, setConfirmModal] = useState({
@@ -129,13 +130,22 @@ const Navbar = () => {
     // ==============================================================
     return (
         <>
-            <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <h1 
-                    className="text-4xl font-logo text-white tracking-widest cursor-pointer uppercase hover:text-brand-yellow transition duration-200" 
-                    onClick={() => navigate('/')}
-                >
-                    Bloque Mundo
-                </h1>
+            <nav className="bg-brand-red py-4 px-4 md:px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="text-white hover:text-brand-yellow md:hidden focus:outline-none transition duration-200 cursor-pointer"
+                        aria-label="Abrir menú"
+                    >
+                        <Menu size={24} />
+                    </button>
+                    <h1 
+                        className="text-2xl sm:text-3xl md:text-4xl font-logo text-white tracking-widest cursor-pointer uppercase hover:text-brand-yellow transition duration-200 whitespace-nowrap" 
+                        onClick={() => navigate('/')}
+                    >
+                        Bloque Mundo
+                    </h1>
+                </div>
 
                 <div className="hidden md:flex gap-10 text-white font-bold text-[16px] tracking-wide items-center">
                     <button 
@@ -185,7 +195,7 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-7 text-white items-center">
+                <div className="flex gap-4 sm:gap-7 text-white items-center">
                     <User size={22} className="cursor-pointer hover:text-brand-yellow hover:scale-110 transition duration-200" onClick={handleProfileClick} />
 
                     <div className="relative cursor-pointer hover:text-brand-yellow hover:scale-110 transition duration-200" onClick={handleFavoritesNav}>
@@ -312,6 +322,98 @@ const Navbar = () => {
                     </div>
                 </div>
             )}
+
+            {/* MENU MOVIL HAMBURGUESA */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <div className="fixed inset-0 z-[100] flex">
+                        {/* Backdrop */}
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        />
+                        {/* Drawer */}
+                        <motion.div 
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="relative w-4/5 max-w-xs bg-slate-950 h-full shadow-2xl flex flex-col p-6 border-r border-slate-800 z-10"
+                        >
+                            {/* Header of Drawer */}
+                            <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
+                                <h2 className="text-xl font-black text-white uppercase italic tracking-wide">
+                                    Menú
+                                </h2>
+                                <button 
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            {/* Search Bar inside Drawer */}
+                            <div className="relative mb-6">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar productos..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && searchTerm.trim() !== '') {
+                                            setIsMobileMenuOpen(false);
+                                            handleKeyDown(e);
+                                        }
+                                    }}
+                                    className="bg-slate-900 py-2.5 pl-5 pr-10 rounded-full text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-full transition-all border border-slate-800 placeholder:text-slate-500 font-medium"
+                                />
+                                <Search 
+                                    size={18} 
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-yellow" 
+                                    onClick={() => {
+                                        if (searchTerm.trim() !== '') {
+                                            setIsMobileMenuOpen(false);
+                                            navigate(`/tienda?q=${searchTerm}`);
+                                        }
+                                    }} 
+                                />
+                            </div>
+
+                            {/* Navigation Links */}
+                            <div className="flex flex-col gap-4 font-bold text-[16px] tracking-wide text-white">
+                                <button 
+                                    onClick={() => { setIsMobileMenuOpen(false); navigate('/'); }} 
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname === '/' ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                >
+                                    Inicio
+                                </button>
+                                <button 
+                                    onClick={() => { setIsMobileMenuOpen(false); navigate('/tienda'); }} 
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname.startsWith('/tienda') ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                >
+                                    Tienda
+                                </button>
+                                <button 
+                                    onClick={() => { setIsMobileMenuOpen(false); navigate('/nosotros'); }} 
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname.startsWith('/nosotros') ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                >
+                                    Nosotros
+                                </button>
+                            </div>
+
+                            {/* Footer or extra info in mobile menu */}
+                            <div className="mt-auto pt-6 text-center text-xs text-slate-600 font-medium border-t border-slate-900">
+                                © Bloque Mundo • Premium Store
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <ProfileSidebar
                 isOpen={isProfileSidebarOpen}

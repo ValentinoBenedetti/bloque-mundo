@@ -144,8 +144,14 @@ const GestionProductos = () => {
                 borderRadius: '20px'
             });
         } catch (err) {
-            alert(err.message || 'Error al eliminar');
             setIsConfirmModalOpen(false);
+            Swal.fire({
+                icon: 'warning',
+                title: '¡Atención!',
+                text: err.message || 'Error al eliminar',
+                confirmButtonColor: '#0f172a',
+                confirmButtonText: 'Entendido'
+            });
         }
     };
 
@@ -228,6 +234,14 @@ const GestionProductos = () => {
 
         return matchSearch && matchType && matchStatus;
     }).sort((a, b) => {
+        const dateA = a.fechaEdicion ? new Date(a.fechaEdicion) : (a.fechaCreacion ? new Date(a.fechaCreacion) : null);
+        const dateB = b.fechaEdicion ? new Date(b.fechaEdicion) : (b.fechaCreacion ? new Date(b.fechaCreacion) : null);
+
+        if (dateA && dateB && dateA.getTime() !== dateB.getTime()) {
+            if (sortBy === 'asc') return dateA - dateB;
+            return dateB - dateA;
+        }
+
         const idA = a.esCombo ? a.idCombo : a.idProducto;
         const idB = b.esCombo ? b.idCombo : b.idProducto;
         if (sortBy === 'asc') return idA - idB;
@@ -235,6 +249,14 @@ const GestionProductos = () => {
     });
 
     const displayedProducts = filteredProducts.slice(0, visibleCount);
+
+    const hasActiveFilters = searchTerm !== '' || filterType !== 'all' || filterStatus !== 'all' || sortBy !== 'desc';
+    const clearFilters = () => {
+        setSearchTerm('');
+        setFilterType('all');
+        setFilterStatus('all');
+        setSortBy('desc');
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 relative">
@@ -261,22 +283,32 @@ const GestionProductos = () => {
             </section>
 
             {/* Filter Bar (Premium Slate-Dark) */}
-            <div className="bg-slate-900 py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+            <div className="bg-slate-900 py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
                 <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-6">
-                    <div className="flex flex-wrap gap-4">
-                        <div className="relative min-w-[220px] group">
+                    <div className="flex flex-wrap gap-4 w-full md:w-auto justify-center md:justify-start">
+                        <button
+                            onClick={clearFilters}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
+                                hasActiveFilters 
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                            }`}
+                        >
+                            <X size={16} /> Limpiar Filtros
+                        </button>
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
                             <select 
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortBy !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
                             >
-                                <option value="desc" className="bg-slate-900 text-slate-100">Por fecha de edición: Descendente</option>
-                                <option value="asc" className="bg-slate-900 text-slate-100">Por fecha de edición: Ascendente</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">Por fecha de edición: Más nuevo</option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">Por fecha de edición: Más antiguo</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortBy !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
 
-                        <div className="relative min-w-[180px] group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
                             <select 
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
@@ -289,7 +321,7 @@ const GestionProductos = () => {
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${filterType !== "all" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
 
-                        <div className="relative min-w-[180px] group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
                             <select 
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}

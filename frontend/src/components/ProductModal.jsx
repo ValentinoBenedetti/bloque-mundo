@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { getTemasRequest } from '../api/temas';
+import { X, Image as ImageIcon, Loader2, Plus, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { getTemasRequest, createTemaRequest, deleteTemaRequest } from '../api/temas';
+import { getCategoriasRequest, createCategoriaRequest, deleteCategoriaRequest } from '../api/categorias';
 import { uploadProductImageRequest } from '../api/products';
+import ConfirmModal from './ConfirmModal';
+import PromptModal from './PromptModal';
 
 const ProductModal = ({ isOpen, onClose, onSave, product }) => {
     const [temas, setTemas] = useState([]);
+    const [categorias, setCategorias] = useState([]);
     const [formData, setFormData] = useState({
         codigoProducto: '',
         titulo: '',
@@ -23,17 +27,33 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
 
     const [allImages, setAllImages] = useState([]); // Array de { id, url, file, isNew }
     const [isUploading, setIsUploading] = useState(false);
+    
+    // States for custom modals
+    const [promptState, setPromptState] = useState({ isOpen: false, title: '', placeholder: '', onConfirm: null });
+    const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+    const [alertState, setAlertState] = useState({ isOpen: false, title: '', message: '', type: 'error' });
+
+    const fetchTemas = async () => {
+        try {
+            const data = await getTemasRequest();
+            setTemas(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchCategorias = async () => {
+        try {
+            const data = await getCategoriasRequest();
+            setCategorias(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     useEffect(() => {
-        const fetchTemas = async () => {
-            try {
-                const data = await getTemasRequest();
-                setTemas(data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
         fetchTemas();
+        fetchCategorias();
     }, []);
 
     useEffect(() => {
@@ -78,14 +98,178 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
 
     const [error, setError] = useState(null);
 
+    const handleAddTema = () => {
+        setPromptState({
+            isOpen: true,
+            title: "Nuevo Tema",
+            placeholder: "Ingrese el nombre del tema...",
+            onConfirm: async (nombre) => {
+                try {
+                    const nuevoTema = await createTemaRequest({ nombre });
+                    await fetchTemas();
+                    setFormData(prev => ({ ...prev, idTema: nuevoTema.idTema }));
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Éxito!",
+                        message: "Tema creado correctamente",
+                        type: "success"
+                    });
+                } catch (err) {
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Atención!",
+                        message: "Error al crear tema. Verifique que no exista.",
+                        type: "error"
+                    });
+                }
+            }
+        });
+    };
+
+    const handleDeleteTema = () => {
+        if (!formData.idTema) {
+            setAlertState({
+                isOpen: true,
+                title: "¡Atención!",
+                message: "Seleccione un tema primero",
+                type: "error"
+            });
+            return;
+        }
+        const temaSeleccionado = temas.find(t => String(t.idTema) === String(formData.idTema));
+        
+        setConfirmState({
+            isOpen: true,
+            title: "Eliminar Tema",
+            message: `¿Seguro que desea eliminar el tema "${temaSeleccionado?.nombre}"?`,
+            onConfirm: async () => {
+                try {
+                    await deleteTemaRequest(formData.idTema);
+                    setFormData(prev => ({ ...prev, idTema: '' }));
+                    await fetchTemas();
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Éxito!",
+                        message: "Tema eliminado correctamente",
+                        type: "success"
+                    });
+                } catch (err) {
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Atención!",
+                        message: err.response?.data?.message || err.message || "Error al eliminar tema",
+                        type: "error"
+                    });
+                }
+            }
+        });
+    };
+
+    const handleAddCategoria = () => {
+        setPromptState({
+            isOpen: true,
+            title: "Nueva Categoría",
+            placeholder: "Ingrese el nombre de la categoría...",
+            onConfirm: async (nombre) => {
+                try {
+                    const nuevaCat = await createCategoriaRequest({ nombre });
+                    await fetchCategorias();
+                    setFormData(prev => ({ ...prev, categoria: nuevaCat.nombre }));
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Éxito!",
+                        message: "Categoría creada correctamente",
+                        type: "success"
+                    });
+                } catch (err) {
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Atención!",
+                        message: "Error al crear categoría. Verifique que no exista.",
+                        type: "error"
+                    });
+                }
+            }
+        });
+    };
+
+    const handleDeleteCategoria = () => {
+        if (!formData.categoria) {
+            setAlertState({
+                isOpen: true,
+                title: "¡Atención!",
+                message: "Seleccione una categoría primero",
+                type: "error"
+            });
+            return;
+        }
+        const catSeleccionada = categorias.find(c => c.nombre === formData.categoria);
+        if (!catSeleccionada) {
+            setAlertState({
+                isOpen: true,
+                title: "¡Atención!",
+                message: "Esta categoría es estática o no se encuentra en la base de datos.",
+                type: "error"
+            });
+            return;
+        }
+        
+        setConfirmState({
+            isOpen: true,
+            title: "Eliminar Categoría",
+            message: `¿Seguro que desea eliminar la categoría "${formData.categoria}"?`,
+            onConfirm: async () => {
+                try {
+                    await deleteCategoriaRequest(catSeleccionada.idCategoria);
+                    setFormData(prev => ({ ...prev, categoria: '' }));
+                    await fetchCategorias();
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Éxito!",
+                        message: "Categoría eliminada correctamente",
+                        type: "success"
+                    });
+                } catch (err) {
+                    setAlertState({
+                        isOpen: true,
+                        title: "¡Atención!",
+                        message: err.response?.data?.message || err.message || "Error al eliminar categoría",
+                        type: "error"
+                    });
+                }
+            }
+        });
+    };
+
     if (!isOpen) return null;
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+
+        // Prevent negative values for specific numeric inputs
+        if (type === 'number' && (name === 'cantidadPiezas' || name === 'stock' || name === 'precio')) {
+            if (value !== '') {
+                const numVal = parseFloat(value);
+                if (numVal < 0 || isNaN(numVal)) {
+                    setFormData({
+                        ...formData,
+                        [name]: '0'
+                    });
+                    return;
+                }
+            }
+        }
+
         setFormData({
             ...formData,
             [name]: type === 'checkbox' ? checked : value
         });
+    };
+
+    const handleKeyDownNoNegative = (e) => {
+        if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+            e.preventDefault();
+        }
     };
 
     const handleFileChange = (e) => {
@@ -250,7 +434,13 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
 
                         {/* Tema */}
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Tema</label>
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Tema</label>
+                                <div className="flex gap-1">
+                                    <button type="button" onClick={handleAddTema} className="p-1 text-slate-400 hover:text-green-600 transition" title="Agregar Tema"><Plus size={16} /></button>
+                                    <button type="button" onClick={handleDeleteTema} className="p-1 text-slate-400 hover:text-red-600 transition" title="Eliminar Tema seleccionado"><Trash2 size={16} /></button>
+                                </div>
+                            </div>
                             <select
                                 name="idTema" value={formData.idTema} onChange={handleChange} required
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white appearance-none"
@@ -283,6 +473,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Piezas</label>
                             <input
                                 type="number" name="cantidadPiezas" value={formData.cantidadPiezas} onChange={handleChange}
+                                min="0"
+                                onKeyDown={handleKeyDownNoNegative}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Cantidad de piezas"
                             />
@@ -290,21 +483,24 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
 
                         {/* Categoría */}
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Categoría</label>
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Categoría</label>
+                                <div className="flex gap-1">
+                                    <button type="button" onClick={handleAddCategoria} className="p-1 text-slate-400 hover:text-green-600 transition" title="Agregar Categoría"><Plus size={16} /></button>
+                                    <button type="button" onClick={handleDeleteCategoria} className="p-1 text-slate-400 hover:text-red-600 transition" title="Eliminar Categoría seleccionada"><Trash2 size={16} /></button>
+                                </div>
+                            </div>
                             <select
                                 name="categoria" value={formData.categoria} onChange={handleChange}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium bg-white"
                             >
                                 <option value="">Seleccione categoría</option>
-                                {[
-                                    "Animales", "Arquitectura", "Botánica", "Castillos", "Ciudad", 
-                                    "Construcción Básica", "Edificios", "Espacio", "Fantasía", "Mecanismos", 
-                                    "Minifiguras", "Naves", "Películas y TV", "Piratas", 
-                                    "Robótica", "Series", "Sets de Colección", "Superhéroes", "Trenes", 
-                                    "Vehículos", "Videojuegos"
-                                ].map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                {categorias.map(cat => (
+                                    <option key={cat.idCategoria} value={cat.nombre}>{cat.nombre}</option>
                                 ))}
+                                {formData.categoria && !categorias.some(c => c.nombre === formData.categoria) && (
+                                    <option key="static-current" value={formData.categoria}>{formData.categoria} (Guardada)</option>
+                                )}
                             </select>
                         </div>
 
@@ -313,6 +509,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Precio de venta</label>
                             <input
                                 type="number" name="precio" value={formData.precio} onChange={handleChange} required
+                                min="0"
+                                onKeyDown={handleKeyDownNoNegative}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese el precio"
                             />
@@ -323,6 +522,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                             <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Cantidad disponible</label>
                             <input
                                 type="number" name="stock" value={formData.stock} onChange={handleChange} required
+                                min="0"
+                                onKeyDown={handleKeyDownNoNegative}
+                                onWheel={(e) => e.target.blur()}
                                 className="w-full p-3 border-2 border-slate-100 rounded-xl focus:border-brand-red outline-none transition text-sm font-medium"
                                 placeholder="Ingrese stock"
                             />
@@ -387,6 +589,55 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
                     </div>
                 </form>
             </div>
+
+            <PromptModal 
+                isOpen={promptState.isOpen}
+                onClose={() => setPromptState(prev => ({ ...prev, isOpen: false }))}
+                onSubmit={promptState.onConfirm}
+                title={promptState.title}
+                placeholder={promptState.placeholder}
+            />
+
+            <ConfirmModal 
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+            />
+
+            {/* Centered Alert/Success Modal */}
+            {alertState.isOpen && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center">
+                            <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 animate-bounce duration-1000 ${alertState.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+                                {alertState.type === 'success' ? (
+                                    <CheckCircle2 className="text-green-500" size={40} />
+                                ) : (
+                                    <AlertTriangle className="text-brand-red" size={40} />
+                                )}
+                            </div>
+                            
+                            <h2 className="text-2xl font-black text-slate-900 uppercase italic mb-3 tracking-tight">
+                                {alertState.title}
+                            </h2>
+                            
+                            <p className="text-slate-500 text-sm leading-relaxed mb-8 font-medium">
+                                {alertState.message}
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+                                className="w-full px-4 py-4 rounded-xl bg-slate-900 text-white font-black hover:bg-black shadow-xl shadow-slate-200 transition-all active:scale-95 uppercase tracking-widest text-xs italic"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

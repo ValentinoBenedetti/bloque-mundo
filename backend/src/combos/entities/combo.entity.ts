@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, ManyToMany, JoinTable, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToMany, JoinTable, BeforeInsert, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Producto } from '../../productos/entities/producto.entity';
 
 @Entity('combos')
@@ -41,6 +41,12 @@ export class Combo {
 
     @Column({ type: 'text', array: true, nullable: true })
     imagenes: string[];
+
+    @CreateDateColumn()
+    fechaCreacion: Date;
+
+    @UpdateDateColumn()
+    fechaEdicion: Date;
 
     @ManyToMany(() => Producto)
     @JoinTable({

@@ -10,7 +10,7 @@ import SuccessModal from '../components/SuccessModal';
 import CheckoutSuccessModal from '../components/CheckoutSuccessModal';
 import LevelUpModal from '../components/LevelUpModal';
 import Swal from 'sweetalert2';
-import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye } from 'lucide-react';
+import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye, X } from 'lucide-react';
 
 const decodificarToken = (token) => {
     try {
@@ -208,6 +208,15 @@ const MisCompras = () => {
 
     const visibleCompras = comprasOrdenadas.slice(0, visibleCount);
 
+    const hasActiveFilters = searchTerm !== '' || sortBy !== 'fecha' || sortOrder !== 'desc' || estadoFiltro !== 'Todos';
+    const clearFilters = () => {
+        setSearchTerm('');
+        setSortBy('fecha');
+        setSortOrder('desc');
+        setEstadoFiltro('Todos');
+        setVisibleCount(5);
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-slate-50">
             <Navbar />
@@ -230,39 +239,51 @@ const MisCompras = () => {
                 </div>
             </section>
 
-            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
-                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="flex gap-4 w-full sm:w-auto">
+            <div className="bg-slate-900 w-full py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap justify-between items-center gap-6">
+                    <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
+                        <button
+                            onClick={clearFilters}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
+                                hasActiveFilters 
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                            }`}
+                        >
+                            <X size={16} /> Limpiar Filtros
+                        </button>
                         {/* Selector de Criterio */}
-                        <div className="relative w-36 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortBy !== "fecha" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="fecha" className="bg-slate-900 text-slate-100">Fecha</option>
-                                <option value="monto" className="bg-slate-900 text-slate-100">Monto</option>
+                                <option value="fecha" className="bg-slate-900 text-slate-100">Ordenar por: Fecha</option>
+                                <option value="monto" className="bg-slate-900 text-slate-100">Ordenar por: Monto</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortBy !== "fecha" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortBy !== "fecha" ? 'text-brand-yellow' : 'text-slate-400'}`}>Ordenar por</div>
                         </div>
 
-                        {/* Selector de Dirección */}
-                        <div className="relative w-40 shrink-0 group">
+                        {/* Selector de Dirección (Orden) */}
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-52 group">
                             <select
                                 value={sortOrder}
                                 onChange={(e) => setSortOrder(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortOrder !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="desc" className="bg-slate-900 text-slate-100">Descendente</option>
-                                <option value="asc" className="bg-slate-900 text-slate-100">Ascendente</option>
+                                <option value="desc" className="bg-slate-900 text-slate-100">
+                                    {sortBy === 'fecha' ? 'Orden: Más nuevo' : 'Orden: Mayor precio'}
+                                </option>
+                                <option value="asc" className="bg-slate-900 text-slate-100">
+                                    {sortBy === 'fecha' ? 'Orden: Más antiguo' : 'Orden: Menor precio'}
+                                </option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${sortOrder !== "desc" ? 'text-brand-yellow' : 'text-slate-400'}`}>Dirección</div>
                         </div>
 
                         {/* Selector de Estado */}
-                        <div className="relative w-36 shrink-0 group">
+                        <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
                             <select
                                 value={estadoFiltro}
                                 onChange={(e) => {
@@ -271,18 +292,17 @@ const MisCompras = () => {
                                 }}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none w-full pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${estadoFiltro !== "Todos" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer`}
                             >
-                                <option value="Todos" className="bg-slate-900 text-slate-100">Todos</option>
-                                <option value="PAGADO" className="bg-slate-900 text-slate-100">Pagados</option>
-                                <option value="PENDIENTE" className="bg-slate-900 text-slate-100">Pendientes</option>
-                                <option value="CANCELADO" className="bg-slate-900 text-slate-100">Cancelados</option>
+                                <option value="Todos" className="bg-slate-900 text-slate-100">Por estado: Todos</option>
+                                <option value="PAGADO" className="bg-slate-900 text-slate-100">Por estado: Pagados</option>
+                                <option value="PENDIENTE" className="bg-slate-900 text-slate-100">Por estado: Pendientes</option>
+                                <option value="CANCELADO" className="bg-slate-900 text-slate-100">Por estado: Cancelados</option>
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
-                            <div className={`absolute -top-2 left-4 bg-slate-900 px-1.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400'}`}>Estado</div>
                         </div>
                     </div>
 
                     {/* Barra de búsqueda */}
-                    <div className="relative w-full sm:w-80 group">
+                    <div className="relative flex-1 min-w-[250px] max-w-md group">
                         <input
                             type="text"
                             placeholder="Buscar por nombre..."

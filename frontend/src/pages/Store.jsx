@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
 import { getTemasRequest } from '../api/temas';
-import { SlidersHorizontal, ChevronDown, XCircle, ChevronRight } from 'lucide-react';
+import { X, ChevronDown, XCircle, ChevronRight } from 'lucide-react';
 
 const Store = () => {
     const [products, setProducts] = useState([]);
@@ -42,6 +42,14 @@ const Store = () => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        setFilters(prev => ({
+            ...prev,
+            categoria: catQuery,
+            tema: temaQuery
+        }));
+    }, [catQuery, temaQuery]);
 
     useEffect(() => {
         const fetchAll = async () => {
@@ -81,7 +89,11 @@ const Store = () => {
             results = results.filter(p => p.tema?.nombre === filters.tema);
         }
         if (filters.rangoEdad) {
-            results = results.filter(p => p.rangoEdad === filters.rangoEdad);
+            results = results.filter(p => {
+                if (!p.rangoEdad) return false;
+                const pEdad = String(p.rangoEdad).includes('+') ? String(p.rangoEdad) : `${p.rangoEdad}+`;
+                return pEdad === filters.rangoEdad;
+            });
         }
         if (filters.stock) {
             if (filters.stock === 'disponible') {
@@ -124,18 +136,20 @@ const Store = () => {
         setSearchParams(newParams);
     };
 
-    const categoriasBase = [
-        "Animales", "Arquitectura", "Botánica", "Castillos", "Ciudad", 
-        "Construcción Básica", "Edificios", "Espacio", "Fantasía", "Mecanismos", 
-        "Minifiguras", "Naves", "Películas y TV", "Piratas", 
-        "Robótica", "Series", "Sets de Colección", "Superhéroes", "Trenes", 
-        "Vehículos", "Videojuegos"
-    ];
-    const categoriasUnicas = Array.from(new Set([...categoriasBase, ...products.map(p => p.categoria).filter(Boolean)])).sort();
+    const hasActiveFilters = filters.categoria !== '' || filters.tema !== '' || filters.precio !== '' || filters.rangoEdad !== '' || filters.stock !== '' || sortBy !== '';
+
+    const categoriasUnicas = Array.from(
+        new Set(
+            products
+                .filter(p => p.estado === 'Publicado')
+                .map(p => p.categoria)
+                .filter(Boolean)
+        )
+    ).sort();
     const temasUnicos = temasAPI.length > 0 
         ? temasAPI.map(t => t.nombre) 
         : Array.from(new Set(products.map(p => p.tema?.nombre).filter(Boolean)));
-    const edadesUnicas = Array.from(new Set(products.map(p => p.rangoEdad).filter(Boolean)));
+    const edadesUnicas = ['4+', '6+', '9+', '13+', '18+'];
 
     return (
         <div className="min-h-screen flex flex-col bg-white">
@@ -159,14 +173,18 @@ const Store = () => {
                 </div>
             </section>
 
-            <div className="bg-slate-900 w-full py-5 px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
+            <div className="bg-slate-900 w-full py-5 px-4 sm:px-10 shadow-xl border-t-4 border-t-brand-yellow border-b border-b-slate-800">
                 <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-6">
                     <div className="flex flex-wrap items-center gap-4">
                         <button
                             onClick={clearFilters}
-                            className="bg-slate-800 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold text-slate-100 border border-slate-700 transition duration-200 shadow-sm shrink-0"
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
+                                hasActiveFilters 
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                            }`}
                         >
-                            <SlidersHorizontal size={16} /> Limpiar Filtros
+                            <X size={16} /> Limpiar Filtros
                         </button>
 
                         {/* CATEGORÍA */}

@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, BeforeInsert, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Tema } from '../../temas/entities/tema.entity';
 
 @Entity('productos')
@@ -48,6 +48,12 @@ export class Producto {
 
     @Column({ type: 'text', array: true, nullable: true })
     imagenes: string[];
+
+    @CreateDateColumn()
+    fechaCreacion: Date;
+
+    @UpdateDateColumn()
+    fechaEdicion: Date;
 
     // Muchos Productos pertenecen a un Tema
     @ManyToOne(() => Tema, (tema) => tema.productos)
