@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Pencil, Lock } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { getUserRequest, updateUserRequest } from '../api/users';
 import { getUserStatusRequest } from '../api/usuarios';
@@ -165,8 +166,8 @@ const EditProfile = () => {
 
             <main className="flex-1 max-w-3xl w-full mx-auto py-12 px-6 animate-fade-in-up">
                 {loading ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-red"></div>
+                    <div className="flex justify-center p-20">
+                        <Loader text="Cargando tu perfil..." />
                     </div>
                 ) : (
                     <>

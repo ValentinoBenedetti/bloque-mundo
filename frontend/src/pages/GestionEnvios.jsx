@@ -60,11 +60,11 @@ const GestionEnvios = () => {
 
         try {
             setUpdatingId(idEnvio);
-            await updateEnvioEstadoRequest(idEnvio, nuevoEstado);
+            const updatedEnvio = await updateEnvioEstadoRequest(idEnvio, nuevoEstado);
 
             // Actualizar estado local
             setEnvios(prev => prev.map(envio =>
-                envio.idEnvio === idEnvio ? { ...envio, estado: nuevoEstado } : envio
+                envio.idEnvio === idEnvio ? { ...envio, ...updatedEnvio, estado: nuevoEstado } : envio
             ));
 
             // Mostrar un Toast no bloqueante para poder apreciar la animación de la barra
@@ -374,9 +374,16 @@ const GestionEnvios = () => {
 
                                         <div className="flex items-center justify-between md:flex-col md:items-end gap-2">
                                             <span className="text-xs font-bold text-slate-500 uppercase">Estado Envío</span>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getEstadoColor(envio.estado)}`}>
-                                                {envio.estado}
-                                            </span>
+                                            <div className="flex flex-col items-end">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getEstadoColor(envio.estado)}`}>
+                                                    {envio.estado}
+                                                </span>
+                                                {envio.estado === 'Entregado' && envio.fechaEntrega && (
+                                                    <span className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wide">
+                                                        El {formatDate(envio.fechaEntrega)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">

@@ -4,8 +4,10 @@ import Swal from 'sweetalert2'; // 🔥 Importamos SweetAlert2
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import Loader from '../components/Loader';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { getProductsRequest } from '../api/products'; // Importamos la conexión real
-import { ChevronLeft, ChevronRight, Filter, ShoppingCart, Star, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, ShoppingCart, Star, Search, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // Swiper Imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -22,6 +24,8 @@ const Home = () => {
     const [destacadoIndex, setDestacadoIndex] = useState(0);
     const [hoveredDestacadoId, setHoveredDestacadoId] = useState(null);
     const [visibleCount, setVisibleCount] = useState(8);
+
+    useDocumentTitle('Inicio');
 
     const navigate = useNavigate();
 
@@ -68,11 +72,31 @@ const Home = () => {
         loadProducts();
     }, []);
 
+    const getGroupWeight = (p) => {
+        if (p.stock === 0) return 5;
+        if (p.stock > 0 && p.stock <= 10) return 1;
+        if (p.esNovedad) return 2;
+        if (p.esDestacado) return 3;
+        return 4;
+    };
+
     // --- Lógica del Carrusel de Novedades ---
-    const novedades = products.filter(p => p.esNovedad && p.estado === 'Publicado').sort((a,b) => (a.stock===0?1:0) - (b.stock===0?1:0));
+    const novedades = products
+        .filter(p => p.esNovedad && p.estado === 'Publicado')
+        .sort((a, b) => {
+            const w = getGroupWeight(a) - getGroupWeight(b);
+            if (w !== 0) return w;
+            return a.stock - b.stock;
+        });
 
     // --- Lógica del Carrusel de Destacados ---
-    const destacados = products.filter(p => p.esDestacado && p.estado === 'Publicado').sort((a,b) => (a.stock===0?1:0) - (b.stock===0?1:0));
+    const destacados = products
+        .filter(p => p.esDestacado && p.estado === 'Publicado')
+        .sort((a, b) => {
+            const w = getGroupWeight(a) - getGroupWeight(b);
+            if (w !== 0) return w;
+            return a.stock - b.stock;
+        });
 
     const handlePrevDestacado = () => {
         setDestacadoIndex(prev => Math.max(prev - 1, 0));
@@ -92,7 +116,7 @@ const Home = () => {
 
             {/* Carrusel Novedades - Estilo Swiper Professional */}
             {novedades.length > 0 && (
-                <section className="relative py-20 bg-slate-950 flex flex-col items-center justify-center text-white overflow-hidden">
+                <section className="relative min-h-[calc(100vh-76px)] pt-12 pb-6 bg-slate-950 flex flex-col items-center justify-between text-white overflow-hidden">
                     {/* Fondo con Blur Dinámico */}
                     <div className="absolute inset-0 z-0">
                         <img
@@ -103,7 +127,7 @@ const Home = () => {
                         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-transparent to-slate-950"></div>
                     </div>
 
-                    <div className="relative z-10 w-full max-w-6xl px-4 text-center mb-6">
+                    <div className="relative z-10 w-full max-w-6xl px-4 text-center mt-2">
                         <motion.h2 
                             initial={{ opacity: 0, y: -10 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -162,7 +186,16 @@ const Home = () => {
                         </Swiper>
 
                         {/* Paginación fuera del carrusel */}
-                        <div className="novedades-custom-pagination flex justify-center items-center gap-2 mt-12"></div>
+                        <div className="novedades-custom-pagination flex justify-center items-center gap-2 mt-8 mb-4"></div>
+                    </div>
+
+                    {/* Indicador de scroll */}
+                    <div 
+                        className="relative z-20 flex flex-col items-center animate-bounce text-white/50 hover:text-white transition cursor-pointer mt-4" 
+                        onClick={() => window.scrollBy({ top: window.innerHeight - 80, behavior: 'smooth' })}
+                    >
+                        <p className="text-[10px] uppercase tracking-widest font-black mb-1">Descubre más</p>
+                        <ChevronDown size={24} />
                     </div>
 
                     <style>{`
@@ -216,10 +249,7 @@ const Home = () => {
             <main className="max-w-7xl mx-auto w-full py-12 px-6">
 
                 {loading ? (
-                    <div className="text-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-red mx-auto"></div>
-                        <p className="mt-4 text-slate-500 font-bold">Buscando bloques...</p>
-                    </div>
+                    <Loader text="Buscando bloques..." />
                 ) : error ? (
                     <div className="text-center py-20 bg-red-50 rounded-xl border border-red-100">
                         <p className="text-red-600 font-bold">No se pudo conectar con el servidor.</p>
@@ -231,7 +261,7 @@ const Home = () => {
                         {destacados.length > 0 && (
                             <div className="mb-20 py-10 px-4 -mx-4 md:px-12 md:-mx-12 rounded-3xl">
                                 <div className="relative z-10">
-                                    <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Productos destacados</h2>
+                                    <h2 className="text-3xl md:text-4xl font-black text-center mb-10 text-slate-800 uppercase italic tracking-tighter">Productos destacados</h2>
                                     <div className="relative md:px-12">
                                         <button 
                                             onClick={handlePrevDestacado}
@@ -264,11 +294,15 @@ const Home = () => {
 
                         {/* Resto de los productos */}
                         <div>
-                            <h2 className="text-2xl font-bold text-center mb-10 text-slate-800 uppercase tracking-tight">Todos los productos</h2>
+                            <h2 className="text-3xl md:text-4xl font-black text-center mb-10 text-slate-800 uppercase italic tracking-tighter">Todos los productos</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                                 {products
                                     .filter(p => p.estado === 'Publicado')
-                                    .sort((a, b) => (a.stock === 0 ? 1 : 0) - (b.stock === 0 ? 1 : 0))
+                                    .sort((a, b) => {
+                                        const w = getGroupWeight(a) - getGroupWeight(b);
+                                        if (w !== 0) return w;
+                                        return a.stock - b.stock;
+                                    })
                                     .slice(0, visibleCount)
                                     .map(p => <ProductCard key={p.idProducto} product={p} />)}
                             </div>

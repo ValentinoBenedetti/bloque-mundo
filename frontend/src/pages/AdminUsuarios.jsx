@@ -302,6 +302,15 @@ const AdminUsuarios = () => {
                                 key={u.idUsuario}
                                 className="bg-white border border-slate-200 rounded-xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 shadow-sm hover:border-slate-300 hover:shadow-md transition-all"
                             >
+                                {/* Avatar */}
+                                <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm ${
+                                    ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'][
+                                        ((u.nombre?.charCodeAt(0) || 0) + (u.apellido?.charCodeAt(0) || 0)) % 8
+                                    ]
+                                }`}>
+                                    {((u.nombre?.[0] || '') + (u.apellido?.[0] || '')).toUpperCase() || '?'}
+                                </div>
+
                                 {/* ID */}
                                 <div className="shrink-0 text-center sm:text-left sm:w-28">
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">

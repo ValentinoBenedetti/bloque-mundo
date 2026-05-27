@@ -24,6 +24,9 @@ export class Envio {
     })
     estado: EstadoEnvio;
 
+    @Column({ type: 'timestamp', nullable: true })
+    fechaEntrega: Date;
+
     @OneToOne(() => Pedido, (pedido) => pedido.envio)
     @JoinColumn({ name: 'idPedido' })
     pedido: Pedido;

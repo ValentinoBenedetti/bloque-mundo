@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Mail, Phone } from 'lucide-react';
 import { FaInstagram, FaFacebookF, FaWhatsapp } from 'react-icons/fa';
 import vexaLogo from '../assets/vexa-logo.png';
+import Logo from './Logo';
 
 const Footer = () => {
     const navigate = useNavigate();
@@ -12,12 +13,9 @@ const Footer = () => {
                 
                 {/* COLUMNA 1: LOGO Y INFO */}
                 <div className="space-y-4">
-                    <h2 
-                        onClick={() => navigate('/')}
-                        className="text-3xl font-logo tracking-widest text-brand-yellow uppercase cursor-pointer hover:opacity-90 transition w-max"
-                    >
-                        Bloque Mundo
-                    </h2>
+                    <div onClick={() => navigate('/')} className="cursor-pointer w-max">
+                        <Logo size="footer" textOnly={true} animated={false} className="text-brand-yellow hover:text-white transition" />
+                    </div>
                     <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
                         Tu tienda favorita de bloques y figuras de colección en Concepción del Uruguay. Creamos diversión pieza por pieza.
                     </p>

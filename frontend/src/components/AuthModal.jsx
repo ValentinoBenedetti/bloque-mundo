@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { loginRequest, verifyUserRequest, registerRequest } from '../api/auth';
-import { GoogleLogin } from '@react-oauth/google'; // 🔥 Usamos el componente oficial
+import { GoogleLogin } from '@react-oauth/google';
+import Logo from './Logo';
 
 const AuthModal = () => {
     const { isAuthModalOpen, closeAuthModal, login, pendingAction } = useAuth();
@@ -189,11 +190,12 @@ const AuthModal = () => {
                         <h2 className="text-2xl font-bold text-center text-slate-900 mb-6">Iniciar sesión o registrarse</h2>
 
                         <div className="flex justify-center mb-6">
-                            <h1 className="text-7xl font-logo text-brand-red leading-none text-center">BLOQUE MUNDO</h1>
+                            <Logo size="large" textOnly={true} animated={false} className="bg-brand-red rounded-xl p-4 shadow-xl border-2 border-brand-red scale-90" />
                         </div>
 
                         {/* 🔥 EL BOTÓN OFICIAL DE GOOGLE */}
-                        <div className="flex justify-center mb-6 w-full">
+                        <div className="flex flex-col items-center justify-center mb-6 w-full space-y-4">
+                            {error && <p className="bg-red-50 text-red-600 p-2 rounded-lg text-xs border border-red-100 text-center w-full">{error}</p>}
                             <GoogleLogin
                                 onSuccess={handleGoogleSuccess}
                                 onError={() => {
@@ -203,20 +205,6 @@ const AuthModal = () => {
                                 ux_mode="popup"
                             />
                         </div>
-
-                        <div className="relative mb-6">
-                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                            <div className="relative flex justify-center text-[10px]"><span className="bg-white px-3 text-slate-400 uppercase tracking-widest font-bold">o usa tu cuenta</span></div>
-                        </div>
-
-                        <form onSubmit={handleLoginTraditional} className="space-y-4">
-                            {error && <p className="bg-red-50 text-red-600 p-2 rounded-lg text-xs border border-red-100 text-center">{error}</p>}
-                            <input type="email" placeholder="Tu Email" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setEmail(e.target.value)} required />
-                            <input type="password" placeholder="Tu Contraseña" className="w-full p-3 border-2 border-slate-100 rounded-lg focus:border-brand-red outline-none transition text-sm" onChange={(e) => setPassword(e.target.value)} required />
-                            <button type="submit" className="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition text-lg uppercase tracking-wider">
-                                Entrar con Email
-                            </button>
-                        </form>
                     </>
                 )}
             </div>

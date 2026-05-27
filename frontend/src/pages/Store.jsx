@@ -4,11 +4,13 @@ import Fuse from 'fuse.js';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { getProductsRequest } from '../api/products';
 import { getTemasRequest } from '../api/temas';
 import { X, ChevronDown, XCircle, ChevronRight } from 'lucide-react';
 
 const Store = () => {
+    useDocumentTitle('Tienda');
     const [products, setProducts] = useState([]);
     const [temasAPI, setTemasAPI] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
@@ -110,13 +112,23 @@ const Store = () => {
         }
 
         results.sort((a, b) => {
-            const noStockA = a.stock === 0 ? 1 : 0;
-            const noStockB = b.stock === 0 ? 1 : 0;
-            if (noStockA !== noStockB) return noStockA - noStockB;
+            const getGroupWeight = (p) => {
+                if (p.stock === 0) return 5;
+                if (p.stock > 0 && p.stock <= 10) return 1;
+                if (p.esNovedad) return 2;
+                if (p.esDestacado) return 3;
+                return 4;
+            };
+
+            const weightA = getGroupWeight(a);
+            const weightB = getGroupWeight(b);
+
+            if (weightA !== weightB) return weightA - weightB;
 
             if (sortBy === 'asc') return Number(a.precio) - Number(b.precio);
             if (sortBy === 'desc') return Number(b.precio) - Number(a.precio);
-            return 0;
+            
+            return a.stock - b.stock;
         });
 
         setFilteredProducts(results);

@@ -18,6 +18,7 @@ import HistorialVentas from './pages/HistorialVentas';
 import GestionProductos from './pages/GestionProductos';
 import AdminUsuarios from './pages/AdminUsuarios';
 import GestionEnvios from './pages/GestionEnvios';
+import NotFound from './pages/NotFound';
 
 const decodificarToken = (token) => {
   try {
@@ -84,7 +85,7 @@ function App() {
               <Route path="/admin/usuarios" element={<ProtectedRoute requireAdmin={true}><AdminUsuarios /></ProtectedRoute>} />
               <Route path="/admin/pedidos" element={<ProtectedRoute requireAdmin={true}><GestionEnvios /></ProtectedRoute>} />
 
-              <Route path="*" element={<Navigate to="/" />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </FavoritesProvider>

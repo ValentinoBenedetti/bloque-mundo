@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import ProfileSidebar from './ProfileSidebar';
 import ConfirmModal from './ConfirmModal';
 import StockErrorModal from './StockErrorModal';
+import Logo from './Logo';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -110,9 +111,7 @@ const Navbar = () => {
     if (isAuthPage) {
         return (
             <nav className="bg-brand-red py-4 px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <h1 className="text-4xl font-logo text-white tracking-widest select-none cursor-default uppercase">
-                    Bloque Mundo
-                </h1>
+                <Logo size="large" className="mx-auto" />
 
                 {/* BOTÓN "CONTINUAR A LA TIENDA" */}
                 <button
@@ -139,32 +138,38 @@ const Navbar = () => {
                     >
                         <Menu size={24} />
                     </button>
-                    <h1 
-                        className="text-2xl sm:text-3xl md:text-4xl font-logo text-white tracking-widest cursor-pointer uppercase hover:text-brand-yellow transition duration-200 whitespace-nowrap" 
-                        onClick={() => navigate('/')}
-                    >
-                        Bloque Mundo
-                    </h1>
+                    <Logo size="normal" />
                 </div>
 
-                <div className="hidden md:flex gap-10 text-white font-bold text-[16px] tracking-wide items-center">
+                <div className="hidden md:flex gap-12 text-white font-bold text-[18px] uppercase tracking-wider items-center">
+                    {/* Enlace Inicio */}
                     <button 
                         onClick={() => navigate('/')} 
-                        className={`transition duration-200 cursor-pointer ${location.pathname === '/' ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                        className="relative group py-1"
                     >
-                        Inicio
+                        <span className={`transition-colors duration-300 ${location.pathname === '/' ? 'text-brand-yellow' : 'text-white'}`}>Inicio</span>
+                        <span className={`absolute left-0 top-1 text-brand-yellow overflow-hidden whitespace-nowrap transition-all duration-300 ${location.pathname === '/' ? 'w-full' : 'w-0 group-hover:w-full'}`}>Inicio</span>
+                        <span className={`absolute left-0 -bottom-1 h-[3px] bg-brand-yellow transition-all duration-300 ${location.pathname === '/' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                     </button>
+
+                    {/* Enlace Tienda */}
                     <button 
                         onClick={() => navigate('/tienda')} 
-                        className={`transition duration-200 cursor-pointer ${location.pathname.startsWith('/tienda') ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                        className="relative group py-1"
                     >
-                        Tienda
+                        <span className={`transition-colors duration-300 ${location.pathname.startsWith('/tienda') ? 'text-brand-yellow' : 'text-white'}`}>Tienda</span>
+                        <span className={`absolute left-0 top-1 text-brand-yellow overflow-hidden whitespace-nowrap transition-all duration-300 ${location.pathname.startsWith('/tienda') ? 'w-full' : 'w-0 group-hover:w-full'}`}>Tienda</span>
+                        <span className={`absolute left-0 -bottom-1 h-[3px] bg-brand-yellow transition-all duration-300 ${location.pathname.startsWith('/tienda') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                     </button>
+
+                    {/* Enlace Nosotros */}
                     <button 
                         onClick={() => navigate('/nosotros')} 
-                        className={`transition duration-200 cursor-pointer ${location.pathname.startsWith('/nosotros') ? 'text-brand-yellow font-black scale-105' : 'hover:text-brand-yellow hover:scale-105'}`}
+                        className="relative group py-1"
                     >
-                        Nosotros
+                        <span className={`transition-colors duration-300 ${location.pathname.startsWith('/nosotros') ? 'text-brand-yellow' : 'text-white'}`}>Nosotros</span>
+                        <span className={`absolute left-0 top-1 text-brand-yellow overflow-hidden whitespace-nowrap transition-all duration-300 ${location.pathname.startsWith('/nosotros') ? 'w-full' : 'w-0 group-hover:w-full'}`}>Nosotros</span>
+                        <span className={`absolute left-0 -bottom-1 h-[3px] bg-brand-yellow transition-all duration-300 ${location.pathname.startsWith('/nosotros') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                     </button>
 
                     <div className="relative ml-4" ref={searchRef}>
@@ -240,62 +245,72 @@ const Navbar = () => {
                                     <p className="font-bold">Tu carrito está vacío</p>
                                 </div>
                             ) : (
-                                cart.map((item, index) => (
-                                    <div key={index} className="flex gap-4 items-center border-b border-slate-50 pb-4 last:border-0">
-                                        <div className="w-20 h-20 bg-slate-100 rounded-lg p-2 shrink-0">
-                                            <img src={item.imagen || item.imagenes || item.image} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
-                                        </div>
-                                        <div className="flex-grow">
-                                            <h3 className="text-base font-extrabold text-slate-800 leading-tight mb-1.5">{item.titulo || item.nombre}</h3>
-                                            <div className="text-sm font-medium text-slate-500 mb-3">
-                                                {item.quantity} x <span className="font-extrabold text-slate-950">{formatPrice(item.precio || item.price)}</span>
+                                cart.map((item, index) => {
+                                    const isCombo = !!item.idCombo;
+                                    const themeName = isCombo ? 'Combo' : (item.tema?.nombre || 'Lego');
+                                    return (
+                                        <div key={index} className="flex gap-4 items-start bg-white border border-slate-200 p-3 rounded-xl shadow-sm relative group hover:border-slate-300 transition-colors">
+                                            <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-lg p-2 shrink-0 flex items-center justify-center">
+                                                <img src={item.imagen || item.imagenes || item.image} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
                                             </div>
-                                            <div className="flex items-center border border-slate-200 rounded w-max bg-white">
-                                                <button 
-                                                    onClick={() => {
-                                                        if (item.quantity === 1) {
-                                                            setConfirmModal({
-                                                                isOpen: true,
-                                                                product: item,
-                                                                action: 'minus'
-                                                            });
-                                                        } else {
-                                                            addToCart(item, -1);
-                                                        }
-                                                    }} 
-                                                    className="px-2.5 py-1.5 text-slate-400 hover:text-slate-900 transition"
-                                                >
-                                                    <Minus size={12} />
-                                                </button>
-                                                <span className="px-3 text-sm font-black text-slate-800">{item.quantity}</span>
-                                                <button 
-                                                    onClick={async () => {
-                                                        try {
-                                                            await addToCart(item, 1);
-                                                        } catch (err) {
-                                                            setStockError(err.message || "No hay suficiente stock");
-                                                        }
-                                                    }} 
-                                                    className="px-2.5 py-1.5 text-slate-400 hover:text-slate-900 transition"
-                                                >
-                                                    <Plus size={12} />
-                                                </button>
+                                            <div className="flex-grow pr-6">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand-red bg-red-50 px-2 py-0.5 rounded-full mb-1.5 inline-block">
+                                                    {themeName}
+                                                </span>
+                                                <h3 className="text-sm font-black text-slate-800 leading-tight mb-1 truncate pr-2" title={item.titulo || item.nombre}>
+                                                    {item.titulo || item.nombre}
+                                                </h3>
+                                                <div className="text-xs font-bold text-slate-400 mb-3">
+                                                    Precio: <span className="font-black text-slate-700">{formatPrice(item.precio || item.price)}</span>
+                                                </div>
+                                                <div className="flex items-center border border-slate-200 rounded-md w-max bg-slate-50 shadow-sm overflow-hidden">
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (item.quantity === 1) {
+                                                                setConfirmModal({
+                                                                    isOpen: true,
+                                                                    product: item,
+                                                                    action: 'minus'
+                                                                });
+                                                            } else {
+                                                                addToCart(item, -1);
+                                                            }
+                                                        }} 
+                                                        className="px-2.5 py-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition"
+                                                    >
+                                                        <Minus size={12} strokeWidth={3} />
+                                                    </button>
+                                                    <span className="px-3 text-xs font-black text-slate-800 border-x border-slate-200 bg-white min-w-[28px] text-center">{item.quantity}</span>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            try {
+                                                                await addToCart(item, 1, false);
+                                                            } catch (err) {
+                                                                setStockError(err.message || "No hay suficiente stock");
+                                                            }
+                                                        }} 
+                                                        className="px-2.5 py-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition"
+                                                    >
+                                                        <Plus size={12} strokeWidth={3} />
+                                                    </button>
+                                                </div>
                                             </div>
+                                            <button 
+                                                onClick={() => {
+                                                    setConfirmModal({
+                                                        isOpen: true,
+                                                        product: item,
+                                                        action: 'remove'
+                                                    });
+                                                }} 
+                                                className="absolute top-3 right-3 bg-white border border-slate-200 text-slate-400 hover:bg-brand-red hover:text-white hover:border-brand-red p-1 rounded-full transition-all opacity-70 group-hover:opacity-100"
+                                                title="Eliminar del carrito"
+                                            >
+                                                <X size={14} strokeWidth={2.5} />
+                                            </button>
                                         </div>
-                                        <button 
-                                            onClick={() => {
-                                                setConfirmModal({
-                                                    isOpen: true,
-                                                    product: item,
-                                                    action: 'remove'
-                                                });
-                                            }} 
-                                            className="bg-slate-100 text-slate-400 hover:bg-brand-red hover:text-white p-1.5 rounded-full transition self-start"
-                                        >
-                                            <X size={14} strokeWidth={3} />
-                                        </button>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 

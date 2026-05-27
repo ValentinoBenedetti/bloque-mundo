@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import Loader from '../components/Loader';
 import { useFavorites } from '../context/FavoritesContext';
 import { getProductsRequest } from '../api/products';
 import { HeartCrack } from 'lucide-react';
@@ -54,9 +55,7 @@ const Favorites = () => {
 
             <main className="flex-1 max-w-7xl mx-auto w-full py-16 px-6">
                 {loading ? (
-                    <div className="flex justify-center p-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-red"></div>
-                    </div>
+                    <Loader text="Cargando tus favoritos..." />
                 ) : favoriteProducts.length === 0 ? (
                     <div className="bg-white rounded-xl p-20 text-center shadow-sm border border-slate-100 flex flex-col items-center">
                         <HeartCrack size={64} className="text-slate-200 mb-6" />

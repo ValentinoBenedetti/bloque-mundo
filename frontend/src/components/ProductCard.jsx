@@ -63,9 +63,13 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                 )}
 
                 {/* BADGE DE STOCK BAJO */}
-                {product.estado === 'Publicado' && product.stock > 0 && product.stock <= 3 && (
+                {product.estado === 'Publicado' && product.stock > 0 && product.stock <= 10 && (
                     <span className="bg-brand-yellow text-slate-900 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-sm border border-brand-yellow/50">
-                        {product.stock === 1 ? '¡Última unidad!' : 'Últimas unidades'}
+                        {product.stock === 1 
+                            ? '¡Última unidad!' 
+                            : product.stock <= 5 
+                                ? `Últimas ${product.stock} unidades` 
+                                : 'Últimas unidades'}
                     </span>
                 )}
 
@@ -102,8 +106,8 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
                     <div className="flex items-center gap-1.5"><Calendar size={18} strokeWidth={1} /><span className="text-sm">{edad || '---'}</span></div>
                     <div className="flex items-center gap-1.5"><Package size={18} strokeWidth={1} /><span className="text-sm">{piezas || '---'}</span></div>
                 </div>
-                <h3 className="text-base font-bold text-slate-800 leading-tight mb-4 group-hover:text-brand-red transition-colors">{nombre || 'Set sin nombre'}</h3>
-                <div className="mt-auto"><span className="text-sm font-black text-slate-900">{formatPrice(precio)}</span></div>
+                <h3 className="text-[17px] font-bold text-slate-800 leading-tight mb-4 group-hover:text-brand-red transition-colors">{nombre || 'Set sin nombre'}</h3>
+                <div className="mt-auto"><span className="text-lg font-black text-slate-900">{formatPrice(precio)}</span></div>
             </div>
         </div>
     );

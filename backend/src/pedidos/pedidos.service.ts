@@ -99,15 +99,22 @@ export class PedidosService {
 
     if (codigoCupon) {
       try {
-        // Obtenemos los temas en el carrito para validar el cupón
         const temasEnCarrito: number[] = [];
         carrito.lineas.forEach(linea => {
-          if (linea.producto && linea.producto.tema) {
-            temasEnCarrito.push(linea.producto.tema.idTema);
+          if (linea.producto) {
+            if (linea.producto.tema) {
+              temasEnCarrito.push(linea.producto.tema.idTema);
+            } else {
+              temasEnCarrito.push(-1); // Sin temática
+            }
           }
           if (linea.combo && linea.combo.productos) {
             linea.combo.productos.forEach(p => { 
-              if (p.tema) temasEnCarrito.push(p.tema.idTema); 
+              if (p.tema) {
+                temasEnCarrito.push(p.tema.idTema);
+              } else {
+                temasEnCarrito.push(-1); // Sin temática
+              }
             });
           }
         });
@@ -187,7 +194,7 @@ export class PedidosService {
   async crearPedidoPendiente(idUsuario: string, codigoCupon?: string, direccionEnvio?: string) {
     const carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
-      relations: ['lineas', 'lineas.producto', 'lineas.combo', 'usuario', 'usuario.nivel'],
+      relations: ['lineas', 'lineas.producto', 'lineas.producto.tema', 'lineas.combo', 'lineas.combo.productos', 'lineas.combo.productos.tema', 'usuario', 'usuario.nivel'],
     });
 
     if (!carrito || !carrito.lineas || carrito.lineas.length === 0) {
@@ -318,8 +325,23 @@ export class PedidosService {
     if (codigoCupon) {
       try {
         const temasEnCarrito: number[] = [];
-        carrito.lineas.forEach(l => {
-           if (l.producto && l.producto.tema) temasEnCarrito.push(l.producto.tema.idTema);
+        carrito.lineas.forEach(linea => {
+          if (linea.producto) {
+            if (linea.producto.tema) {
+              temasEnCarrito.push(linea.producto.tema.idTema);
+            } else {
+              temasEnCarrito.push(-1); // Sin temática
+            }
+          }
+          if (linea.combo && linea.combo.productos) {
+            linea.combo.productos.forEach(p => { 
+              if (p.tema) {
+                temasEnCarrito.push(p.tema.idTema);
+              } else {
+                temasEnCarrito.push(-1); // Sin temática
+              }
+            });
+          }
         });
         cuponEntidad = await this.cuponesService.validate(codigoCupon, carrito.total, temasEnCarrito, idUsuario);
         const descuento = totalFinal * (Number(cuponEntidad?.porcentaje || 0) / 100);
@@ -362,8 +384,26 @@ export class PedidosService {
     return pedidoGuardado;
   }
 
-  async procesarCompra(idUsuario: string, codigoCupon?: string) {
-    // Este metodo ahora busca si hay un pedido PENDIENTE para este usuario y lo confirma
+  async procesarCompra(idUsuario: string, codigoCupon?: string, idPedido?: number) {
+    // Si tenemos el idPedido explícito (del retorno de MP), lo usamos
+    if (idPedido) {
+      const pedido = await this.pedidoRepository.findOne({
+        where: { idPedido, usuario: { idUsuario } },
+        relations: ['lineas', 'lineas.producto', 'lineas.combo']
+      });
+
+      if (pedido) {
+        if (pedido.estado === 'PENDIENTE') {
+          return this.confirmarPago(pedido.idPedido);
+        }
+        if (pedido.estado === 'PAGADO') {
+          return pedido; // Ya fue procesado por el webhook
+        }
+      }
+      throw new BadRequestException('El pedido especificado no existe o ya fue cancelado.');
+    }
+
+    // Fallback: Si no hay idPedido, buscamos el último PENDIENTE
     const pedidoPendiente = await this.pedidoRepository.findOne({
       where: { usuario: { idUsuario }, estado: 'PENDIENTE' },
       order: { fecha: 'DESC' },
@@ -373,7 +413,6 @@ export class PedidosService {
     if (pedidoPendiente) {
       return this.confirmarPago(pedidoPendiente.idPedido);
     } else {
-      // Si no hay pendiente, tal vez es un flujo viejo o manual
       throw new BadRequestException('No hay pedido pendiente para confirmar.');
     }
   }
@@ -428,7 +467,8 @@ export class PedidosService {
     const cp = extraerCP(dir);
     const costoEnvio = calcularCostoEnvio(cp);
     
-    await this.enviosService.crearEnvio(pedido.idPedido, cp, costoEnvio, dir);
+    const envioCreado = await this.enviosService.crearEnvio(pedido.idPedido, cp, costoEnvio, dir);
+    pedido.envio = envioCreado; // Asignar para que esté disponible en correos y frontend
 
     // 5. Enviar email de confirmación al usuario
     try {

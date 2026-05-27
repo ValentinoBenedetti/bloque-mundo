@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import styles from './ProfileSidebar.module.css';
 
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiX, FiEdit2, FiPackage, FiLogOut, FiBarChart2, FiLayers, FiUsers, FiAward } from 'react-icons/fi';
 import { getUserStatusRequest } from '../api/usuarios';
 
@@ -29,6 +29,7 @@ const decodificarToken = (token) => {
 const ProfileSidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Extraemos tus datos reales del token
     const userData = decodificarToken(user);
@@ -63,6 +64,7 @@ const ProfileSidebar = ({ isOpen, onClose }) => {
     const handleLogout = () => {
         logout();
         onClose();
+        navigate('/login');
     };
 
     return (

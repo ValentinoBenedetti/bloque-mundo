@@ -267,12 +267,39 @@ const CuponModal = ({ isOpen, onClose }) => {
                             </div>
                         ) : (
                             <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-                                {cupones.map((c) => (
-                                    <div key={c.codigo} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center hover:border-slate-300 transition shadow-sm">
+                                {[...cupones].sort((a, b) => {
+                                    const isExpired = (c) => {
+                                        const now = new Date();
+                                        const [year, month, day] = c.fechaFin.split('-');
+                                        const endDate = new Date(year, month - 1, day, 23, 59, 59);
+                                        if (now > endDate) return true;
+                                        if (c.topeUso > 0 && c.pedidos && c.pedidos.length >= c.topeUso) return true;
+                                        return false;
+                                    };
+                                    const aExpired = isExpired(a);
+                                    const bExpired = isExpired(b);
+                                    if (aExpired && !bExpired) return 1;
+                                    if (!aExpired && bExpired) return -1;
+                                    return 0;
+                                }).map((c) => {
+                                    const now = new Date();
+                                    const [year, month, day] = c.fechaFin.split('-');
+                                    const endDate = new Date(year, month - 1, day, 23, 59, 59);
+                                    const isDateExpired = now > endDate;
+                                    const isUsageExpired = c.topeUso > 0 && c.pedidos && c.pedidos.length >= c.topeUso;
+                                    const expired = isDateExpired || isUsageExpired;
+
+                                    return (
+                                    <div key={c.codigo} className={`bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center hover:border-slate-300 transition shadow-sm ${expired ? 'opacity-60 grayscale' : ''}`}>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="bg-slate-900 text-brand-yellow font-black px-2.5 py-1 rounded text-xs uppercase tracking-wider">{c.codigo}</span>
-                                                <span className="bg-brand-red text-white text-xs font-black px-2 py-0.5 rounded">-{c.porcentaje}%</span>
+                                                <span className={`font-black px-2.5 py-1 rounded text-xs uppercase tracking-wider ${expired ? 'bg-slate-400 text-white' : 'bg-slate-900 text-brand-yellow'}`}>{c.codigo}</span>
+                                                <span className={`text-white text-xs font-black px-2 py-0.5 rounded ${expired ? 'bg-slate-400' : 'bg-brand-red'}`}>-{c.porcentaje}%</span>
+                                                {expired && (
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 border border-slate-300 px-1.5 py-0.5 rounded">
+                                                        {isUsageExpired ? 'Agotado' : 'Expirado'}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="text-[11px] text-slate-500 font-medium flex items-center gap-3 pt-1">
                                                 <span>Válido: {c.fechaInicio} al {c.fechaFin}</span>
@@ -294,7 +321,8 @@ const CuponModal = ({ isOpen, onClose }) => {
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Heart, Calendar, Package, Hash, Star, StarHalf, Minus, Plus, Maximize, Shapes, Tag, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import Loader from '../components/Loader';
 import ProductCard from '../components/ProductCard';
 import { getProductsRequest } from '../api/products';
 import { getResenasRequest } from '../api/resenas';
@@ -171,15 +172,12 @@ const ProductDetail = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col bg-slate-50">
-                <Navbar />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-red"></div>
-                        <p className="text-slate-500 font-bold animate-pulse">Cargando set {id}...</p>
-                    </div>
-                </div>
-                <Footer />
+            <div className="min-h-screen bg-slate-50 flex flex-col">
+            <Navbar />
+            <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full flex items-center justify-center">
+                <Loader text="Buscando detalle del producto..." />
+            </main>
+            <Footer />
             </div>
         );
     }
@@ -368,11 +366,15 @@ const ProductDetail = () => {
                             )}
                         </div>
                         
-                        {product.stock > 0 && product.stock <= 3 && (
+                        {product.stock > 0 && product.stock <= 10 && (
                             <div className="mb-6">
                                 <span className="bg-brand-yellow/20 text-slate-900 text-[11px] font-black uppercase tracking-[0.1em] px-4 py-2 rounded-lg border border-brand-yellow/30 inline-flex items-center gap-2 animate-pulse">
                                     <div className="w-1.5 h-1.5 rounded-full bg-brand-yellow shadow-[0_0_8px_rgba(251,191,36,0.8)]"></div>
-                                    {product.stock === 1 ? '¡Última unidad disponible!' : 'Últimas unidades disponibles'}
+                                    {product.stock === 1 
+                                        ? '¡Última unidad disponible!' 
+                                        : product.stock <= 5 
+                                            ? `Últimas ${product.stock} unidades disponibles` 
+                                            : 'Últimas unidades disponibles'}
                                 </span>
                             </div>
                         )}

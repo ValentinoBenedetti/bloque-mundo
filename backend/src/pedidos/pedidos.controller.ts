@@ -13,7 +13,7 @@ export class PedidosController {
   async confirmarCompra(@Request() req: any, @Body() body: any) {
     // Sacamos el ID del usuario directamente de su "pulsera VIP" (Token)
     const idUsuario = req.user.sub;
-    return this.pedidosService.procesarCompra(idUsuario, body?.codigoCupon);
+    return this.pedidosService.procesarCompra(idUsuario, body?.codigoCupon, body?.idPedido);
   }
 
   // POST: http://localhost:3000/pedidos/crear-preferencia
@@ -62,7 +62,7 @@ export class PedidosController {
     // Obtenemos los parametros de la URL original
     const url = new URL(req.url, `http://${req.headers.host}`);
     const status = url.searchParams.get('status');
-    const idPedido = url.searchParams.get('idPedido');
+    const idPedido = url.searchParams.get('idPedido') || url.searchParams.get('external_reference');
     
     // Redirigimos al frontend local con los parametros
     return { url: `http://localhost:5173/perfil/compras?status=${status}&idPedido=${idPedido}` };

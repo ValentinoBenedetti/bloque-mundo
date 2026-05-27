@@ -48,7 +48,8 @@ const CheckoutSuccessModal = ({ isOpen, onClose, pedido, paymentId = 'N/A' }) =>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-3">
                             Resumen de la operación
                         </p>
-                        <div className="grid grid-cols-2 gap-4">
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
                                 <span className="block text-[10px] font-bold text-slate-400 uppercase">Nº de Orden</span>
                                 <span className="font-black text-slate-800 text-sm">
@@ -62,11 +63,68 @@ const CheckoutSuccessModal = ({ isOpen, onClose, pedido, paymentId = 'N/A' }) =>
                                 </span>
                             </div>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">Total Pagado</span>
-                            <span className="font-black text-brand-red text-base">
-                                ${Number(pedido?.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 })}
-                            </span>
+
+                        {/* Productos comprados */}
+                        {pedido?.lineas && pedido.lineas.length > 0 && (
+                            <div className="border-t border-slate-200 pt-3 mb-4 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                                <span className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Productos adquiridos</span>
+                                <div className="flex flex-col gap-2">
+                                    {pedido.lineas.map((linea, index) => {
+                                        const nombre = linea.producto?.titulo || linea.combo?.titulo || 'Producto';
+                                        return (
+                                            <div key={index} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div className="flex flex-col max-w-[65%]">
+                                                    <span className="text-xs font-bold text-slate-800 truncate" title={nombre}>{nombre}</span>
+                                                    <span className="text-[10px] font-bold text-slate-500">Cantidad: {linea.cantidad}</span>
+                                                </div>
+                                                <span className="text-xs font-black text-slate-900">
+                                                    ${Number(linea.precioHistorico || linea.precioUnitario || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 })} c/u
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-3 pt-4 border-t-2 border-slate-200 flex flex-col bg-slate-100 rounded-lg p-3">
+                            {(() => {
+                                const costoEnvio = pedido?.envio?.costo ? Number(pedido.envio.costo) : 0;
+                                const subtotal = pedido?.lineas?.reduce((acc, linea) => acc + (Number(linea.precioHistorico || linea.precioUnitario || 0) * linea.cantidad), 0) || 0;
+                                const total = Number(pedido?.total || 0);
+                                const descuento = (subtotal + costoEnvio) > total ? (subtotal + costoEnvio) - total : 0;
+
+                                return (
+                                    <>
+                                        {(descuento > 0 || costoEnvio > 0) && (
+                                            <div className="flex flex-col gap-1 w-full border-b border-slate-200 pb-2 mb-2">
+                                                <div className="flex justify-between items-center px-2">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Subtotal</span>
+                                                    <span className="text-xs font-bold text-slate-700">${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                                                </div>
+                                                {costoEnvio > 0 && (
+                                                <div className="flex justify-between items-center px-2">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Costo de envío</span>
+                                                    <span className="text-xs font-bold text-slate-700">${costoEnvio.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                                                </div>
+                                                )}
+                                                {descuento > 0 && (
+                                                <div className="flex justify-between items-center px-2">
+                                                    <span className="text-[10px] font-bold text-green-600 uppercase">Descuentos aplicados</span>
+                                                    <span className="text-xs font-bold text-green-600">-${descuento.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                                                </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col items-center justify-center">
+                                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">Total Pagado</span>
+                                            <span className="font-black text-brand-red text-3xl">
+                                                ${total.toLocaleString('es-AR', { minimumFractionDigits: 0 })}
+                                            </span>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -82,7 +140,7 @@ const CheckoutSuccessModal = ({ isOpen, onClose, pedido, paymentId = 'N/A' }) =>
                     <p className="text-slate-400 text-[10px] font-bold">
                         ¿Tienes dudas?{' '}
                         <a 
-                            href="mailto:soporte@bloquemundo.com" 
+                            href="mailto:bloquemundoo@gmail.com" 
                             className="text-slate-600 hover:text-slate-900 underline transition"
                         >
                             Contáctanos

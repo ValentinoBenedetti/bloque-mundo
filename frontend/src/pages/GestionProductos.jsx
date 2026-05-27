@@ -7,6 +7,7 @@ import ProductModal from '../components/ProductModal';
 import ConfirmModal from '../components/ConfirmModal';
 import ComboModal from '../components/ComboModal';
 import CuponModal from '../components/CuponModal';
+import Loader from '../components/Loader';
 import { getProductsRequest, updateProductRequest, deleteProductRequest, createProductRequest } from '../api/products';
 import { getCombosRequest, createComboRequest, updateComboRequest, deleteComboRequest } from '../api/combos';
 import bgImage from '../assets/background-lego.jpg';
@@ -164,6 +165,8 @@ const GestionProductos = () => {
             setIsProductModalOpen(true);
         }
     };
+
+
 
     const handleCreateClick = () => {
         setSelectedProduct(null);
@@ -376,35 +379,51 @@ const GestionProductos = () => {
                 </button>
             </div>
 
+
             {/* Product List */}
             <main className="flex-1 max-w-7xl mx-auto w-full pb-20 px-6">
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-red"></div>
+                    <div className="flex-1 flex justify-center items-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
+                        <Loader text="Cargando inventario..." />
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {displayedProducts.map((product) => (
-                            <div key={product.idProducto} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                                <div className="flex flex-wrap items-center">
-                                    {/* Code Section */}
-                                    <div className="p-6 border-r border-slate-100 min-w-[200px] flex flex-col items-center justify-center bg-slate-50/50">
-                                        <p className="text-lg font-bold text-slate-400">Código: <span className="text-slate-900 font-black">{product.codigoProducto}</span></p>
-                                        <div className="flex gap-2 mt-4">
-                                            <button 
-                                                onClick={() => handleDeleteClick(product)}
-                                                className="bg-slate-200 p-2 rounded hover:bg-red-500 hover:text-white transition"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleEditClick(product)}
-                                                className="bg-slate-200 p-2 rounded hover:bg-slate-900 hover:text-white transition"
-                                            >
-                                                <Edit size={18} />
-                                            </button>
+                        {displayedProducts.map((product) => {
+                            const idStr = product.esCombo ? `CMB-${product.idCombo}` : product.idProducto.toString();
+                            const imgUrl = product.imagenes?.[0] || product.imagen;
+
+                            return (
+                                <div key={idStr} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                                    <div className="flex flex-wrap items-stretch">
+                                        {/* Thumbnail Section */}
+                                        <div className="w-24 border-r border-slate-100 p-2 flex items-center justify-center bg-white shrink-0">
+                                            {imgUrl ? (
+                                                <img src={imgUrl} alt={product.titulo || product.nombre} className="w-full h-full object-contain mix-blend-multiply max-h-16" />
+                                            ) : (
+                                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                                    <Package size={20} />
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
+
+                                        {/* Code Section */}
+                                        <div className="p-6 border-r border-slate-100 min-w-[200px] flex flex-col items-center justify-center bg-slate-50/50 shrink-0">
+                                            <p className="text-lg font-bold text-slate-400">Código: <span className="text-slate-900 font-black">{product.codigoProducto || idStr}</span></p>
+                                            <div className="flex gap-2 mt-4">
+                                                <button 
+                                                    onClick={() => handleDeleteClick(product)}
+                                                    className="bg-slate-200 p-2 rounded hover:bg-red-500 hover:text-white transition"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleEditClick(product)}
+                                                    className="bg-slate-200 p-2 rounded hover:bg-slate-900 hover:text-white transition"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
 
                                     {/* Info Section */}
                                     <div className="flex-1 p-6 border-r border-slate-100 min-w-[250px]">
@@ -455,7 +474,8 @@ const GestionProductos = () => {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
 
                 {visibleCount < filteredProducts.length && (
                     <div className="flex justify-center pt-8 pb-12">

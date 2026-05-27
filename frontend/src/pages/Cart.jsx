@@ -2,12 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
+import { Trash2, Minus, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { crearPreferenciaRequest, confirmarCompraRequest } from '../api/pedidos';
 import ConfirmModal from '../components/ConfirmModal';
 import logoMercadoPago from '../assets/logo mercado pago byn.png';
+import sadLego from '../assets/sad-lego.png';
 import Swal from 'sweetalert2';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const extraerCP = (direccion) => {
     if (!direccion) return '0000';
@@ -57,6 +59,7 @@ const calcularCostoEnvio = (cp) => {
 };
 
 const Cart = () => {
+    useDocumentTitle('Carrito');
     const { cart, addToCart, removeFromCart, refreshCart, totalPrice, cartMetadata, setStockError } = useCart();
     const navigate = useNavigate();
 
@@ -86,6 +89,34 @@ const Cart = () => {
             setShippingAddress('');
         }
     }, [useSavedAddress, userSavedAddress]);
+
+    useEffect(() => {
+        refreshCart();
+    }, []);
+
+    useEffect(() => {
+        if (cartMetadata?.cambiosPrecio && cartMetadata.cambiosPrecio.length > 0) {
+            const newPriceChanges = {};
+            cartMetadata.cambiosPrecio.forEach(change => {
+                newPriceChanges[change.productoId] = {
+                    oldPrice: change.oldPrice,
+                    newPrice: change.newPrice
+                };
+            });
+            setPriceChanges(prev => ({ ...prev, ...newPriceChanges }));
+
+            const titulos = cartMetadata.cambiosPrecio.map(c => `"${c.titulo}"`).join(', ');
+            Swal.fire({
+                icon: 'info',
+                title: 'Precio Actualizado',
+                html: `<div style="font-family: sans-serif; font-size: 14px; color: #4b5563; font-weight: 700; line-height: 1.5;">Antes de continuar, te avisamos que el precio de: <strong style="color: #1a1a1a; font-weight: 900;">${titulos}</strong> fue actualizado en tu carrito.</div>`,
+                confirmButtonColor: '#0f172a'
+            });
+
+            // Limpiar cambios en metadata para evitar re-disparar la alerta
+            cartMetadata.cambiosPrecio = null;
+        }
+    }, [cartMetadata]);
 
     useEffect(() => {
         const fetchSuggestions = async () => {
@@ -137,11 +168,20 @@ const Cart = () => {
         try {
             // Recopilar los IDs de todos los temas en el carrito para validación
             const temasEnCarrito = cart.reduce((acc, item) => {
-                if (item.tema?.idTema) acc.push(item.tema.idTema);
-                if (item.productos && Array.isArray(item.productos)) {
+                if (item.esCombo && item.productos && Array.isArray(item.productos)) {
                     item.productos.forEach(prod => {
-                        if (prod.tema?.idTema) acc.push(prod.tema.idTema);
+                        if (prod.tema?.idTema) {
+                            acc.push(prod.tema.idTema);
+                        } else {
+                            acc.push(-1); // Sin temática
+                        }
                     });
+                } else {
+                    if (item.tema?.idTema) {
+                        acc.push(item.tema.idTema);
+                    } else {
+                        acc.push(-1); // Sin temática
+                    }
                 }
                 return acc;
             }, []);
@@ -303,14 +343,28 @@ const Cart = () => {
                 <h1 className="text-4xl font-black text-slate-900 uppercase italic mb-10 tracking-tighter">Mi Carrito</h1>
 
                 {cart.length === 0 ? (
-                    <div className="bg-white rounded-xl p-20 text-center shadow-sm border border-slate-100">
-                        <p className="text-2xl font-bold text-slate-400 mb-6">Tu carrito está vacío 🧱</p>
-                        <button
-                            onClick={() => navigate('/tienda')}
-                            className="bg-brand-red text-white px-8 py-3 rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition"
-                        >
-                            Ir a la tienda
-                        </button>
+                    <div className="relative bg-white rounded-xl p-32 text-center shadow-sm border border-slate-100 flex flex-col items-center justify-center overflow-hidden">
+                        {/* Fondo gigante y difuminado */}
+                        <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center">
+                            <img 
+                                src={sadLego} 
+                                alt="Fondo Carrito vacío" 
+                                className="w-full h-full object-contain opacity-15 grayscale blur-[1px] scale-110" 
+                            />
+                        </div>
+
+                        {/* Contenido en primer plano */}
+                        <div className="relative z-10 flex flex-col items-center">
+                            <p className="text-3xl font-black text-slate-800 mb-8 italic uppercase tracking-widest drop-shadow-sm">
+                                ¡Tu carrito está vacío!
+                            </p>
+                            <button
+                                onClick={() => navigate('/tienda')}
+                                className="bg-brand-red text-white px-12 py-4 rounded-lg font-black uppercase tracking-widest hover:bg-red-700 transition shadow-lg hover:scale-105 active:scale-95 cursor-pointer"
+                            >
+                                Volver a la tienda
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div className="flex flex-col lg:flex-row gap-10">
@@ -368,7 +422,7 @@ const Cart = () => {
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        await addToCart(item, 1);
+                                                        await addToCart(item, 1, false);
                                                     } catch (err) {
                                                         setStockError(err.message || "No hay suficiente stock");
                                                     }
@@ -566,9 +620,13 @@ const Cart = () => {
                                 <button
                                     onClick={handleCheckout}
                                     disabled={loadingCheckout}
-                                    className="w-full bg-slate-900 text-white font-black py-4 rounded-lg shadow-lg hover:bg-black transition-all uppercase tracking-widest text-sm italic mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-slate-900 text-white font-black py-4 rounded-lg shadow-lg hover:bg-black transition-all uppercase tracking-widest text-sm italic mb-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    {loadingCheckout ? 'Procesando...' : 'Pagar con Mercado Pago'}
+                                    {loadingCheckout ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" /> Procesando...
+                                        </>
+                                    ) : 'Pagar con Mercado Pago'}
                                 </button>
                                 
                                 <div className="flex flex-col items-center gap-4">

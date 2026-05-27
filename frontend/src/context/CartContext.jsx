@@ -37,7 +37,8 @@ export const CartProvider = ({ children }) => {
                     total: data.total,
                     descuentoAplicado: data.descuentoAplicado,
                     totalConDescuento: data.totalConDescuento,
-                    usuario: data.usuario
+                    usuario: data.usuario,
+                    cambiosPrecio: data.cambiosPrecio || null
                 });
             } catch (error) {
                 console.error("Error cargando el carrito:", error);
@@ -52,7 +53,7 @@ export const CartProvider = ({ children }) => {
         refreshCart();
     }, [isAuthenticated]);
 
-    const addToCart = async (product, quantity = 1) => {
+    const addToCart = async (product, quantity = 1, showToast = true) => {
         const productId = product.id || product.idProducto || product.id_producto;
         
         try {
@@ -95,25 +96,34 @@ export const CartProvider = ({ children }) => {
                 });
             }
 
-            if (quantity > 0) {
+            if (quantity > 0 && showToast) {
+                // 🔥 Reproducir sonido de "Clic de Lego"
+                try {
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.type = 'sine';
+                    // Frecuencia inicial y final (drop rápido)
+                    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                    
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.05);
+                } catch (e) {
+                    console.error("Audio error", e);
+                }
+
                 setSuccessMessage(`Agregaste al carrito: ${product.titulo || product.nombre}`);
                 setTimeout(() => setSuccessMessage(null), 3000);
 
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: `<span style="font-family: sans-serif; font-weight: 800; font-style: italic; text-transform: uppercase; color: #FFD500; font-size: 14px; tracking-tight">¡Agregado al carrito!</span>`,
-                    html: `<div style="font-family: sans-serif; font-size: 13px; color: #4b5563; font-weight: 700; margin-top: 4px; line-height: 1.4;">Agregaste <strong style="color: #1a1a1a; font-weight: 900;">${product.titulo || product.nombre}</strong> al carrito</div>`,
-                    showConfirmButton: false,
-                    timer: 2500,
-                    timerProgressBar: false,
-                    background: '#ffffff',
-                    iconColor: '#FFD500',
-                    customClass: {
-                        popup: 'rounded-2xl shadow-2xl border-2 border-[#FFD500]/30 p-4'
-                    }
-                });
+                // Modal eliminado a petición del usuario.
             }
         } catch (error) {
             console.error("Error al agregar al carrito:", error);

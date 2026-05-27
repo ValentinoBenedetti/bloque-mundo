@@ -34,6 +34,14 @@ export class EnviosService {
         const estadoAnterior = envio.estado;
         if (estadoAnterior !== estado) {
             envio.estado = estado;
+            
+            // Si el estado es entregado, guardar la fecha actual
+            if (estado === 'Entregado') {
+                envio.fechaEntrega = new Date();
+            } else {
+                envio.fechaEntrega = null as any; // Limpiar si se vuelve a otro estado
+            }
+
             const updatedEnvio = await this.envioRepository.save(envio);
 
             // Notificar por mail si pasa a "En camino" o "Entregado"

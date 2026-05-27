@@ -142,6 +142,11 @@ const TrackingModal = ({ isOpen, onClose, pedido }) => {
                                      estadoEnvio === 'En camino' ? 'En camino a tu casa' : 
                                      'Preparando tu pedido'}
                                 </p>
+                                {estadoEnvio === 'Entregado' && envio.fechaEntrega && (
+                                    <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wide">
+                                        El {new Date(envio.fechaEntrega).toLocaleDateString()}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>

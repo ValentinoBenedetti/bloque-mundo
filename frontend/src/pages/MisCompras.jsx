@@ -8,8 +8,10 @@ import ReviewModal from '../components/ReviewModal';
 import TrackingModal from '../components/TrackingModal';
 import SuccessModal from '../components/SuccessModal';
 import CheckoutSuccessModal from '../components/CheckoutSuccessModal';
+import CheckoutFailureModal from '../components/CheckoutFailureModal';
 import LevelUpModal from '../components/LevelUpModal';
 import Swal from 'sweetalert2';
+import confetti from 'canvas-confetti';
 import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye, X } from 'lucide-react';
 
 const decodificarToken = (token) => {
@@ -48,6 +50,9 @@ const MisCompras = () => {
     const [checkoutSuccessPedido, setCheckoutSuccessPedido] = useState(null);
     const [checkoutSuccessPaymentId, setCheckoutSuccessPaymentId] = useState('N/A');
 
+    // Estado para compra fallida
+    const [isCheckoutFailureOpen, setIsCheckoutFailureOpen] = useState(false);
+
     // Estados para el modal de nivel ascendido
     const [isLevelUpOpen, setIsLevelUpOpen] = useState(false);
     const [levelUpInfo, setLevelUpInfo] = useState(null);
@@ -65,7 +70,7 @@ const MisCompras = () => {
                 // Verificar si venimos de Mercado Pago
                 const queryParams = new URLSearchParams(location.search);
                 const statusParam = queryParams.get('status');
-                const idPedidoStr = queryParams.get('idPedido');
+                const idPedidoStr = queryParams.get('idPedido') || queryParams.get('external_reference');
                 const idPedido = idPedidoStr ? parseInt(idPedidoStr, 10) : null;
                 
                 let pedidoConfirmado = null;
@@ -74,7 +79,10 @@ const MisCompras = () => {
                     // Confirmar la compra para que vacíe el carrito y cree el pedido
                     try {
                         const savedCupon = localStorage.getItem('tempCuponCheckout');
-                        const data = savedCupon ? { codigoCupon: savedCupon } : {};
+                        const data = {
+                            ...(savedCupon ? { codigoCupon: savedCupon } : {}),
+                            ...(idPedido ? { idPedido: idPedido } : {})
+                        };
                         pedidoConfirmado = await confirmarCompraRequest(data);
                     } catch (e) {
                         // Puede fallar si el webhook ganó la carrera (lo cual es normal)
@@ -91,13 +99,7 @@ const MisCompras = () => {
                             console.log('Error al cancelar pedido:', e);
                         }
                     }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Compra cancelada',
-                        text: 'El proceso de pago no fue completado o fue cancelado. Si querés, podés intentarlo de nuevo desde tu carrito.',
-                        confirmButtonColor: '#E11D48',
-                        confirmButtonText: 'Entendido'
-                    });
+                    setIsCheckoutFailureOpen(true);
                     window.history.replaceState({}, document.title, window.location.pathname);
                     localStorage.removeItem('tempCuponCheckout');
                 }
@@ -116,6 +118,14 @@ const MisCompras = () => {
                     setCheckoutSuccessPaymentId(mpPaymentId);
                     setCheckoutSuccessPedido(pedidoConfirmado || { idPedido: idPedido || 'N/A', total: 0 });
                     setIsCheckoutSuccessOpen(true);
+                    
+                    // 🔥 Disparar Confeti
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#D62828', '#ffcc00', '#2563eb', '#16a34a']
+                    });
 
                     // Verificar si hubo ascenso de nivel
                     const savedUser = localStorage.getItem('usuarioBloqueMundo');
@@ -502,6 +512,11 @@ const MisCompras = () => {
                 }}
                 pedido={checkoutSuccessPedido}
                 paymentId={checkoutSuccessPaymentId}
+            />
+
+            <CheckoutFailureModal 
+                isOpen={isCheckoutFailureOpen}
+                onClose={() => setIsCheckoutFailureOpen(false)}
             />
 
             <LevelUpModal

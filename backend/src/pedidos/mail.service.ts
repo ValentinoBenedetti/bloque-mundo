@@ -44,6 +44,10 @@ export class MailService {
     const total = Number(pedido.total);
     const direccion = pedido.direccionEnvio || pedido.usuario.direccion || 'Retiro en sucursal';
 
+    const costoEnvio = pedido.envio ? Number(pedido.envio.costo) : 0;
+    const subtotalBruto = pedido.lineas ? pedido.lineas.reduce((acc, linea) => acc + (Number(linea.precioHistorico) * Number(linea.cantidad)), 0) : 0;
+    const descuentoTotal = (subtotalBruto + costoEnvio) > total ? (subtotalBruto + costoEnvio) - total : 0;
+
     // Generar las filas de los productos en HTML
     const itemsHtml = pedido.lineas && pedido.lineas.length > 0
       ? pedido.lineas.map(linea => {
@@ -132,8 +136,35 @@ export class MailService {
                       </tbody>
                     </table>
 
-                    <!-- TOTAL -->
+                    <!-- TOTALES -->
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      ${descuentoTotal > 0 || costoEnvio > 0 ? `
+                      <tr>
+                        <td style="font-size: 13px; font-weight: bold; color: #64748b; padding-bottom: 8px;">Subtotal:</td>
+                        <td style="font-size: 14px; font-weight: bold; color: #0f172a; text-align: right; padding-bottom: 8px;">
+                          $${subtotalBruto.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                      ${costoEnvio > 0 ? `
+                      <tr>
+                        <td style="font-size: 13px; font-weight: bold; color: #64748b; padding-bottom: 8px;">Costo de envío:</td>
+                        <td style="font-size: 14px; font-weight: bold; color: #0f172a; text-align: right; padding-bottom: 8px;">
+                          $${costoEnvio.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                      ` : ''}
+                      ${descuentoTotal > 0 ? `
+                      <tr>
+                        <td style="font-size: 13px; font-weight: bold; color: #16a34a; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">Descuentos aplicados:</td>
+                        <td style="font-size: 14px; font-weight: bold; color: #16a34a; text-align: right; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                          -$${descuentoTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                        </td>
+                      </tr>
+                      ` : ''}
+                      <tr>
+                        <td colspan="2" style="height: 12px;"></td>
+                      </tr>
+                      ` : ''}
                       <tr>
                         <td style="font-size: 16px; font-weight: 800; color: #0f172a;">Total Abonado:</td>
                         <td style="font-size: 22px; font-weight: 900; color: #e11d48; text-align: right;">

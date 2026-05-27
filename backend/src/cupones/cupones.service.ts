@@ -77,8 +77,11 @@ export class CuponesService {
         }
 
         if (cupon.temaRequerido && temasEnCarrito !== undefined) {
-            if (!temasEnCarrito.includes(cupon.temaRequerido.idTema)) {
-                throw new BadRequestException(`Este cupón solo aplica a sets de la temática "${cupon.temaRequerido.nombre}"`);
+            const todosPertenecenAlTema = temasEnCarrito.length > 0 && temasEnCarrito.every(
+                (idTema) => idTema === cupon.temaRequerido.idTema
+            );
+            if (!todosPertenecenAlTema) {
+                throw new BadRequestException(`El cupón solo aplica si todos los productos en el carrito pertenecen a la temática "${cupon.temaRequerido.nombre}"`);
             }
         }
 

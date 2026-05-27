@@ -155,7 +155,7 @@ export class CarritoService {
   }
 
   async obtenerCarrito(idUsuario: string) {
-    const carrito = await this.carritoRepository.findOne({
+    let carrito = await this.carritoRepository.findOne({
       where: { usuario: { idUsuario } },
       relations: ['lineas', 'lineas.producto', 'lineas.producto.tema', 'lineas.combo', 'lineas.combo.productos', 'lineas.combo.productos.tema', 'usuario', 'usuario.nivel'],
       order: {
@@ -166,6 +166,41 @@ export class CarritoService {
     });
     // Si no existe, devolvemos un objeto vacío estructurado igual
     if (!carrito) return { total: 0, lineas: [] };
+
+    let precioCambiado = false;
+    const cambiosPrecio: any[] = [];
+
+    const lineasSeguras = carrito.lineas || [];
+    for (const linea of lineasSeguras) {
+      const item = linea.producto || linea.combo;
+      if (!item) continue;
+
+      const precioDB = Number(item.precio);
+      const precioCarrito = Number(linea.precioUnitario);
+
+      if (precioCarrito !== precioDB) {
+        linea.precioUnitario = precioDB;
+        await this.lineaRepository.save(linea);
+        precioCambiado = true;
+
+        const isCombo = !!linea.combo;
+        const idStr = isCombo ? `combo-${linea.combo.idCombo}` : linea.producto.idProducto.toString();
+        const titulo = isCombo ? linea.combo.titulo : linea.producto.titulo;
+
+        cambiosPrecio.push({
+          productoId: idStr,
+          titulo,
+          oldPrice: precioCarrito,
+          newPrice: precioDB
+        });
+      }
+    }
+
+    if (precioCambiado) {
+      carrito = await this.actualizarTotal(carrito.idCarrito);
+      (carrito as any).cambiosPrecio = cambiosPrecio;
+    }
+
     return carrito;
   }
 
