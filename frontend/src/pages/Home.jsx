@@ -116,9 +116,9 @@ const Home = () => {
 
             {/* Carrusel Novedades - Estilo Swiper Professional */}
             {novedades.length > 0 && (
-                <section className="relative min-h-[calc(100vh-76px)] pt-12 pb-6 bg-slate-950 flex flex-col items-center justify-between text-white overflow-hidden">
+                <section className="relative w-full py-16 bg-slate-950 flex flex-col items-center justify-center gap-6 md:gap-10 text-white overflow-hidden">
                     {/* Fondo con Blur Dinámico */}
-                    <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 z-0 w-full h-full">
                         <img
                             src="/assets/banners/novedades.png"
                             className="w-full h-full object-cover opacity-30 blur-sm scale-110"
@@ -127,7 +127,7 @@ const Home = () => {
                         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-transparent to-slate-950"></div>
                     </div>
 
-                    <div className="relative z-10 w-full max-w-6xl px-4 text-center mt-2">
+                    <div className="relative z-10 w-full max-w-6xl px-4 text-center">
                         <motion.h2 
                             initial={{ opacity: 0, y: -10 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -138,7 +138,7 @@ const Home = () => {
                         <p className="text-slate-400 font-medium tracking-widest uppercase text-[10px] mt-1">Lanzamientos recientes</p>
                     </div>
 
-                    <div className="relative z-10 w-full max-w-7xl px-4">
+                    <div className="relative z-10 w-full max-w-7xl px-4 mt-6 md:mt-12">
                         <Swiper
                             slidesPerView={1}
                             spaceBetween={0}

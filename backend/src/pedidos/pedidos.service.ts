@@ -511,6 +511,7 @@ export class PedidosService {
       .leftJoinAndSelect('pedido.lineas', 'lineas')
       .leftJoinAndSelect('lineas.producto', 'producto')
       .leftJoinAndSelect('lineas.combo', 'combo')
+      .leftJoinAndSelect('pedido.envio', 'envio')
       .orderBy('pedido.fecha', 'DESC')
       .getMany();
   }

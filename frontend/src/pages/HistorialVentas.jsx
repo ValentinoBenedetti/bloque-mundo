@@ -4,7 +4,7 @@ import { getHistorialVentasAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AdminReviewModal from '../components/AdminReviewModal';
-import { Calendar, Hash, User, ChevronDown, Search, X, FileSpreadsheet, Filter, FileText } from 'lucide-react';
+import { Calendar, Hash, User, ChevronDown, Search, X, FileSpreadsheet, Filter, FileText, Package } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -37,20 +37,26 @@ const HistorialVentas = () => {
         fetchVentas();
     }, []);
 
-    // Filtro por búsqueda (nombre de producto o código)
+    // Filtro por búsqueda (nombre de producto, código, idPedido o nombre de usuario)
     const ventasFiltradas = ventas.filter(pedido => {
         if (estadoFiltro !== 'Todos' && pedido.estado !== estadoFiltro) return false;
         if (filtroMonto && Number(pedido.total) <= 100000) return false;
         
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            return pedido.lineas?.some(linea => {
+            const matchesId = String(pedido.idPedido).includes(term);
+            const matchesUser = pedido.usuario ? 
+                `${pedido.usuario.nombre || ''} ${pedido.usuario.apellido || ''}`.toLowerCase().includes(term) : false;
+            
+            const matchesLineas = pedido.lineas?.some(linea => {
                 const itemComprado = linea.producto || linea.combo;
                 if (!itemComprado) return false;
                 const matchesName = itemComprado.titulo && itemComprado.titulo.toLowerCase().includes(term);
                 const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
                 return matchesName || matchesCode;
             });
+            
+            return matchesId || matchesUser || matchesLineas;
         }
         return true;
     });
@@ -226,7 +232,7 @@ const HistorialVentas = () => {
                     <div className="relative flex-1 min-w-[250px] max-w-md group">
                         <input
                             type="text"
-                            placeholder="Buscar por producto (con código)"
+                            placeholder="Buscar por ID, Usuario o Producto..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
@@ -287,9 +293,14 @@ const HistorialVentas = () => {
                         <div className="h-40 bg-slate-200 rounded-lg w-full"></div>
                         <div className="h-40 bg-slate-200 rounded-lg w-full"></div>
                     </div>
+                ) : ventas.length === 0 ? (
+                    <div className="text-center py-20">
+                        <p className="text-2xl font-bold text-slate-400">Aún no hay ventas registradas.</p>
+                    </div>
                 ) : ventasFiltradas.length === 0 ? (
                     <div className="text-center py-20">
-                        <p className="text-2xl font-bold text-slate-400">No se encontraron ventas con esos criterios.</p>
+                        <Package size={48} className="mx-auto text-slate-300 mb-4" />
+                        <p className="text-2xl font-bold text-slate-400">No se encontraron pedidos con esos criterios.</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -326,20 +337,38 @@ const HistorialVentas = () => {
                                             <p className="text-xs font-medium text-slate-500">{usuario.email || usuario.correo}</p>
                                         </div>
 
-                                        {/* Estado del pedido */}
-                                        <div className="space-y-2 border-l border-slate-100 pl-4 flex flex-col justify-start">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                                                Estado del Pedido
+                                        {/* Estados */}
+                                        <div className="border-l border-slate-100 pl-4 flex gap-6">
+                                            <div className="space-y-2 flex flex-col justify-start">
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
+                                                    Estado del Pedido
+                                                </div>
+                                                <div className="mt-1.5">
+                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
+                                                        pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                        pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                        pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-slate-100 text-slate-700'
+                                                    }`}>
+                                                        {pedido.estado}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="mt-1.5">
-                                                <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
-                                                    pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                    pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
-                                                    pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-slate-100 text-slate-700'
-                                                }`}>
-                                                    {pedido.estado}
-                                                </span>
+
+                                            <div className="space-y-2 flex flex-col justify-start">
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">
+                                                    Estado del Envío
+                                                </div>
+                                                <div className="mt-1.5">
+                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
+                                                        pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
+                                                        pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
+                                                        pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
+                                                        'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {pedido.envio?.estado || 'PENDIENTE'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

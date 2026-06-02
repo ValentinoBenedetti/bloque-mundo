@@ -13,7 +13,17 @@ const Footer = () => {
                 
                 {/* COLUMNA 1: LOGO Y INFO */}
                 <div className="space-y-4">
-                    <div onClick={() => navigate('/')} className="cursor-pointer w-max">
+                    <div 
+                        onClick={() => {
+                            if (window.location.pathname === '/') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            } else {
+                                navigate('/');
+                                window.scrollTo(0, 0);
+                            }
+                        }} 
+                        className="cursor-pointer w-max"
+                    >
                         <Logo size="footer" textOnly={true} animated={false} className="text-brand-yellow hover:text-white transition" />
                     </div>
                     <p className="text-slate-400 text-xs md:text-sm leading-relaxed">
@@ -53,7 +63,14 @@ const Footer = () => {
                     <ul className="space-y-2 text-xs md:text-sm">
                         <li>
                             <button 
-                                onClick={() => navigate('/')} 
+                                onClick={() => {
+                                    if (window.location.pathname === '/') {
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    } else {
+                                        navigate('/');
+                                        window.scrollTo(0, 0);
+                                    }
+                                }} 
                                 className="hover:text-brand-yellow hover:translate-x-1 transition duration-300 cursor-pointer flex items-center gap-1 bg-transparent border-none p-0 text-slate-300 font-normal outline-none"
                             >
                                 Inicio

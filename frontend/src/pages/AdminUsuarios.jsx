@@ -70,13 +70,12 @@ const VerComprasModal = ({ usuario, pedidos, onClose }) => {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span
-                                            className={`text-xs font-black px-2.5 py-1 rounded-full uppercase ${
-                                                pedido.estado === 'PAGADO'
+                                            className={`text-xs font-black px-2.5 py-1 rounded-full uppercase ${pedido.estado === 'PAGADO'
                                                     ? 'bg-green-100 text-green-700'
                                                     : pedido.estado === 'CANCELADO'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-yellow-100 text-yellow-700'
-                                            }`}
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-yellow-100 text-yellow-700'
+                                                }`}
                                         >
                                             {pedido.estado}
                                         </span>
@@ -100,7 +99,7 @@ const VerComprasModal = ({ usuario, pedidos, onClose }) => {
                                                 <span className="font-bold">
                                                     {formatPrice(
                                                         Number(linea.precioHistorico || linea.precioUnitario) *
-                                                            linea.cantidad
+                                                        linea.cantidad
                                                     )}
                                                 </span>
                                             </div>
@@ -164,7 +163,8 @@ const AdminUsuarios = () => {
     };
 
     const handleEnviarCorreo = (email) => {
-        window.open(`mailto:${email}`, '_blank');
+        // Abre Gmail directamente en una nueva pestaña listo para redactar
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
     };
 
     // Filtro + orden
@@ -227,11 +227,10 @@ const AdminUsuarios = () => {
                     <div className="flex flex-wrap gap-4 w-full sm:w-auto justify-center sm:justify-start">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
@@ -289,9 +288,9 @@ const AdminUsuarios = () => {
                         ))}
                     </div>
                 ) : usuariosFiltrados.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <Users size={48} className="text-slate-200 mb-4" />
-                        <p className="text-xl font-bold text-slate-400">
+                    <div className="text-center py-20">
+                        <Users size={48} className="mx-auto text-slate-300 mb-4" />
+                        <p className="text-2xl font-bold text-slate-400">
                             No se encontraron usuarios con esos criterios.
                         </p>
                     </div>
@@ -303,21 +302,23 @@ const AdminUsuarios = () => {
                                 className="bg-white border border-slate-200 rounded-xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 shadow-sm hover:border-slate-300 hover:shadow-md transition-all"
                             >
                                 {/* Avatar */}
-                                <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm ${
-                                    ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'][
-                                        ((u.nombre?.charCodeAt(0) || 0) + (u.apellido?.charCodeAt(0) || 0)) % 8
+                                <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm ${['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'][
+                                    ((u.nombre?.charCodeAt(0) || 0) + (u.apellido?.charCodeAt(0) || 0)) % 8
                                     ]
-                                }`}>
+                                    }`}>
                                     {((u.nombre?.[0] || '') + (u.apellido?.[0] || '')).toUpperCase() || '?'}
                                 </div>
 
                                 {/* ID */}
-                                <div className="shrink-0 text-center sm:text-left sm:w-28">
+                                <div className="shrink-0 text-center sm:text-left sm:w-40">
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">
                                         ID
                                     </span>
-                                    <span className="text-2xl font-black text-slate-900 italic">
+                                    <span className="text-2xl font-black text-slate-900 italic block">
                                         {u.idUsuario}
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-slate-500 block mt-1 break-all pr-2">
+                                        {u.email}
                                     </span>
                                 </div>
 

@@ -12,7 +12,7 @@ import CheckoutFailureModal from '../components/CheckoutFailureModal';
 import LevelUpModal from '../components/LevelUpModal';
 import Swal from 'sweetalert2';
 import confetti from 'canvas-confetti';
-import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye, X } from 'lucide-react';
+import { Calendar, Hash, ChevronDown, Truck, Search, MessageSquare, ShoppingBag, Eye, X, Package } from 'lucide-react';
 
 const decodificarToken = (token) => {
     try {
@@ -187,10 +187,12 @@ const MisCompras = () => {
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            return pedido.lineas?.some(linea => {
+            const matchesId = String(pedido.idPedido).includes(term);
+            const matchesLineas = pedido.lineas?.some(linea => {
                 const item = linea.producto || linea.combo;
                 return item?.titulo?.toLowerCase().includes(term);
             });
+            return matchesId || matchesLineas;
         }
         return true;
     });
@@ -315,7 +317,7 @@ const MisCompras = () => {
                     <div className="relative flex-1 min-w-[250px] max-w-md group">
                         <input
                             type="text"
-                            placeholder="Buscar por nombre..."
+                            placeholder="Buscar por nombre o ID de pedido..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className={`w-full pl-6 pr-12 py-2.5 rounded-full text-sm font-semibold bg-slate-800 border ${searchTerm ? 'border-brand-yellow text-brand-yellow focus:ring-brand-yellow' : 'border-slate-700 text-slate-100 placeholder:text-slate-400 hover:border-brand-yellow focus:ring-brand-yellow'} outline-none focus:ring-2 transition`}
@@ -336,9 +338,14 @@ const MisCompras = () => {
                         <div className="h-40 bg-slate-200 rounded-lg w-full"></div>
                         <div className="h-40 bg-slate-200 rounded-lg w-full"></div>
                     </div>
-                ) : comprasOrdenadas.length === 0 ? (
+                ) : compras.length === 0 ? (
                     <div className="text-center py-20">
                         <p className="text-2xl font-bold text-slate-400">Aún no has realizado ninguna compra 🧱</p>
+                    </div>
+                ) : comprasOrdenadas.length === 0 ? (
+                    <div className="text-center py-20">
+                        <Package size={48} className="mx-auto text-slate-300 mb-4" />
+                        <p className="text-2xl font-bold text-slate-400">No se encontraron pedidos con esos criterios.</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -357,21 +364,38 @@ const MisCompras = () => {
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center gap-6">
-                                            {/* Badge de Estado */}
-                                            <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide ${
-                                                pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
-                                                pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
-                                                'bg-slate-100 text-slate-700'
-                                            }`}>
-                                                {pedido.estado}
-                                            </span>
+                                        <div className="flex items-center gap-4 sm:gap-6">
+                                            {/* Estados */}
+                                            <div className="flex gap-4 sm:gap-6">
+                                                <div className="flex flex-col gap-1.5 text-center">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Estado del Pedido</span>
+                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
+                                                        pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                        pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                        pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                        'bg-slate-100 text-slate-700'
+                                                    }`}>
+                                                        {pedido.estado}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1.5 text-center">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Estado del Envío</span>
+                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
+                                                        pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
+                                                        pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
+                                                        pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
+                                                        'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {pedido.envio?.estado || 'PENDIENTE'}
+                                                    </span>
+                                                </div>
+                                            </div>
 
                                             {/* Total Pagado */}
-                                            <div className="flex flex-col gap-0 text-right">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Total Pagado</span>
-                                                <span className="text-xl font-black text-slate-900 leading-none mt-1">
+                                            <div className="flex flex-col gap-1.5 text-right border-l border-slate-100 pl-4 sm:pl-6">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Total Pagado</span>
+                                                <span className="text-xl font-black text-slate-900 leading-none">
                                                     ${(Number(pedido.total)).toLocaleString()}
                                                 </span>
                                             </div>

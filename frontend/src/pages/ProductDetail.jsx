@@ -337,33 +337,38 @@ const ProductDetail = () => {
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-4 mb-6">
-                            <span className="text-3xl font-black text-brand-red">{formatPrice(precio)}</span>
-                            <div className="h-6 w-[2px] bg-slate-200"></div>
-                            {resenas.length > 0 ? (
-                                (() => {
-                                    const average = resenas.reduce((acc, r) => acc + r.estrellas, 0) / resenas.length;
-                                    const roundedAverage = Math.round(average * 2) / 2;
-                                    const fullStars = Math.floor(roundedAverage);
-                                    const hasHalfStar = roundedAverage % 1 !== 0;
-                                    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                        <div className="flex flex-col mb-6">
+                            <div className="flex items-center gap-4 mb-1">
+                                <span className="text-3xl font-black text-brand-red">{formatPrice(precio)}</span>
+                                <div className="h-6 w-[2px] bg-slate-200"></div>
+                                {resenas.length > 0 ? (
+                                    (() => {
+                                        const average = resenas.reduce((acc, r) => acc + r.estrellas, 0) / resenas.length;
+                                        const roundedAverage = Math.round(average * 2) / 2;
+                                        const fullStars = Math.floor(roundedAverage);
+                                        const hasHalfStar = roundedAverage % 1 !== 0;
+                                        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
-                                    return (
-                                        <div className="flex items-center gap-1 text-brand-yellow">
-                                            {[...Array(fullStars)].map((_, i) => (
-                                                <Star key={`full-${i}`} size={18} className="fill-current" />
-                                            ))}
-                                            {hasHalfStar && <StarHalf key="half" size={18} className="fill-current" />}
-                                            {[...Array(emptyStars)].map((_, i) => (
-                                                <Star key={`empty-${i}`} size={18} className="text-slate-200" />
-                                            ))}
-                                            <span className="text-slate-400 text-xs font-bold ml-2">({roundedAverage.toLocaleString('es-AR')})</span>
-                                        </div>
-                                    );
-                                })()
-                            ) : (
-                                <span className="text-slate-400 text-xs font-bold italic">Este producto aún no tiene reseñas</span>
-                            )}
+                                        return (
+                                            <div className="flex items-center gap-1 text-brand-yellow">
+                                                {[...Array(fullStars)].map((_, i) => (
+                                                    <Star key={`full-${i}`} size={18} className="fill-current" />
+                                                ))}
+                                                {hasHalfStar && <StarHalf key="half" size={18} className="fill-current" />}
+                                                {[...Array(emptyStars)].map((_, i) => (
+                                                    <Star key={`empty-${i}`} size={18} className="text-slate-200" />
+                                                ))}
+                                                <span className="text-slate-400 text-xs font-bold ml-2">({roundedAverage.toLocaleString('es-AR')})</span>
+                                            </div>
+                                        );
+                                    })()
+                                ) : (
+                                    <span className="text-slate-400 text-xs font-bold italic">Este producto aún no tiene reseñas</span>
+                                )}
+                            </div>
+                            <span className="text-sm font-semibold text-slate-400">
+                                Precio sin impuestos nacionales: <span className="font-bold text-slate-600">{formatPrice(precio / 1.21)}</span>
+                            </span>
                         </div>
                         
                         {product.stock > 0 && product.stock <= 10 && (

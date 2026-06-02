@@ -386,6 +386,10 @@ const GestionProductos = () => {
                     <div className="flex-1 flex justify-center items-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
                         <Loader text="Cargando inventario..." />
                     </div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="text-center py-20">
+                        <p className="text-2xl font-bold text-slate-400">No encontramos ningún bloque que coincida 🧱</p>
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         {displayedProducts.map((product) => {

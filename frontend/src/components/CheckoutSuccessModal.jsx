@@ -6,7 +6,7 @@ const CheckoutSuccessModal = ({ isOpen, onClose, pedido, paymentId = 'N/A' }) =>
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 relative border border-slate-100">
+            <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden animate-in zoom-in-95 duration-300 relative border border-slate-100 custom-scrollbar">
                 {/* Botón cerrar */}
                 <button 
                     onClick={onClose}
@@ -140,7 +140,9 @@ const CheckoutSuccessModal = ({ isOpen, onClose, pedido, paymentId = 'N/A' }) =>
                     <p className="text-slate-400 text-[10px] font-bold">
                         ¿Tienes dudas?{' '}
                         <a 
-                            href="mailto:bloquemundoo@gmail.com" 
+                            href="https://mail.google.com/mail/?view=cm&fs=1&to=bloquemundoo@gmail.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-slate-600 hover:text-slate-900 underline transition"
                         >
                             Contáctanos
