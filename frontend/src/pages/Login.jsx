@@ -104,7 +104,7 @@ const Login = () => {
             <main className="flex-1 flex items-center justify-center relative py-16 md:py-24 px-4 min-h-[650px]">
 
                 <div
-                    className="absolute inset-0 bg-cover bg-center z-0"
+                    className="absolute inset-0 bg-cover bg-center z-0 blur-sm scale-110"
                     style={{
                         backgroundImage: `url(${bgImage})`
                     }}
@@ -112,7 +112,7 @@ const Login = () => {
 
                 <div className="absolute inset-0 bg-black/40 z-10"></div>
 
-                <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-md relative z-20 animate-fade-in-up border border-slate-150">
+                <div className="bg-white p-8 md:p-10 rounded-lg shadow-2xl w-full max-w-lg relative z-20 mx-4 animate-fade-in-up overflow-visible">
 
                     <button
                         onClick={() => navigate('/')}
