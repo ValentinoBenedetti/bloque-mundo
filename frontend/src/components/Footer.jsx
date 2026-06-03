@@ -163,10 +163,10 @@ const Footer = () => {
             {/* BARRA INFERIOR */}
             <div className="max-w-7xl mx-auto border-t border-slate-800 mt-12 pt-6 flex flex-wrap justify-between items-center text-xs text-slate-500 gap-4">
                 <span>Copyright © 2026 Bloque Mundo. Todos los derechos reservados.</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pr-16">
                     <span className="font-bold uppercase tracking-wider text-[9px] opacity-70">Desarrollado por</span>
                     <a href="https://www.instagram.com/vexa.systems" target="_blank" rel="noopener noreferrer" className="flex items-center">
-                        <img src={vexaLogo} alt="Vexa Systems" className="h-6 object-contain hover:scale-105 transition duration-300 brightness-0 invert opacity-70 hover:opacity-100" />
+                        <img src={vexaLogo} alt="Vexa Systems" className="h-10 object-contain hover:scale-105 transition duration-300 brightness-0 invert opacity-70 hover:opacity-100" />
                     </a>
                 </div>
             </div>
