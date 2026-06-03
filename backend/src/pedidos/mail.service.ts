@@ -114,7 +114,7 @@ export class MailService {
                         <td style="font-size: 14px; font-weight: 800; color: #0f172a; text-align: right;">#${idPedido}</td>
                       </tr>
                       <tr>
-                        <td style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; padding-top: 8px;">Método de Envío:</td>
+                        <td style="font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; padding-top: 8px;">Dirección de Entrega:</td>
                         <td style="font-size: 13px; font-weight: 600; color: #334155; text-align: right; padding-top: 8px; max-width: 250px; word-break: break-word;">${direccion}</td>
                       </tr>
                     </table>

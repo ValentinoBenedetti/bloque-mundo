@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getHistorialVentasAdminRequest } from '../api/pedidos';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AdminReviewModal from '../components/AdminReviewModal';
-import { Calendar, Hash, User, ChevronDown, Search, X, FileSpreadsheet, Filter, FileText, Package } from 'lucide-react';
+import { Calendar, Hash, User, ChevronDown, Search, X, FileSpreadsheet, Filter, FileText, Package, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import html2canvas from 'html2canvas';
 
 const HistorialVentas = () => {
     const [ventas, setVentas] = useState([]);
@@ -16,9 +17,20 @@ const HistorialVentas = () => {
     const [sortOrder, setSortOrder] = useState('desc'); // 'desc' o 'asc'
     const [searchTerm, setSearchTerm] = useState('');
     const [estadoFiltro, setEstadoFiltro] = useState('Todos');
-    const [filtroMonto, setFiltroMonto] = useState(false);
+    const [filtroPrecio, setFiltroPrecio] = useState('');
+    const [isPriceOpen, setIsPriceOpen] = useState(false);
+    const [minPrice, setMinPrice] = useState('');
+    const [maxPrice, setMaxPrice] = useState('');
+    const priceRef = useRef(null);
+
     const [visibleCount, setVisibleCount] = useState(5); // Para el botón Ver más
     const [modalData, setModalData] = useState({ isOpen: false, idUsuario: null, idProducto: null, idPedido: null, productoNombre: '' });
+    
+    // Filtros para las métricas
+    const [chartYear, setChartYear] = useState('Todos');
+    const [chartMonth, setChartMonth] = useState('Todos');
+    
+    const chartRef = useRef(null);
 
     const navigate = useNavigate();
 
@@ -37,10 +49,26 @@ const HistorialVentas = () => {
         fetchVentas();
     }, []);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (priceRef.current && !priceRef.current.contains(event.target)) {
+                setIsPriceOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     // Filtro por búsqueda (nombre de producto, código, idPedido o nombre de usuario)
     const ventasFiltradas = ventas.filter(pedido => {
         if (estadoFiltro !== 'Todos' && pedido.estado !== estadoFiltro) return false;
-        if (filtroMonto && Number(pedido.total) <= 100000) return false;
+        
+        if (filtroPrecio) {
+            const [minStr, maxStr] = filtroPrecio.split('-');
+            const min = minStr ? Number(minStr) : 0;
+            const max = maxStr ? Number(maxStr) : Infinity;
+            if (Number(pedido.total) < min || Number(pedido.total) > max) return false;
+        }
         
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -68,11 +96,11 @@ const HistorialVentas = () => {
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
-    const hasActiveFilters = searchTerm !== '' || estadoFiltro !== 'Todos' || sortOrder !== 'desc' || filtroMonto;
+    const hasActiveFilters = searchTerm !== '' || estadoFiltro !== 'Todos' || sortOrder !== 'desc' || filtroPrecio !== '';
     const clearFilters = () => {
         setSearchTerm('');
         setEstadoFiltro('Todos');
-        setFiltroMonto(false);
+        setFiltroPrecio('');
         setSortOrder('desc');
         setVisibleCount(5);
     };
@@ -128,7 +156,7 @@ const HistorialVentas = () => {
             tableRows.push(pedidoData);
         });
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 20,
@@ -139,11 +167,77 @@ const HistorialVentas = () => {
         doc.save("Reporte_Ventas.pdf");
     };
 
-    // Datos para el gráfico de barras (Ventas por Estado)
+    const handleExportChartPDF = async () => {
+        if (!chartRef.current) return;
+        
+        try {
+            const canvas = await html2canvas(chartRef.current, {
+                scale: 2, // Para mejor resolución
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // A4 landscape dimensions: 297 x 210 mm
+            const pdfWidth = 297;
+            const pdfHeight = 210;
+            
+            const imgProps = doc.getImageProperties(imgData);
+            const imgWidth = pdfWidth - 20; // 10mm margin
+            const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+            let title = "Gráfico de Métricas de Ventas - Bloque Mundo";
+            if (chartYear !== 'Todos' || chartMonth !== 'Todos') {
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                let periodo = "";
+                if (chartMonth !== 'Todos') periodo += meses[parseInt(chartMonth)] + " ";
+                if (chartYear !== 'Todos') periodo += chartYear;
+                title += ` (${periodo.trim()})`;
+            }
+
+            doc.text(title, 10, 15);
+            doc.addImage(imgData, 'PNG', 10, 25, imgWidth, imgHeight);
+            doc.save("Grafico_Ventas.pdf");
+        } catch (error) {
+            console.error("Error al exportar gráfico:", error);
+        }
+    };
+
+    // --- Lógica de Métricas ---
+    const availableYears = [...new Set(ventas.map(v => new Date(v.fecha).getFullYear()))].sort((a, b) => b - a);
+    
+    const availableMonths = [
+        { value: 'Todos', label: 'Todos los meses' },
+        { value: '0', label: 'Enero' },
+        { value: '1', label: 'Febrero' },
+        { value: '2', label: 'Marzo' },
+        { value: '3', label: 'Abril' },
+        { value: '4', label: 'Mayo' },
+        { value: '5', label: 'Junio' },
+        { value: '6', label: 'Julio' },
+        { value: '7', label: 'Agosto' },
+        { value: '8', label: 'Septiembre' },
+        { value: '9', label: 'Octubre' },
+        { value: '10', label: 'Noviembre' },
+        { value: '11', label: 'Diciembre' },
+    ];
+
+    const ventasMetricas = ventas.filter(v => {
+        const date = new Date(v.fecha);
+        if (chartYear !== 'Todos' && date.getFullYear().toString() !== chartYear.toString()) return false;
+        if (chartMonth !== 'Todos' && date.getMonth().toString() !== chartMonth.toString()) return false;
+        return true;
+    });
+
     const statsData = [
-        { name: 'Pagados', cantidad: ventas.filter(v => v.estado === 'PAGADO').length },
-        { name: 'Pendientes', cantidad: ventas.filter(v => v.estado === 'PENDIENTE').length },
-        { name: 'Cancelados', cantidad: ventas.filter(v => v.estado === 'CANCELADO').length }
+        { name: 'Pagados', monto: ventasMetricas.filter(v => v.estado === 'PAGADO').reduce((sum, v) => sum + Number(v.total), 0) },
+        { name: 'Pendientes', monto: ventasMetricas.filter(v => v.estado === 'PENDIENTE').reduce((sum, v) => sum + Number(v.total), 0) },
+        { name: 'Cancelados', monto: ventasMetricas.filter(v => v.estado === 'CANCELADO').reduce((sum, v) => sum + Number(v.total), 0) }
     ];
 
     return (
@@ -212,20 +306,74 @@ const HistorialVentas = () => {
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
                         
-                        {/* Botón Filtro Monto > 100k */}
-                        <button
-                            onClick={() => {
-                                setFiltroMonto(!filtroMonto);
-                                setVisibleCount(5);
-                            }}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                filtroMonto 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
-                        >
-                            <Filter size={16} /> &gt; $100.000
-                        </button>
+                        {/* PRECIO */}
+                        <div className="relative group" ref={priceRef}>
+                            <button
+                                onClick={() => setIsPriceOpen(!isPriceOpen)}
+                                className={`bg-slate-800 hover:bg-slate-700 flex items-center justify-between gap-4 px-5 py-2 rounded-full text-sm font-semibold border ${filtroPrecio ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer min-w-[120px]`}
+                            >
+                                {filtroPrecio === '0-55000' ? 'Hasta $ 55.000' :
+                                    filtroPrecio === '55000-95000' ? '$55k - $95k' :
+                                        filtroPrecio === '95000-' ? 'Más de $ 95.000' :
+                                            filtroPrecio ? 'Personalizado' : 'Total venta'}
+                                <ChevronDown size={14} className={`transition-colors duration-200 ${filtroPrecio ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
+                            </button>
+
+                            {isPriceOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl p-5 z-50">
+                                    <h4 className="font-bold text-slate-200 mb-4 text-base">Total venta</h4>
+
+                                    <div className="space-y-3 mb-6">
+                                        <button
+                                            onClick={() => { setFiltroPrecio('0-55000'); setVisibleCount(5); setIsPriceOpen(false); }}
+                                            className="block w-full text-left text-sm text-slate-300 hover:text-brand-yellow font-medium transition"
+                                        >
+                                            Hasta $ 55.000
+                                        </button>
+                                        <button
+                                            onClick={() => { setFiltroPrecio('55000-95000'); setVisibleCount(5); setIsPriceOpen(false); }}
+                                            className="block w-full text-left text-sm text-slate-300 hover:text-brand-yellow font-medium transition"
+                                        >
+                                            $ 55.000 a $ 95.000
+                                        </button>
+                                        <button
+                                            onClick={() => { setFiltroPrecio('95000-'); setVisibleCount(5); setIsPriceOpen(false); }}
+                                            className="block w-full text-left text-sm text-slate-300 hover:text-brand-yellow font-medium transition"
+                                        >
+                                            Más de $ 95.000
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            placeholder="Mínim"
+                                            value={minPrice}
+                                            onChange={(e) => setMinPrice(e.target.value)}
+                                            className="w-full p-2 border border-slate-700 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
+                                        />
+                                        <span className="text-slate-500">—</span>
+                                        <input
+                                            type="number"
+                                            placeholder="Máxim"
+                                            value={maxPrice}
+                                            onChange={(e) => setMaxPrice(e.target.value)}
+                                            className="w-full p-2 border border-slate-700 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                setFiltroPrecio(`${minPrice || 0}-${maxPrice || ''}`);
+                                                setVisibleCount(5);
+                                                setIsPriceOpen(false);
+                                            }}
+                                            className="bg-brand-yellow p-2 rounded-full hover:bg-yellow-500 text-slate-900 transition shrink-0"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Barra de búsqueda */}
@@ -269,18 +417,55 @@ const HistorialVentas = () => {
                 {/* --- DASHBOARD --- */}
                 {!loading && ventas.length > 0 && (
                     <div className="mb-10 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter mb-6">Métricas de Ventas</h2>
-                        <div className="h-64 w-full">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter">Métricas de Ventas</h2>
+                            <div className="flex gap-4 items-center flex-wrap">
+                                <button
+                                    onClick={handleExportChartPDF}
+                                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-slate-800 text-white font-bold hover:bg-brand-red hover:text-white transition shadow-sm text-sm"
+                                    title="Exportar Gráfico a PDF"
+                                >
+                                    <FileText size={14} /> PDF
+                                </button>
+                                <div className="relative group">
+                                    <select
+                                        value={chartYear}
+                                        onChange={(e) => setChartYear(e.target.value)}
+                                        className="bg-slate-50 hover:bg-slate-100 appearance-none w-32 pr-10 pl-4 py-1.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 shadow-sm transition duration-200 outline-none cursor-pointer"
+                                    >
+                                        <option value="Todos">Todos (Años)</option>
+                                        {availableYears.map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                                </div>
+                                <div className="relative group">
+                                    <select
+                                        value={chartMonth}
+                                        onChange={(e) => setChartMonth(e.target.value)}
+                                        className="bg-slate-50 hover:bg-slate-100 appearance-none w-40 pr-10 pl-4 py-1.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 shadow-sm transition duration-200 outline-none cursor-pointer"
+                                    >
+                                        {availableMonths.map(month => (
+                                            <option key={month.value} value={month.value}>{month.label}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="h-64 w-full" ref={chartRef} style={{ padding: '10px', backgroundColor: 'white' }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={statsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 12, fontWeight: 700}} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} allowDecimals={false} />
+                                    <YAxis tickFormatter={(value) => `$${value.toLocaleString('es-AR')}`} tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} width={80} />
                                     <Tooltip 
+                                        formatter={(value) => [`$${value.toLocaleString('es-AR')}`, 'Monto Total']}
                                         cursor={{fill: '#f1f5f9'}} 
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                     />
-                                    <Bar dataKey="cantidad" fill="#D62828" radius={[4, 4, 0, 0]} barSize={40} />
+                                    <Bar dataKey="monto" fill="#D62828" radius={[4, 4, 0, 0]} barSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
