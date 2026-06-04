@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -7,7 +7,7 @@ import Loader from '../components/Loader';
 import { useFavorites } from '../context/FavoritesContext';
 import { getProductsRequest } from '../api/products';
 import { HeartCrack } from 'lucide-react';
-import bgImage from '../assets/background-lego.jpg';
+import bgImage from '../assets/favorites_header_bg.png';
 
 const Favorites = () => {
     const { favoritesIds } = useFavorites();
@@ -43,15 +43,23 @@ const Favorites = () => {
         <div className="min-h-screen flex flex-col bg-slate-50">
             <Navbar />
 
-            <div className="relative h-64 w-full flex flex-col items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center z-0" style={{ backgroundImage: `url(${bgImage})` }}></div>
-                <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <div className="relative z-20 text-center">
-                    <h1 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter mb-2">
+            <section className="relative h-64 bg-slate-900 flex flex-col items-center justify-center text-white">
+                <img
+                    src={bgImage}
+                    className="absolute inset-0 w-full h-full object-cover opacity-40"
+                    alt="Banner Favoritos"
+                />
+                <div className="relative z-10 text-center">
+                    <h1 className="text-4xl font-black uppercase italic tracking-tight drop-shadow-lg">
                         Favoritos
                     </h1>
+                    <p className="text-sm font-medium text-slate-300 mt-2">
+                        <Link to="/" className="hover:text-brand-yellow transition-colors">Inicio</Link>{' '}
+                        <span className="text-slate-400 mx-1">›</span>
+                        <Link to="/favoritos" className="hover:text-brand-yellow transition-colors">Favoritos</Link>
+                    </p>
                 </div>
-            </div>
+            </section>
 
             <main className="flex-1 max-w-7xl mx-auto w-full py-16 px-6">
                 {loading ? (
