@@ -168,7 +168,10 @@ export class CarritoService {
     if (!carrito) return { total: 0, lineas: [] };
 
     let precioCambiado = false;
+    let stockCambiado = false;
     const cambiosPrecio: any[] = [];
+    const cambiosStock: any[] = [];
+    const lineasParaEliminar: any[] = [];
 
     const lineasSeguras = carrito.lineas || [];
     for (const linea of lineasSeguras) {
@@ -194,11 +197,50 @@ export class CarritoService {
           newPrice: precioDB
         });
       }
+
+      // Check stock
+      const isComboStock = !!linea.combo;
+      const idStrStock = isComboStock ? `combo-${linea.combo.idCombo}` : linea.producto.idProducto.toString();
+      const tituloStock = isComboStock ? linea.combo.titulo : linea.producto.titulo;
+
+      let stockDisponible = Infinity;
+      if (isComboStock) {
+        const combo = linea.combo as Combo;
+        for (const prod of combo.productos || []) {
+           if (prod.stock < stockDisponible) stockDisponible = prod.stock;
+        }
+      } else {
+        const prod = linea.producto as Producto;
+        stockDisponible = prod.stock;
+      }
+
+      if (linea.cantidad > stockDisponible) {
+        stockCambiado = true;
+        const cantidadAnterior = linea.cantidad;
+        if (stockDisponible <= 0) {
+           lineasParaEliminar.push(linea);
+        } else {
+           linea.cantidad = stockDisponible;
+           await this.lineaRepository.save(linea);
+        }
+
+        cambiosStock.push({
+          productoId: idStrStock,
+          titulo: tituloStock,
+          oldCantidad: cantidadAnterior,
+          newCantidad: stockDisponible
+        });
+      }
     }
 
-    if (precioCambiado) {
+    if (lineasParaEliminar.length > 0) {
+      await this.lineaRepository.remove(lineasParaEliminar);
+    }
+
+    if (precioCambiado || stockCambiado) {
       carrito = await this.actualizarTotal(carrito.idCarrito);
-      (carrito as any).cambiosPrecio = cambiosPrecio;
+      if (precioCambiado) (carrito as any).cambiosPrecio = cambiosPrecio;
+      if (stockCambiado) (carrito as any).cambiosStock = cambiosStock;
     }
 
     return carrito;

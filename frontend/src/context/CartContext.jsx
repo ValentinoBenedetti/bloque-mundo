@@ -38,7 +38,8 @@ export const CartProvider = ({ children }) => {
                     descuentoAplicado: data.descuentoAplicado,
                     totalConDescuento: data.totalConDescuento,
                     usuario: data.usuario,
-                    cambiosPrecio: data.cambiosPrecio || null
+                    cambiosPrecio: data.cambiosPrecio || null,
+                    cambiosStock: data.cambiosStock || null
                 });
             } catch (error) {
                 console.error("Error cargando el carrito:", error);

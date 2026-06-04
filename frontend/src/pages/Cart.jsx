@@ -111,12 +111,31 @@ const Cart = () => {
                 title: 'Precio Actualizado',
                 html: `<div style="font-family: sans-serif; font-size: 14px; color: #4b5563; font-weight: 700; line-height: 1.5;">Antes de continuar, te avisamos que el precio de: <strong style="color: #1a1a1a; font-weight: 900;">${titulos}</strong> fue actualizado en tu carrito.</div>`,
                 confirmButtonColor: '#0f172a'
+            }).then(() => {
+                if (cartMetadata?.cambiosStock && cartMetadata.cambiosStock.length > 0) {
+                    mostrarAlertaStock(cartMetadata.cambiosStock);
+                    cartMetadata.cambiosStock = null;
+                }
             });
 
             // Limpiar cambios en metadata para evitar re-disparar la alerta
             cartMetadata.cambiosPrecio = null;
+        } else if (cartMetadata?.cambiosStock && cartMetadata.cambiosStock.length > 0) {
+            mostrarAlertaStock(cartMetadata.cambiosStock);
+            cartMetadata.cambiosStock = null;
         }
     }, [cartMetadata]);
+
+    const mostrarAlertaStock = (cambiosStock) => {
+        const titulos = cambiosStock.map(c => `"${c.titulo}"`).join(', ');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Producto sin stock',
+            html: `<div style="font-family: sans-serif; font-size: 14px; color: #4b5563; font-weight: 700; line-height: 1.5;">El producto <strong style="color: #1a1a1a; font-weight: 900;">${titulos}</strong> se quedó sin stock suficiente y fue ajustado o eliminado de tu carrito.</div>`,
+            confirmButtonColor: '#0f172a'
+        });
+        refreshCart();
+    };
 
     useEffect(() => {
         const fetchSuggestions = async () => {
