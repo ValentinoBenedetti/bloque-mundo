@@ -25,11 +25,11 @@ const HistorialVentas = () => {
 
     const [visibleCount, setVisibleCount] = useState(5); // Para el botón Ver más
     const [modalData, setModalData] = useState({ isOpen: false, idUsuario: null, idProducto: null, idPedido: null, productoNombre: '' });
-    
+
     // Filtros para las métricas
     const [chartYear, setChartYear] = useState('Todos');
     const [chartMonth, setChartMonth] = useState('Todos');
-    
+
     const chartRef = useRef(null);
 
     const navigate = useNavigate();
@@ -62,20 +62,20 @@ const HistorialVentas = () => {
     // Filtro por búsqueda (nombre de producto, código, idPedido o nombre de usuario)
     const ventasFiltradas = ventas.filter(pedido => {
         if (estadoFiltro !== 'Todos' && pedido.estado !== estadoFiltro) return false;
-        
+
         if (filtroPrecio) {
             const [minStr, maxStr] = filtroPrecio.split('-');
             const min = minStr ? Number(minStr) : 0;
             const max = maxStr ? Number(maxStr) : Infinity;
             if (Number(pedido.total) < min || Number(pedido.total) > max) return false;
         }
-        
+
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             const matchesId = String(pedido.idPedido).includes(term);
-            const matchesUser = pedido.usuario ? 
+            const matchesUser = pedido.usuario ?
                 `${pedido.usuario.nombre || ''} ${pedido.usuario.apellido || ''}`.toLowerCase().includes(term) : false;
-            
+
             const matchesLineas = pedido.lineas?.some(linea => {
                 const itemComprado = linea.producto || linea.combo;
                 if (!itemComprado) return false;
@@ -83,7 +83,7 @@ const HistorialVentas = () => {
                 const matchesCode = (itemComprado.codigoCombo || itemComprado.codigoProducto || itemComprado.idProducto || itemComprado.idCombo || '').toString().toLowerCase().includes(term);
                 return matchesName || matchesCode;
             });
-            
+
             return matchesId || matchesUser || matchesLineas;
         }
         return true;
@@ -141,7 +141,7 @@ const HistorialVentas = () => {
     const handleExportPDF = () => {
         const doc = new jsPDF();
         doc.text("Reporte de Ventas - Bloque Mundo", 14, 15);
-        
+
         const tableColumn = ["ID Pedido", "Fecha", "Estado", "Total", "Cliente"];
         const tableRows = [];
 
@@ -169,14 +169,14 @@ const HistorialVentas = () => {
 
     const handleExportChartPDF = async () => {
         if (!chartRef.current) return;
-        
+
         try {
             const canvas = await html2canvas(chartRef.current, {
                 scale: 2, // Para mejor resolución
                 backgroundColor: '#ffffff'
             });
             const imgData = canvas.toDataURL('image/png');
-            
+
             const doc = new jsPDF({
                 orientation: 'landscape',
                 unit: 'mm',
@@ -186,7 +186,7 @@ const HistorialVentas = () => {
             // A4 landscape dimensions: 297 x 210 mm
             const pdfWidth = 297;
             const pdfHeight = 210;
-            
+
             const imgProps = doc.getImageProperties(imgData);
             const imgWidth = pdfWidth - 20; // 10mm margin
             const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
@@ -210,7 +210,7 @@ const HistorialVentas = () => {
 
     // --- Lógica de Métricas ---
     const availableYears = [...new Set(ventas.map(v => new Date(v.fecha).getFullYear()))].sort((a, b) => b - a);
-    
+
     const availableMonths = [
         { value: 'Todos', label: 'Todos los meses' },
         { value: '0', label: 'Enero' },
@@ -267,11 +267,10 @@ const HistorialVentas = () => {
                     <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
@@ -305,7 +304,7 @@ const HistorialVentas = () => {
                             </select>
                             <ChevronDown size={14} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${estadoFiltro !== "Todos" ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                         </div>
-                        
+
                         {/* PRECIO */}
                         <div className="relative group" ref={priceRef}>
                             <button
@@ -315,7 +314,16 @@ const HistorialVentas = () => {
                                 {filtroPrecio === '0-55000' ? 'Hasta $ 55.000' :
                                     filtroPrecio === '55000-95000' ? '$55k - $95k' :
                                         filtroPrecio === '95000-' ? 'Más de $ 95.000' :
-                                            filtroPrecio ? 'Personalizado' : 'Total venta'}
+                                            filtroPrecio ? (
+                                                (() => {
+                                                    const [min, max] = filtroPrecio.split('-');
+                                                    const formatVal = (val) => Number(val).toLocaleString('es-AR');
+                                                    if (min && max) return `$${formatVal(min)} - $${formatVal(max)}`;
+                                                    if (min) return `Más de $${formatVal(min)}`;
+                                                    if (max) return `Hasta $${formatVal(max)}`;
+                                                    return 'Personalizado';
+                                                })()
+                                            ) : 'Total venta'}
                                 <ChevronDown size={14} className={`transition-colors duration-200 ${filtroPrecio ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                             </button>
 
@@ -349,7 +357,11 @@ const HistorialVentas = () => {
                                             type="number"
                                             placeholder="Mínim"
                                             value={minPrice}
-                                            onChange={(e) => setMinPrice(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '' || Number(val) >= 0) setMinPrice(val);
+                                            }}
+                                            min="0"
                                             className="w-full p-2 border border-slate-700 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
                                         />
                                         <span className="text-slate-500">—</span>
@@ -357,7 +369,11 @@ const HistorialVentas = () => {
                                             type="number"
                                             placeholder="Máxim"
                                             value={maxPrice}
-                                            onChange={(e) => setMaxPrice(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '' || Number(val) >= 0) setMaxPrice(val);
+                                            }}
+                                            min="0"
                                             className="w-full p-2 border border-slate-700 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
                                         />
                                         <button
@@ -413,7 +429,7 @@ const HistorialVentas = () => {
             </div>
 
             <main className="flex-1 max-w-5xl mx-auto w-full py-12 px-6">
-                
+
                 {/* --- DASHBOARD --- */}
                 {!loading && ventas.length > 0 && (
                     <div className="mb-10 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -458,11 +474,11 @@ const HistorialVentas = () => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={statsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 12, fontWeight: 700}} axisLine={false} tickLine={false} />
-                                    <YAxis tickFormatter={(value) => `$${value.toLocaleString('es-AR')}`} tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} width={80} />
-                                    <Tooltip 
+                                    <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                                    <YAxis tickFormatter={(value) => `$${value.toLocaleString('es-AR')}`} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} width={80} />
+                                    <Tooltip
                                         formatter={(value) => [`$${value.toLocaleString('es-AR')}`, 'Monto Total']}
-                                        cursor={{fill: '#f1f5f9'}} 
+                                        cursor={{ fill: '#f1f5f9' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                     />
                                     <Bar dataKey="monto" fill="#D62828" radius={[4, 4, 0, 0]} barSize={40} />
@@ -529,12 +545,11 @@ const HistorialVentas = () => {
                                                     Estado del Pedido
                                                 </div>
                                                 <div className="mt-1.5">
-                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
-                                                        pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                        pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
-                                                        pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-slate-100 text-slate-700'
-                                                    }`}>
+                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                            pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                                pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                                    'bg-slate-100 text-slate-700'
+                                                        }`}>
                                                         {pedido.estado}
                                                     </span>
                                                 </div>
@@ -545,12 +560,11 @@ const HistorialVentas = () => {
                                                     Estado del Envío
                                                 </div>
                                                 <div className="mt-1.5">
-                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
-                                                        pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
-                                                        pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
-                                                        pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
-                                                        'bg-slate-100 text-slate-500'
-                                                    }`}>
+                                                    <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
+                                                            pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
+                                                                pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-slate-100 text-slate-500'
+                                                        }`}>
                                                         {pedido.envio?.estado || 'PENDIENTE'}
                                                     </span>
                                                 </div>
@@ -564,7 +578,7 @@ const HistorialVentas = () => {
                                         {pedido.lineas?.map((linea, idx) => {
                                             const itemComprado = linea.producto || linea.combo;
                                             const isCombo = !!linea.combo;
-                                            const imagen = isCombo 
+                                            const imagen = isCombo
                                                 ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
                                                 : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
 
@@ -617,7 +631,7 @@ const HistorialVentas = () => {
 
                         {ventasOrdenadas.length > visibleCount && (
                             <div className="flex justify-center mt-8">
-                                <button 
+                                <button
                                     onClick={handleLoadMore}
                                     className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
                                 >
@@ -631,7 +645,7 @@ const HistorialVentas = () => {
 
             <Footer />
 
-            <AdminReviewModal 
+            <AdminReviewModal
                 isOpen={modalData.isOpen}
                 onClose={() => setModalData({ ...modalData, isOpen: false })}
                 idUsuario={modalData.idUsuario}

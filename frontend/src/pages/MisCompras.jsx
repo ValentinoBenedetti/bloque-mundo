@@ -37,7 +37,7 @@ const MisCompras = () => {
     const [sortBy, setSortBy] = useState('fecha'); // 'fecha' o 'monto'
     const [estadoFiltro, setEstadoFiltro] = useState('Todos');
     const [visibleCount, setVisibleCount] = useState(5);
-    
+
     // Estados para la reseña
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPurchase, setSelectedPurchase] = useState(null);
@@ -72,7 +72,7 @@ const MisCompras = () => {
                 const statusParam = queryParams.get('status');
                 const idPedidoStr = queryParams.get('idPedido') || queryParams.get('external_reference');
                 const idPedido = idPedidoStr ? parseInt(idPedidoStr, 10) : null;
-                
+
                 let pedidoConfirmado = null;
 
                 if (statusParam === 'success') {
@@ -118,7 +118,7 @@ const MisCompras = () => {
                     setCheckoutSuccessPaymentId(mpPaymentId);
                     setCheckoutSuccessPedido(pedidoConfirmado || { idPedido: idPedido || 'N/A', total: 0 });
                     setIsCheckoutSuccessOpen(true);
-                    
+
                     // 🔥 Disparar Confeti
                     confetti({
                         particleCount: 150,
@@ -256,11 +256,10 @@ const MisCompras = () => {
                     <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
@@ -369,24 +368,22 @@ const MisCompras = () => {
                                             <div className="flex gap-4 sm:gap-6">
                                                 <div className="flex flex-col gap-1.5 text-center">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Estado del Pedido</span>
-                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
-                                                        pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                                        pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
-                                                        pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
-                                                        'bg-slate-100 text-slate-700'
-                                                    }`}>
+                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${pedido.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                                                            pedido.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' :
+                                                                pedido.estado === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                                    'bg-slate-100 text-slate-700'
+                                                        }`}>
                                                         {pedido.estado}
                                                     </span>
                                                 </div>
 
                                                 <div className="flex flex-col gap-1.5 text-center">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Estado del Envío</span>
-                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${
-                                                        pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
-                                                        pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
-                                                        pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
-                                                        'bg-slate-100 text-slate-500'
-                                                    }`}>
+                                                    <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide inline-block ${pedido.envio?.estado === 'Entregado' ? 'bg-blue-100 text-blue-700' :
+                                                            pedido.envio?.estado === 'En camino' ? 'bg-indigo-100 text-indigo-700' :
+                                                                pedido.envio?.estado === 'Preparando' ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-slate-100 text-slate-500'
+                                                        }`}>
                                                         {pedido.envio?.estado || 'PENDIENTE'}
                                                     </span>
                                                 </div>
@@ -407,7 +404,7 @@ const MisCompras = () => {
                                         {pedido.lineas?.map((linea, idx) => {
                                             const itemComprado = linea.producto || linea.combo;
                                             const isCombo = !!linea.combo;
-                                            const imagen = isCombo 
+                                            const imagen = isCombo
                                                 ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
                                                 : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
 
@@ -451,11 +448,10 @@ const MisCompras = () => {
                                                                     setIsModalOpen(true);
                                                                 }}
                                                                 disabled={pedido.envio?.estado !== 'Entregado'}
-                                                                className={`flex-1 sm:flex-none font-bold py-1.5 px-4 rounded text-xs transition shadow-sm flex items-center justify-center gap-1.5 ${
-                                                                    pedido.envio?.estado === 'Entregado'
-                                                                    ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white cursor-pointer'
-                                                                    : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
-                                                                }`}
+                                                                className={`flex-1 sm:flex-none font-bold py-1.5 px-4 rounded text-xs transition shadow-sm flex items-center justify-center gap-1.5 ${pedido.envio?.estado === 'Entregado'
+                                                                        ? 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white cursor-pointer'
+                                                                        : 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                                                                    }`}
                                                                 title={pedido.envio?.estado !== 'Entregado' ? 'Podrás opinar cuando tu pedido sea entregado' : ''}
                                                             >
                                                                 <MessageSquare size={14} />
@@ -489,7 +485,7 @@ const MisCompras = () => {
 
                         {comprasOrdenadas.length > visibleCount && (
                             <div className="flex justify-center mt-8">
-                                <button 
+                                <button
                                     onClick={() => setVisibleCount(prev => prev + 5)}
                                     className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
                                 >
@@ -504,7 +500,7 @@ const MisCompras = () => {
             <Footer />
 
             {selectedPurchase && (
-                <ReviewModal 
+                <ReviewModal
                     isOpen={isModalOpen}
                     onClose={() => {
                         setIsModalOpen(false);
@@ -518,7 +514,7 @@ const MisCompras = () => {
                 />
             )}
 
-            <SuccessModal 
+            <SuccessModal
                 isOpen={isSuccessOpen}
                 onClose={() => setIsSuccessOpen(false)}
                 title="¡Reseña enviada!"
@@ -526,7 +522,7 @@ const MisCompras = () => {
                 buttonText="Genial"
             />
 
-            <CheckoutSuccessModal 
+            <CheckoutSuccessModal
                 isOpen={isCheckoutSuccessOpen}
                 onClose={() => {
                     setIsCheckoutSuccessOpen(false);
@@ -538,7 +534,7 @@ const MisCompras = () => {
                 paymentId={checkoutSuccessPaymentId}
             />
 
-            <CheckoutFailureModal 
+            <CheckoutFailureModal
                 isOpen={isCheckoutFailureOpen}
                 onClose={() => setIsCheckoutFailureOpen(false)}
             />
@@ -553,7 +549,7 @@ const MisCompras = () => {
                 newLevel={levelUpInfo?.newLevel}
             />
 
-            <TrackingModal 
+            <TrackingModal
                 isOpen={isTrackingOpen}
                 onClose={() => {
                     setIsTrackingOpen(false);

@@ -71,10 +71,10 @@ const VerComprasModal = ({ usuario, pedidos, onClose }) => {
                                     <div className="flex items-center gap-3">
                                         <span
                                             className={`text-xs font-black px-2.5 py-1 rounded-full uppercase ${pedido.estado === 'PAGADO'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : pedido.estado === 'CANCELADO'
-                                                        ? 'bg-red-100 text-red-700'
-                                                        : 'bg-yellow-100 text-yellow-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : pedido.estado === 'CANCELADO'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-yellow-100 text-yellow-700'
                                                 }`}
                                         >
                                             {pedido.estado}
@@ -228,8 +228,8 @@ const AdminUsuarios = () => {
                         <button
                             onClick={clearFilters}
                             className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
-                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
-                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
                                 }`}
                         >
                             <X size={16} /> Limpiar Filtros
@@ -304,7 +304,7 @@ const AdminUsuarios = () => {
                                 {/* Avatar */}
                                 <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm ${['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'][
                                     ((u.nombre?.charCodeAt(0) || 0) + (u.apellido?.charCodeAt(0) || 0)) % 8
-                                    ]
+                                ]
                                     }`}>
                                     {((u.nombre?.[0] || '') + (u.apellido?.[0] || '')).toUpperCase() || '?'}
                                 </div>

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const ScrollToTopButton = () => {
     const [isVisible, setIsVisible] = useState(false);
+    const { isCartOpen } = useCart();
+    const { isProfileSidebarOpen } = useAuth();
 
     useEffect(() => {
         const toggleVisibility = () => {
@@ -25,7 +29,7 @@ const ScrollToTopButton = () => {
         });
     };
 
-    if (!isVisible) return null;
+    if (!isVisible || isCartOpen || isProfileSidebarOpen) return null;
 
     return (
         <button

@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
 
     const openAuthModal = () => setIsAuthModalOpen(true);
     const closeAuthModal = () => setIsAuthModalOpen(false);
@@ -49,7 +50,9 @@ export const AuthProvider = ({ children }) => {
             openAuthModal,
             closeAuthModal,
             login,
-            logout
+            logout,
+            isProfileSidebarOpen,
+            setIsProfileSidebarOpen
         }}>
             {children}
         </AuthContext.Provider>

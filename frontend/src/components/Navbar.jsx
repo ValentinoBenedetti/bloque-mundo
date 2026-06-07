@@ -23,7 +23,6 @@ const Navbar = () => {
     const [products, setProducts] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
     // ESTADO PARA MODAL DE CONFIRMACIN
@@ -34,10 +33,11 @@ const Navbar = () => {
     });
 
     const searchRef = useRef(null);
+    const mobileSearchRef = useRef(null);
 
     const { cart, addToCart, removeFromCart, totalItems, totalPrice, isCartOpen, setIsCartOpen, stockError, setStockError, successMessage } = useCart();
     const { favoritesIds } = useFavorites();
-    const { isAuthenticated, openAuthModal } = useAuth();
+    const { isAuthenticated, openAuthModal, isProfileSidebarOpen, setIsProfileSidebarOpen } = useAuth();
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -66,7 +66,9 @@ const Navbar = () => {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (searchRef.current && !searchRef.current.contains(event.target)) {
+            const inDesktop = searchRef.current && searchRef.current.contains(event.target);
+            const inMobile = mobileSearchRef.current && mobileSearchRef.current.contains(event.target);
+            if (!inDesktop && !inMobile) {
                 setIsDropdownOpen(false);
             }
         };
@@ -130,15 +132,52 @@ const Navbar = () => {
     return (
         <>
             <nav className="bg-brand-red py-4 px-4 md:px-10 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 md:flex-none mr-2 md:mr-0">
                     <button 
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="text-white hover:text-brand-yellow md:hidden focus:outline-none transition duration-200 cursor-pointer"
+                        className="text-white hover:text-brand-yellow md:hidden focus:outline-none transition duration-200 cursor-pointer shrink-0"
                         aria-label="Abrir menú"
                     >
                         <Menu size={24} />
                     </button>
-                    <Logo size="normal" />
+                    
+                    <div className="hidden md:block">
+                        <Logo size="normal" />
+                    </div>
+
+                    <div className="md:hidden flex-1 relative" ref={mobileSearchRef}>
+                        <input
+                            type="text"
+                            placeholder="Buscar productos..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onFocus={() => searchTerm.trim() !== '' && setIsDropdownOpen(true)}
+                            className="bg-white py-1.5 pl-4 pr-8 rounded-full text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-full transition-all shadow-md border-none placeholder:text-slate-400 font-medium"
+                        />
+                        <Search 
+                            size={16} 
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-red" 
+                            onClick={() => {
+                                if (searchTerm.trim() !== '') {
+                                    setIsDropdownOpen(false);
+                                    navigate(`/tienda?q=${searchTerm}`);
+                                }
+                            }} 
+                        />
+                        {isDropdownOpen && suggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl border border-slate-100 overflow-hidden flex flex-col z-50">
+                                {suggestions.map((item) => (
+                                    <div key={`mob-${item.id}`} onClick={() => handleSuggestionClick(item.titulo)} className="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50">
+                                        <img src={item.imagen || item.imagenes || item.image} alt={item.titulo} className="w-8 h-8 object-contain mix-blend-multiply" />
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-xs font-bold text-slate-800 truncate">{item.titulo || item.nombre}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="hidden md:flex gap-12 text-white font-bold text-[18px] uppercase tracking-wider items-center">
@@ -251,9 +290,9 @@ const Navbar = () => {
                                     return (
                                         <div key={index} className="flex gap-4 items-start bg-white border border-slate-200 p-3 rounded-xl shadow-sm relative group hover:border-slate-300 transition-colors">
                                             <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-lg p-2 shrink-0 flex items-center justify-center">
-                                                <img src={item.imagen || item.imagenes || item.image} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
+                                                <img src={item.imagen || (Array.isArray(item.imagenes) ? item.imagenes[0] : item.imagenes) || item.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Combo'} className="w-full h-full object-contain mix-blend-multiply" alt="producto" />
                                             </div>
-                                            <div className="flex-grow pr-6">
+                                            <div className="flex-1 min-w-0 pr-6">
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-brand-red bg-red-50 px-2 py-0.5 rounded-full mb-1.5 inline-block">
                                                     {themeName}
                                                 </span>
@@ -357,72 +396,47 @@ const Navbar = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="relative w-4/5 max-w-xs bg-slate-950 h-full shadow-2xl flex flex-col p-6 border-r border-slate-800 z-10"
+                            className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col p-[30px] border-r border-slate-200 z-10"
                         >
                             {/* Header of Drawer */}
-                            <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
-                                <h2 className="text-xl font-black text-white uppercase italic tracking-wide">
+                            <div className="flex justify-between items-center mb-5 pb-2">
+                                <h2 className="text-2xl font-bold text-slate-900">
                                     Menú
                                 </h2>
                                 <button 
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="text-slate-400 hover:text-white transition-colors duration-200 cursor-pointer"
+                                    className="text-slate-600 hover:text-red-600 transition-colors duration-200 cursor-pointer"
                                 >
-                                    <X size={24} />
+                                    <X size={28} />
                                 </button>
                             </div>
 
-                            {/* Search Bar inside Drawer */}
-                            <div className="relative mb-6">
-                                <input
-                                    type="text"
-                                    placeholder="Buscar productos..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && searchTerm.trim() !== '') {
-                                            setIsMobileMenuOpen(false);
-                                            handleKeyDown(e);
-                                        }
-                                    }}
-                                    className="bg-slate-900 py-2.5 pl-5 pr-10 rounded-full text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-yellow w-full transition-all border border-slate-800 placeholder:text-slate-500 font-medium"
-                                />
-                                <Search 
-                                    size={18} 
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-brand-yellow" 
-                                    onClick={() => {
-                                        if (searchTerm.trim() !== '') {
-                                            setIsMobileMenuOpen(false);
-                                            navigate(`/tienda?q=${searchTerm}`);
-                                        }
-                                    }} 
-                                />
-                            </div>
+
 
                             {/* Navigation Links */}
-                            <div className="flex flex-col gap-4 font-bold text-[16px] tracking-wide text-white">
+                            <div className="flex flex-col gap-2 font-medium text-[16px] text-slate-700 mt-4">
                                 <button 
                                     onClick={() => { setIsMobileMenuOpen(false); navigate('/'); }} 
-                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname === '/' ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-3 rounded-lg w-full ${location.pathname === '/' ? 'bg-slate-100 text-red-600' : 'hover:bg-slate-100 hover:text-red-600'}`}
                                 >
                                     Inicio
                                 </button>
                                 <button 
                                     onClick={() => { setIsMobileMenuOpen(false); navigate('/tienda'); }} 
-                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname.startsWith('/tienda') ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-3 rounded-lg w-full ${location.pathname.startsWith('/tienda') ? 'bg-slate-100 text-red-600' : 'hover:bg-slate-100 hover:text-red-600'}`}
                                 >
                                     Tienda
                                 </button>
                                 <button 
                                     onClick={() => { setIsMobileMenuOpen(false); navigate('/nosotros'); }} 
-                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-4 rounded-xl ${location.pathname.startsWith('/nosotros') ? 'bg-brand-red text-white font-black' : 'hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                                    className={`text-left transition duration-200 flex items-center gap-3 py-3 px-3 rounded-lg w-full ${location.pathname.startsWith('/nosotros') ? 'bg-slate-100 text-red-600' : 'hover:bg-slate-100 hover:text-red-600'}`}
                                 >
                                     Nosotros
                                 </button>
                             </div>
 
                             {/* Footer or extra info in mobile menu */}
-                            <div className="mt-auto pt-6 text-center text-xs text-slate-600 font-medium border-t border-slate-900">
+                            <div className="mt-auto pt-6 text-center text-xs text-slate-400 font-medium border-t border-slate-100">
                                 © Bloque Mundo • Premium Store
                             </div>
                         </motion.div>

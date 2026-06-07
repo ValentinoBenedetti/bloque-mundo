@@ -163,11 +163,10 @@ const GestionEnvios = () => {
                     <div className="flex gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap justify-center sm:justify-start">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
@@ -286,12 +285,12 @@ const GestionEnvios = () => {
                                                 <div className="absolute left-6 right-6 top-[20px] h-1 z-0">
                                                     {/* Línea gris de fondo */}
                                                     <div className="absolute inset-0 bg-slate-200 rounded-full"></div>
-                                                    
+
                                                     {/* Línea pintada de progreso */}
-                                                    <div 
+                                                    <div
                                                         className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-in-out bg-gradient-to-r from-amber-500 via-blue-500 to-emerald-500"
-                                                        style={{ 
-                                                            width: (estadosOrden[envio.estado] ?? 0) === 0 ? '0%' : (estadosOrden[envio.estado] ?? 0) === 1 ? '50%' : '100%' 
+                                                        style={{
+                                                            width: (estadosOrden[envio.estado] ?? 0) === 0 ? '0%' : (estadosOrden[envio.estado] ?? 0) === 1 ? '50%' : '100%'
                                                         }}
                                                     ></div>
                                                 </div>
@@ -306,19 +305,17 @@ const GestionEnvios = () => {
                                                     const StepIcon = step.icon;
                                                     return (
                                                         <div key={idx} className="relative z-10 flex flex-col items-center">
-                                                            <div 
-                                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                                                                    isActive 
-                                                                        ? `${step.color} shadow-md scale-110` 
+                                                            <div
+                                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${isActive
+                                                                        ? `${step.color} shadow-md scale-110`
                                                                         : 'bg-white text-slate-400 border-slate-200'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 <StepIcon size={18} />
                                                             </div>
-                                                            <span 
-                                                                className={`text-[9px] font-black uppercase tracking-wider mt-2 transition-colors duration-500 ${
-                                                                    isActive ? 'text-slate-800' : 'text-slate-400'
-                                                                }`}
+                                                            <span
+                                                                className={`text-[9px] font-black uppercase tracking-wider mt-2 transition-colors duration-500 ${isActive ? 'text-slate-800' : 'text-slate-400'
+                                                                    }`}
                                                             >
                                                                 {step.label}
                                                             </span>

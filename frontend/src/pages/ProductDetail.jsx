@@ -50,6 +50,7 @@ const ProductDetail = () => {
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [isZoomed, setIsZoomed] = useState(false);
     const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+    const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
 
     const handleMouseMove = (e) => {
         if (!isZoomed) return;
@@ -533,7 +534,7 @@ const ProductDetail = () => {
                             </div>
                         ) : (
                             <div className="grid gap-6">
-                                {resenas.map((resena) => (
+                                {resenas.slice(0, visibleReviewsCount).map((resena) => (
                                     <div key={resena.idResena} className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm transition-hover hover:shadow-md">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex gap-1 text-brand-yellow">
@@ -566,9 +567,12 @@ const ProductDetail = () => {
                                     </div>
                                 ))}
                                 
-                                {resenas.length > 3 && (
+                                {resenas.length > visibleReviewsCount && (
                                     <div className="flex justify-center mt-8">
-                                        <button className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm">
+                                        <button 
+                                            onClick={() => setVisibleReviewsCount(prev => prev + 3)}
+                                            className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
+                                        >
                                             Ver más reseñas
                                         </button>
                                     </div>

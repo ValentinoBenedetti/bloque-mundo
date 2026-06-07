@@ -59,7 +59,7 @@ const GestionProductos = () => {
 
     const handleToggleStatus = async (product) => {
         const nuevoEstado = product.estado === 'Publicado' ? 'NoPublicado' : 'Publicado';
-        
+
         // Si apagamos el estado, automáticamente apagamos destacados y novedades
         const updates = { estado: nuevoEstado };
         if (nuevoEstado === 'NoPublicado') {
@@ -224,11 +224,11 @@ const GestionProductos = () => {
 
     const filteredProducts = products.filter(p => {
         const idStr = p.codigoProducto ? p.codigoProducto.toString() : (p.esCombo ? `CMB-${p.idCombo}` : (p.idProducto || p.id).toString());
-        const matchSearch = idStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (p.titulo || p.nombre).toLowerCase().includes(searchTerm.toLowerCase());
-        const matchType = filterType === 'all' ? true : 
-                         filterType === 'combo' ? p.esCombo : !p.esCombo;
-        
+        const matchSearch = idStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.titulo || p.nombre).toLowerCase().includes(searchTerm.toLowerCase());
+        const matchType = filterType === 'all' ? true :
+            filterType === 'combo' ? p.esCombo : !p.esCombo;
+
         let matchStatus = true;
         if (filterStatus === 'publicado') matchStatus = p.estado === 'Publicado';
         else if (filterStatus === 'nopublicado') matchStatus = p.estado === 'NoPublicado';
@@ -291,16 +291,15 @@ const GestionProductos = () => {
                     <div className="flex flex-wrap gap-4 w-full md:w-auto justify-center md:justify-start">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
                         <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-56 group">
-                            <select 
+                            <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${sortBy !== "desc" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
@@ -312,7 +311,7 @@ const GestionProductos = () => {
                         </div>
 
                         <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
-                            <select 
+                            <select
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${filterType !== "all" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
@@ -325,7 +324,7 @@ const GestionProductos = () => {
                         </div>
 
                         <div className="relative flex-1 min-w-[140px] sm:flex-none sm:w-48 group">
-                            <select 
+                            <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
                                 className={`bg-slate-800 hover:bg-slate-700 appearance-none pr-10 pl-4 py-2 rounded-full text-sm font-semibold border ${filterStatus !== "all" ? 'border-brand-yellow text-brand-yellow' : 'border-slate-700 text-slate-200 hover:border-brand-yellow'} shadow-sm transition duration-200 outline-none cursor-pointer w-full`}
@@ -341,9 +340,9 @@ const GestionProductos = () => {
                     </div>
 
                     <div className="relative flex-1 max-w-md group">
-                        <input 
-                            type="text" 
-                            placeholder="Buscar productos (por código o nombre)" 
+                        <input
+                            type="text"
+                            placeholder="Buscar productos (por código o nombre)"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className={`w-full pl-6 pr-12 py-2.5 rounded-full text-sm font-semibold bg-slate-800 border ${searchTerm ? 'border-brand-yellow text-brand-yellow focus:ring-brand-yellow' : 'border-slate-700 text-slate-100 placeholder:text-slate-400 hover:border-brand-yellow focus:ring-brand-yellow'} outline-none focus:ring-2 transition`}
@@ -359,19 +358,19 @@ const GestionProductos = () => {
 
             {/* Action Buttons */}
             <div className="max-w-7xl mx-auto w-full py-8 px-6 flex flex-wrap justify-center gap-6">
-                <button 
+                <button
                     onClick={() => handleCreateComboClick()}
                     className="flex items-center gap-3 bg-white border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm hover:bg-slate-900 hover:text-white transition group shadow-sm"
                 >
                     Crear nuevo combo <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 </button>
-                <button 
+                <button
                     onClick={() => handleCreateClick()}
                     className="flex items-center gap-3 bg-white border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm hover:bg-slate-900 hover:text-white transition group shadow-sm"
                 >
                     Cargar nuevo producto <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 </button>
-                <button 
+                <button
                     onClick={() => setIsCuponModalOpen(true)}
                     className="flex items-center gap-3 bg-brand-yellow border-2 border-slate-900 px-8 py-3 rounded-lg font-black uppercase tracking-widest text-sm text-slate-900 hover:bg-slate-900 hover:text-brand-yellow transition group shadow-sm"
                 >
@@ -414,13 +413,13 @@ const GestionProductos = () => {
                                         <div className="p-6 border-r border-slate-100 min-w-[200px] flex flex-col items-center justify-center bg-slate-50/50 shrink-0">
                                             <p className="text-lg font-bold text-slate-400">Código: <span className="text-slate-900 font-black">{product.codigoProducto || idStr}</span></p>
                                             <div className="flex gap-2 mt-4">
-                                                <button 
+                                                <button
                                                     onClick={() => handleDeleteClick(product)}
                                                     className="bg-slate-200 p-2 rounded hover:bg-red-500 hover:text-white transition"
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleEditClick(product)}
                                                     className="bg-slate-200 p-2 rounded hover:bg-slate-900 hover:text-white transition"
                                                 >
@@ -429,68 +428,68 @@ const GestionProductos = () => {
                                             </div>
                                         </div>
 
-                                    {/* Info Section */}
-                                    <div className="flex-1 p-6 border-r border-slate-100 min-w-[250px]">
-                                        <h3 className="text-xl font-black text-slate-800 uppercase italic mb-1 truncate">
-                                            {product.titulo || product.nombre}
-                                        </h3>
-                                        <p className="text-sm font-bold text-slate-500">Precio unitario: <span className="text-brand-red font-black">{formatPrice(product.precio)}</span></p>
-                                        <p className="text-sm font-bold text-slate-500">En Stock: <span className="text-slate-900 font-black">{product.stock || 0}</span></p>
-                                    </div>
+                                        {/* Info Section */}
+                                        <div className="flex-1 p-6 border-r border-slate-100 min-w-[250px]">
+                                            <h3 className="text-xl font-black text-slate-800 uppercase italic mb-1 truncate">
+                                                {product.titulo || product.nombre}
+                                            </h3>
+                                            <p className="text-sm font-bold text-slate-500">Precio unitario: <span className="text-brand-red font-black">{formatPrice(product.precio)}</span></p>
+                                            <p className="text-sm font-bold text-slate-500">En Stock: <span className="text-slate-900 font-black">{product.stock || 0}</span></p>
+                                        </div>
 
-                                    {/* Status Section */}
-                                    <div className="p-6 border-r border-slate-100 text-center min-w-[120px]">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Estado</p>
-                                        <div 
-                                            className="relative inline-flex items-center cursor-pointer"
-                                            onClick={() => handleToggleStatus(product)}
-                                        >
-                                            <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.estado === 'Publicado' ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.estado === 'Publicado' ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                        {/* Status Section */}
+                                        <div className="p-6 border-r border-slate-100 text-center min-w-[120px]">
+                                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Estado</p>
+                                            <div
+                                                className="relative inline-flex items-center cursor-pointer"
+                                                onClick={() => handleToggleStatus(product)}
+                                            >
+                                                <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.estado === 'Publicado' ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                    <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.estado === 'Publicado' ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Featured Section */}
-                                    <div className="p-6 border-r border-slate-100 text-center min-w-[120px]">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Destacados</p>
-                                        <div 
-                                            className="relative inline-flex items-center cursor-pointer"
-                                            onClick={() => handleToggleFeatured(product)}
-                                        >
-                                            <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esDestacado ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esDestacado ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                        {/* Featured Section */}
+                                        <div className="p-6 border-r border-slate-100 text-center min-w-[120px]">
+                                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Destacados</p>
+                                            <div
+                                                className="relative inline-flex items-center cursor-pointer"
+                                                onClick={() => handleToggleFeatured(product)}
+                                            >
+                                                <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esDestacado ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                    <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esDestacado ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* New Section */}
-                                    <div className="p-6 text-center min-w-[120px]">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Novedades</p>
-                                        <div 
-                                            className="relative inline-flex items-center cursor-pointer"
-                                            onClick={() => handleToggleNew(product)}
-                                        >
-                                            <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esNovedad ? 'bg-green-500' : 'bg-slate-200'}`}>
-                                                <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esNovedad ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                        {/* New Section */}
+                                        <div className="p-6 text-center min-w-[120px]">
+                                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Novedades</p>
+                                            <div
+                                                className="relative inline-flex items-center cursor-pointer"
+                                                onClick={() => handleToggleNew(product)}
+                                            >
+                                                <div className={`w-11 h-6 rounded-full transition-all duration-200 ${product.esNovedad ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                                    <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-all duration-200 shadow-sm ${product.esNovedad ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             );
                         })}
 
-                {visibleCount < filteredProducts.length && (
-                    <div className="flex justify-center pt-8 pb-12">
-                        <button 
-                            onClick={() => setVisibleCount(prev => prev + 5)}
-                            className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
-                        >
-                            Ver más productos
-                        </button>
-                    </div>
-                )}
+                        {visibleCount < filteredProducts.length && (
+                            <div className="flex justify-center pt-8 pb-12">
+                                <button
+                                    onClick={() => setVisibleCount(prev => prev + 5)}
+                                    className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer text-sm"
+                                >
+                                    Ver más productos
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -499,21 +498,21 @@ const GestionProductos = () => {
 
             <Footer />
 
-            <ProductModal 
+            <ProductModal
                 isOpen={isProductModalOpen}
                 onClose={() => setIsProductModalOpen(false)}
                 onSave={handleSaveProduct}
                 product={selectedProduct}
             />
 
-            <ComboModal 
+            <ComboModal
                 isOpen={isComboModalOpen}
                 onClose={() => setIsComboModalOpen(false)}
                 onSave={handleSaveCombo}
                 combo={selectedCombo}
             />
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={confirmDelete}
@@ -521,7 +520,7 @@ const GestionProductos = () => {
                 message={`¿Estás seguro que deseas eliminar "${productToDelete?.titulo || productToDelete?.nombre}"? Esta acción no se puede deshacer.`}
             />
 
-            <CuponModal 
+            <CuponModal
                 isOpen={isCuponModalOpen}
                 onClose={() => setIsCuponModalOpen(false)}
             />

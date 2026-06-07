@@ -127,7 +127,7 @@ const Store = () => {
 
             if (sortBy === 'asc') return Number(a.precio) - Number(b.precio);
             if (sortBy === 'desc') return Number(b.precio) - Number(a.precio);
-            
+
             return a.stock - b.stock;
         });
 
@@ -158,8 +158,8 @@ const Store = () => {
                 .filter(Boolean)
         )
     ).sort();
-    const temasUnicos = temasAPI.length > 0 
-        ? temasAPI.map(t => t.nombre) 
+    const temasUnicos = temasAPI.length > 0
+        ? temasAPI.map(t => t.nombre)
         : Array.from(new Set(products.map(p => p.tema?.nombre).filter(Boolean)));
     const edadesUnicas = ['4+', '6+', '9+', '13+', '18+'];
 
@@ -190,11 +190,10 @@ const Store = () => {
                     <div className="flex flex-wrap items-center gap-4">
                         <button
                             onClick={clearFilters}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${
-                                hasActiveFilters 
-                                ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500' 
-                                : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
-                            }`}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold border transition duration-200 shadow-sm shrink-0 ${hasActiveFilters
+                                    ? 'bg-brand-yellow text-slate-900 border-brand-yellow hover:bg-yellow-500'
+                                    : 'bg-slate-800 text-slate-100 border-slate-700 hover:bg-brand-yellow hover:text-slate-900 hover:border-brand-yellow'
+                                }`}
                         >
                             <X size={16} /> Limpiar Filtros
                         </button>
@@ -234,7 +233,16 @@ const Store = () => {
                                 {filters.precio === '0-55000' ? 'Hasta $ 55.000' :
                                     filters.precio === '55000-95000' ? '$55k - $95k' :
                                         filters.precio === '95000-' ? 'Más de $ 95.000' :
-                                            filters.precio ? 'Personalizado' : 'Precio'}
+                                            filters.precio ? (
+                                                (() => {
+                                                    const [min, max] = filters.precio.split('-');
+                                                    const formatVal = (val) => Number(val).toLocaleString('es-AR');
+                                                    if (min && max) return `$${formatVal(min)} - $${formatVal(max)}`;
+                                                    if (min) return `Más de $${formatVal(min)}`;
+                                                    if (max) return `Hasta $${formatVal(max)}`;
+                                                    return 'Personalizado';
+                                                })()
+                                            ) : 'Precio'}
                                 <ChevronDown size={14} className={`transition-colors duration-200 ${filters.precio ? 'text-brand-yellow' : 'text-slate-400 group-hover:text-brand-yellow'}`} />
                             </button>
 
@@ -268,7 +276,11 @@ const Store = () => {
                                             type="number"
                                             placeholder="Mínimo"
                                             value={minPrice}
-                                            onChange={(e) => setMinPrice(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '' || Number(val) >= 0) setMinPrice(val);
+                                            }}
+                                            min="0"
                                             className="w-full p-2 border border-slate-750 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
                                         />
                                         <span className="text-slate-500">—</span>
@@ -276,7 +288,11 @@ const Store = () => {
                                             type="number"
                                             placeholder="Máximo"
                                             value={maxPrice}
-                                            onChange={(e) => setMaxPrice(e.target.value)}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === '' || Number(val) >= 0) setMaxPrice(val);
+                                            }}
+                                            min="0"
                                             className="w-full p-2 border border-slate-750 rounded-lg text-sm outline-none focus:border-brand-yellow bg-slate-800 text-slate-100 placeholder:text-slate-500"
                                         />
                                         <button
@@ -371,7 +387,7 @@ const Store = () => {
 
                         {visibleCount < filteredProducts.length && (
                             <div className="flex justify-center mt-12">
-                                <button 
+                                <button
                                     onClick={() => setVisibleCount(prev => prev + 8)}
                                     className="bg-white border-2 border-brand-red text-brand-red px-8 py-2.5 font-bold rounded-full hover:bg-brand-red hover:text-white transition-all duration-200 hover:-translate-y-0.5 shadow-sm active:scale-95 cursor-pointer"
                                 >
