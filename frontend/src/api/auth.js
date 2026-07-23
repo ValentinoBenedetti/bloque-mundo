@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000'; // Asegúrense de que su NestJS esté en el 3000
+const API_URL = (import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL || 'http://localhost:3000'}'); // Asegúrense de que su NestJS esté en el 3000
 
 export const loginRequest = async (email, password) => {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -15,13 +15,13 @@ export const loginRequest = async (email, password) => {
 };
 // Función para verificar si el email ya existe
 export const verifyUserRequest = async (email) => {
-    const res = await fetch(`http://localhost:3000/auth/verify/${email}`);
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/verify/${email}`);
     return await res.json();
 };
 
 // Función para registrar al usuario nuevo con Google + datos extra
 export const registerRequest = async (userData) => {
-    const res = await fetch('http://localhost:3000/auth/registro', {
+    const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),

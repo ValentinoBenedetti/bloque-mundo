@@ -205,7 +205,7 @@ const Cart = () => {
                 return acc;
             }, []);
 
-            const res = await fetch('http://localhost:3000/cupones/validar', {
+            const res = await fetch('${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/cupones/validar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

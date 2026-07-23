@@ -32,6 +32,7 @@ import { CategoriasModule } from './categorias/categorias.module';
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
       autoLoadEntities: true,
       synchronize: true,
     }),
