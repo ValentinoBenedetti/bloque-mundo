@@ -26,7 +26,7 @@ export class ProductosController {
       },
     }),
   }))
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
+  uploadFile(@UploadedFile() file: any) {
     return {
       url: `http://localhost:3000/uploads/${file.filename}`,
     };
