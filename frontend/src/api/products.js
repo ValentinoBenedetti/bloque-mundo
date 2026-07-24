@@ -1,38 +1,39 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+export const fixUrl = (url) => {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
+    if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
+    return url;
+};
+
+export const fixProduct = (p) => {
+    if (!p) return p;
+    p.imagen = fixUrl(p.imagen);
+    if (p.imagenes && Array.isArray(p.imagenes)) {
+        p.imagenes = p.imagenes.map(fixUrl);
+    } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
+        try {
+            const parsed = JSON.parse(p.imagenes);
+            p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
+        } catch (e) {}
+    }
+    
+    // Fix included products in a combo if they exist
+    if (p.productos && Array.isArray(p.productos)) {
+        p.productos = p.productos.map(item => {
+            if (item.producto) item.producto = fixProduct(item.producto);
+            return item;
+        });
+    }
+    return p;
+};
+
 export const getProductsRequest = async () => {
     const response = await fetch(`${API_URL}/productos`);
     if (!response.ok) throw new Error('Error al traer productos');
     let productos = await response.json();
-
-    const fixUrl = (url) => {
-        if (!url) return url;
-        if (typeof url !== 'string') return url;
-        if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
-        if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
-        return url;
-    };
-
-    const fixProduct = (p) => {
-        p.imagen = fixUrl(p.imagen);
-        if (p.imagenes && Array.isArray(p.imagenes)) {
-            p.imagenes = p.imagenes.map(fixUrl);
-        } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
-            try {
-                const parsed = JSON.parse(p.imagenes);
-                p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
-            } catch (e) {}
-        }
-        
-        // Fix included products in a combo if they exist
-        if (p.productos && Array.isArray(p.productos)) {
-            p.productos = p.productos.map(item => {
-                if (item.producto) item.producto = fixProduct(item.producto);
-                return item;
-            });
-        }
-        return p;
-    };
 
     productos = productos.map(fixProduct);
 

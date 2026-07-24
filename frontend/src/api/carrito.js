@@ -9,12 +9,22 @@ const getHeaders = () => {
     };
 };
 
+import { fixProduct } from './products';
+
 export const getCarritoRequest = async () => {
     const response = await fetch(`${API_URL}/carrito`, {
         headers: getHeaders()
     });
     if (!response.ok) return { total: 0, lineas: [] };
-    return response.json();
+    const cart = await response.json();
+    if (cart.lineas && Array.isArray(cart.lineas)) {
+        cart.lineas = cart.lineas.map(linea => {
+            if (linea.producto) linea.producto = fixProduct(linea.producto);
+            if (linea.combo) linea.combo = fixProduct(linea.combo);
+            return linea;
+        });
+    }
+    return cart;
 };
 
 export const agregarAlCarritoRequest = async (idProducto, cantidad) => {

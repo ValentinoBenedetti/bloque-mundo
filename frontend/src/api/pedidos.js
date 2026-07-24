@@ -19,6 +19,8 @@ export const confirmarCompraRequest = async (data = {}) => {
     return response.json();
 };
 
+import { fixProduct } from './products';
+
 export const getPedidosRequest = async () => {
     // Obtenemos el token de la misma forma que el resto de la app
     const savedUser = localStorage.getItem('usuarioBloqueMundo');
@@ -32,7 +34,17 @@ export const getPedidosRequest = async () => {
     if (!response.ok) {
         throw new Error('Error al obtener el historial de compras');
     }
-    return response.json();
+    const pedidos = await response.json();
+    return pedidos.map(pedido => {
+        if (pedido.lineasPedido && Array.isArray(pedido.lineasPedido)) {
+            pedido.lineasPedido = pedido.lineasPedido.map(linea => {
+                if (linea.producto) linea.producto = fixProduct(linea.producto);
+                if (linea.combo) linea.combo = fixProduct(linea.combo);
+                return linea;
+            });
+        }
+        return pedido;
+    });
 };
 
 export const getHistorialVentasAdminRequest = async () => {
@@ -47,7 +59,17 @@ export const getHistorialVentasAdminRequest = async () => {
     if (!response.ok) {
         throw new Error('Error al obtener el historial de ventas');
     }
-    return response.json();
+    const pedidos = await response.json();
+    return pedidos.map(pedido => {
+        if (pedido.lineasPedido && Array.isArray(pedido.lineasPedido)) {
+            pedido.lineasPedido = pedido.lineasPedido.map(linea => {
+                if (linea.producto) linea.producto = fixProduct(linea.producto);
+                if (linea.combo) linea.combo = fixProduct(linea.combo);
+                return linea;
+            });
+        }
+        return pedido;
+    });
 };
 
 export const crearPreferenciaRequest = async (data = {}) => {

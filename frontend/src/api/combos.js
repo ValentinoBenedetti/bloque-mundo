@@ -9,10 +9,13 @@ const getHeaders = () => {
     };
 };
 
+import { fixProduct } from './products';
+
 export const getCombosRequest = async () => {
     const response = await fetch(`${API_URL}/combos`);
     if (!response.ok) throw new Error('Error al traer combos');
-    return response.json();
+    let combos = await response.json();
+    return combos.map(fixProduct);
 };
 
 export const createComboRequest = async (comboData) => {
