@@ -13,7 +13,7 @@ export const getProductsRequest = async () => {
         return url;
     };
 
-    productos = productos.map(p => {
+    const fixProduct = (p) => {
         p.imagen = fixUrl(p.imagen);
         if (p.imagenes && Array.isArray(p.imagenes)) {
             p.imagenes = p.imagenes.map(fixUrl);
@@ -23,20 +23,33 @@ export const getProductsRequest = async () => {
                 p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
             } catch (e) {}
         }
+        
+        // Fix included products in a combo if they exist
+        if (p.productos && Array.isArray(p.productos)) {
+            p.productos = p.productos.map(item => {
+                if (item.producto) item.producto = fixProduct(item.producto);
+                return item;
+            });
+        }
         return p;
-    });
+    };
+
+    productos = productos.map(fixProduct);
 
     try {
         const combosResponse = await fetch(`${API_URL}/combos`);
         if (combosResponse.ok) {
             const combos = await combosResponse.json();
-            const combosAsProducts = combos.map(c => ({
-                ...c,
-                idProducto: `combo-${c.idCombo}`,
-                codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
-                esCombo: true,
-                imagen: c.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop' // fallback
-            }));
+            const combosAsProducts = combos.map(c => {
+                c = fixProduct(c);
+                return {
+                    ...c,
+                    idProducto: `combo-${c.idCombo}`,
+                    codigoProducto: c.codigoCombo || `CMB-${c.idCombo}`,
+                    esCombo: true,
+                    imagen: c.imagen || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop' // fallback
+                };
+            });
             return [...productos, ...combosAsProducts];
         }
     } catch (e) {
@@ -46,11 +59,39 @@ export const getProductsRequest = async () => {
 };
 
 export const getProductRequest = async (id) => {
+    const fixUrl = (url) => {
+        if (!url) return url;
+        if (typeof url !== 'string') return url;
+        if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
+        if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
+        return url;
+    };
+    
+    const fixProduct = (p) => {
+        p.imagen = fixUrl(p.imagen);
+        if (p.imagenes && Array.isArray(p.imagenes)) {
+            p.imagenes = p.imagenes.map(fixUrl);
+        } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(p.imagenes);
+                p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
+            } catch (e) {}
+        }
+        if (p.productos && Array.isArray(p.productos)) {
+            p.productos = p.productos.map(item => {
+                if (item.producto) item.producto = fixProduct(item.producto);
+                return item;
+            });
+        }
+        return p;
+    };
+
     if (id && id.toString().startsWith('combo-')) {
         const realId = id.toString().replace('combo-', '');
         const response = await fetch(`${API_URL}/combos/${realId}`);
         if (!response.ok) throw new Error('Error al traer el combo');
-        const c = await response.json();
+        let c = await response.json();
+        c = fixProduct(c);
         return {
             ...c,
             idProducto: `combo-${c.idCombo}`,
@@ -62,25 +103,8 @@ export const getProductRequest = async (id) => {
 
     const response = await fetch(`${API_URL}/productos/${id}`);
     if (!response.ok) throw new Error('Error al traer el producto');
-    const p = await response.json();
-
-    const fixUrl = (url) => {
-        if (!url) return url;
-        if (typeof url !== 'string') return url;
-        if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
-        if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
-        return url;
-    };
-
-    p.imagen = fixUrl(p.imagen);
-    if (p.imagenes && Array.isArray(p.imagenes)) {
-        p.imagenes = p.imagenes.map(fixUrl);
-    } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
-        try {
-            const parsed = JSON.parse(p.imagenes);
-            p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
-        } catch (e) {}
-    }
+    let p = await response.json();
+    p = fixProduct(p);
     return p;
 };
 
