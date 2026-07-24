@@ -578,9 +578,20 @@ const HistorialVentas = () => {
                                         {pedido.lineas?.map((linea, idx) => {
                                             const itemComprado = linea.producto || linea.combo;
                                             const isCombo = !!linea.combo;
-                                            const imagen = isCombo
+                                            const rawImagen = isCombo
                                                 ? (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?q=80&w=600&auto=format&fit=crop')
                                                 : (itemComprado?.imagen || (Array.isArray(itemComprado?.imagenes) ? itemComprado.imagenes[0] : itemComprado?.imagenes) || itemComprado?.image || 'https://placehold.co/300x300/f1f5f9/64748b?text=Lego+Producto');
+                                            
+                                            // FORCE FIX THE URL DIRECTLY IN THE COMPONENT
+                                            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                                            let imagen = rawImagen;
+                                            if (typeof imagen === 'string') {
+                                                if (imagen.includes('http://localhost:3000')) {
+                                                    imagen = imagen.replace('http://localhost:3000', API_URL);
+                                                } else if (imagen.startsWith('uploads/')) {
+                                                    imagen = `${API_URL}/${imagen}`;
+                                                }
+                                            }
 
                                             const idStr = isCombo ? `combo-${itemComprado?.idCombo}` : itemComprado?.idProducto;
                                             const codigo = itemComprado?.codigoCombo || itemComprado?.codigoProducto || idStr;
