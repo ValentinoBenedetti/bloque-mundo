@@ -11,6 +11,7 @@ export const fixUrl = (url) => {
 export const fixProduct = (p) => {
     if (!p) return p;
     p.imagen = fixUrl(p.imagen);
+    if (p.image) p.image = fixUrl(p.image); // Also fix .image if it exists
     if (p.imagenes && Array.isArray(p.imagenes)) {
         p.imagenes = p.imagenes.map(fixUrl);
     } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
