@@ -21,7 +21,7 @@ export const verifyUserRequest = async (email) => {
 
 // Función para registrar al usuario nuevo con Google + datos extra
 export const registerRequest = async (userData) => {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/registro', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/registro`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),

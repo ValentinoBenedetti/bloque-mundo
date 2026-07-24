@@ -1,4 +1,4 @@
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/envios';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/envios`;
 
 export const getEnviosRequest = async () => {
     const savedUser = localStorage.getItem('usuarioBloqueMundo');
