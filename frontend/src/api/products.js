@@ -2,23 +2,58 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const fixUrl = (url) => {
     if (!url) return url;
+    
+    // Si la URL es un array o un string de array JSON, lo parseamos y tomamos el primero
+    if (Array.isArray(url)) url = url[0];
+    if (typeof url === 'string' && url.trim().startsWith('[')) {
+        try {
+            const parsed = JSON.parse(url);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                url = parsed[0];
+            }
+        } catch (e) {}
+    }
+
     if (typeof url !== 'string') return url;
+    
     if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
     if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
+    
+    // Si la URL es relativa y no empieza con http o /
+    if (!url.startsWith('http') && !url.startsWith('data:') && !url.startsWith('/')) {
+        // Eliminar posibles barras iniciales escapadas
+        const cleanUrl = url.replace(/^[\\\/]+/, '');
+        return `${API_URL}/${cleanUrl}`;
+    }
+    
     return url;
 };
 
 export const fixProduct = (p) => {
     if (!p) return p;
-    p.imagen = fixUrl(p.imagen);
-    if (p.image) p.image = fixUrl(p.image); // Also fix .image if it exists
-    if (p.imagenes && Array.isArray(p.imagenes)) {
-        p.imagenes = p.imagenes.map(fixUrl);
-    } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
-        try {
-            const parsed = JSON.parse(p.imagenes);
-            p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
-        } catch (e) {}
+    
+    // Fix imagen principal
+    if (p.imagen) {
+        p.imagen = fixUrl(p.imagen);
+    }
+    
+    // Fix image (fallback)
+    if (p.image) {
+        p.image = fixUrl(p.image);
+    }
+
+    // Fix imagenes array
+    if (p.imagenes) {
+        if (Array.isArray(p.imagenes)) {
+            p.imagenes = p.imagenes.map(fixUrl);
+        } else if (typeof p.imagenes === 'string' && p.imagenes.trim().startsWith('[')) {
+            try {
+                const parsed = JSON.parse(p.imagenes);
+                p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
+            } catch (e) {}
+        } else if (typeof p.imagenes === 'string') {
+            p.imagenes = [fixUrl(p.imagenes)];
+        }
     }
     
     // Fix included products in a combo if they exist
