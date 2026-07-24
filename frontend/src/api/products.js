@@ -63,6 +63,12 @@ export const fixProduct = (p) => {
             return item;
         });
     }
+    
+    // DEBUG: Append [FIXED] to know if this function ran
+    if (p.titulo && !p.titulo.includes('[FIXED]')) {
+        p.titulo = p.titulo + ' [FIXED]';
+    }
+    
     return p;
 };
 
