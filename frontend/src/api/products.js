@@ -3,7 +3,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const getProductsRequest = async () => {
     const response = await fetch(`${API_URL}/productos`);
     if (!response.ok) throw new Error('Error al traer productos');
-    const productos = await response.json();
+    let productos = await response.json();
+
+    productos = productos.map(p => {
+        if (p.imagen && p.imagen.includes('http://localhost:3000')) {
+            p.imagen = p.imagen.replace('http://localhost:3000', API_URL);
+        } else if (p.imagen && p.imagen.startsWith('uploads/')) {
+            p.imagen = `${API_URL}/${p.imagen}`;
+        }
+        return p;
+    });
 
     try {
         const combosResponse = await fetch(`${API_URL}/combos`);
@@ -41,7 +50,13 @@ export const getProductRequest = async (id) => {
 
     const response = await fetch(`${API_URL}/productos/${id}`);
     if (!response.ok) throw new Error('Error al traer el producto');
-    return response.json();
+    const p = await response.json();
+    if (p.imagen && p.imagen.includes('http://localhost:3000')) {
+        p.imagen = p.imagen.replace('http://localhost:3000', API_URL);
+    } else if (p.imagen && p.imagen.startsWith('uploads/')) {
+        p.imagen = `${API_URL}/${p.imagen}`;
+    }
+    return p;
 };
 
 export const createProductRequest = async (productData) => {
