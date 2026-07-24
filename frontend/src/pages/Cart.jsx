@@ -391,70 +391,72 @@ const Cart = () => {
                         {/* LISTA DE PRODUCTOS (Izquierda) */}
                         <div className="flex-1 space-y-4">
                             {cart.map((item, index) => (
-                                <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-6">
-                                    <div className="w-24 h-24 bg-slate-50 rounded-lg p-2 shrink-0">
-                                        <img
-                                            src={item.imagen || item.imagenes || item.image}
-                                            className="w-full h-full object-contain mix-blend-multiply"
-                                            alt="producto"
-                                        />
-                                    </div>
+                                <div key={index} className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
+                                    <div className="flex items-start sm:items-center gap-4 sm:gap-6 flex-1 min-w-0">
+                                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50 rounded-lg p-2 shrink-0">
+                                            <img
+                                                src={item.imagen || item.imagenes || item.image}
+                                                className="w-full h-full object-contain mix-blend-multiply"
+                                                alt="producto"
+                                            />
+                                        </div>
 
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-black text-slate-800 leading-tight mb-1 uppercase italic">
-                                            {item.titulo || item.nombre}
-                                        </h3>
-                                        
-                                        {priceChanges[item.idProducto || item.id_producto || item.id] ? (
-                                            <div className="flex flex-col mb-4">
-                                                <span className="text-slate-400 font-bold text-sm line-through">
-                                                    {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].oldPrice)} c/u
-                                                </span>
-                                                <span className="text-brand-red font-black text-sm">
-                                                    {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].newPrice)} c/u
-                                                </span>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm sm:text-lg font-black text-slate-800 leading-tight mb-1 uppercase italic break-words">
+                                                {item.titulo || item.nombre}
+                                            </h3>
+                                            
+                                            {priceChanges[item.idProducto || item.id_producto || item.id] ? (
+                                                <div className="flex flex-col mb-4">
+                                                    <span className="text-slate-400 font-bold text-xs sm:text-sm line-through">
+                                                        {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].oldPrice)} c/u
+                                                    </span>
+                                                    <span className="text-brand-red font-black text-xs sm:text-sm">
+                                                        {formatPrice(priceChanges[item.idProducto || item.id_producto || item.id].newPrice)} c/u
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <p className="text-brand-red font-black text-xs sm:text-sm mb-3 sm:mb-4">
+                                                    {formatPrice(item.precioUnitario || item.precio || item.price)} c/u
+                                                </p>
+                                            )}
+
+                                            <div className="flex items-center border-2 border-slate-100 rounded-lg w-max">
+                                                <button
+                                                    onClick={() => {
+                                                        if (item.quantity === 1) {
+                                                            setConfirmModal({
+                                                                isOpen: true,
+                                                                product: item,
+                                                                action: 'minus'
+                                                            });
+                                                        } else {
+                                                            addToCart(item, -1);
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                >
+                                                    <Minus size={16} />
+                                                </button>
+                                                <span className="px-3 sm:px-4 font-black text-slate-800 text-sm sm:text-base">{item.quantity}</span>
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await addToCart(item, 1, false);
+                                                        } catch (err) {
+                                                            setStockError(err.message || "No hay suficiente stock");
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
+                                                >
+                                                    <Plus size={16} />
+                                                </button>
                                             </div>
-                                        ) : (
-                                            <p className="text-brand-red font-black text-sm mb-4">
-                                                {formatPrice(item.precioUnitario || item.precio || item.price)} c/u
-                                            </p>
-                                        )}
-
-                                        <div className="flex items-center border-2 border-slate-100 rounded-lg w-max">
-                                            <button
-                                                onClick={() => {
-                                                    if (item.quantity === 1) {
-                                                        setConfirmModal({
-                                                            isOpen: true,
-                                                            product: item,
-                                                            action: 'minus'
-                                                        });
-                                                    } else {
-                                                        addToCart(item, -1);
-                                                    }
-                                                }}
-                                                className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
-                                            >
-                                                <Minus size={16} />
-                                            </button>
-                                            <span className="px-4 font-black text-slate-800">{item.quantity}</span>
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        await addToCart(item, 1, false);
-                                                    } catch (err) {
-                                                        setStockError(err.message || "No hay suficiente stock");
-                                                    }
-                                                }}
-                                                className="px-3 py-1 text-slate-400 hover:text-slate-900 transition"
-                                            >
-                                                <Plus size={16} />
-                                            </button>
                                         </div>
                                     </div>
 
-                                    <div className="text-right">
-                                        <p className="text-xl font-black text-slate-900 mb-4">
+                                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start border-t sm:border-t-0 border-slate-100 pt-4 sm:pt-0">
+                                        <p className="text-lg sm:text-xl font-black text-slate-900 sm:mb-4">
                                             {formatPrice((item.precio || item.price) * item.quantity)}
                                         </p>
                                         <button
@@ -465,7 +467,7 @@ const Cart = () => {
                                                     action: 'remove'
                                                 });
                                             }}
-                                            className="text-slate-300 hover:text-brand-red transition p-2"
+                                            className="text-slate-300 hover:text-brand-red transition p-2 sm:p-0 flex items-center justify-center rounded-lg hover:bg-red-50 sm:hover:bg-transparent"
                                         >
                                             <Trash2 size={20} />
                                         </button>
