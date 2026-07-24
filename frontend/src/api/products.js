@@ -3,7 +3,28 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const getProductsRequest = async () => {
     const response = await fetch(`${API_URL}/productos`);
     if (!response.ok) throw new Error('Error al traer productos');
-    const productos = await response.json();
+    let productos = await response.json();
+
+    const fixUrl = (url) => {
+        if (!url) return url;
+        if (typeof url !== 'string') return url;
+        if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
+        if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
+        return url;
+    };
+
+    productos = productos.map(p => {
+        p.imagen = fixUrl(p.imagen);
+        if (p.imagenes && Array.isArray(p.imagenes)) {
+            p.imagenes = p.imagenes.map(fixUrl);
+        } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(p.imagenes);
+                p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
+            } catch (e) {}
+        }
+        return p;
+    });
 
     try {
         const combosResponse = await fetch(`${API_URL}/combos`);
@@ -41,7 +62,26 @@ export const getProductRequest = async (id) => {
 
     const response = await fetch(`${API_URL}/productos/${id}`);
     if (!response.ok) throw new Error('Error al traer el producto');
-    return response.json();
+    const p = await response.json();
+
+    const fixUrl = (url) => {
+        if (!url) return url;
+        if (typeof url !== 'string') return url;
+        if (url.includes('http://localhost:3000')) return url.replace('http://localhost:3000', API_URL);
+        if (url.startsWith('uploads/')) return `${API_URL}/${url}`;
+        return url;
+    };
+
+    p.imagen = fixUrl(p.imagen);
+    if (p.imagenes && Array.isArray(p.imagenes)) {
+        p.imagenes = p.imagenes.map(fixUrl);
+    } else if (typeof p.imagenes === 'string' && p.imagenes.startsWith('[')) {
+        try {
+            const parsed = JSON.parse(p.imagenes);
+            p.imagenes = Array.isArray(parsed) ? parsed.map(fixUrl) : parsed;
+        } catch (e) {}
+    }
+    return p;
 };
 
 export const createProductRequest = async (productData) => {
