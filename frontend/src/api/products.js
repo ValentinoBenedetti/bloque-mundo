@@ -64,11 +64,6 @@ export const fixProduct = (p) => {
         });
     }
     
-    // DEBUG: Append [FIXED] to know if this function ran
-    if (p.titulo && !p.titulo.includes('[FIXED]')) {
-        p.titulo = p.titulo + ' [FIXED]';
-    }
-    
     return p;
 };
 
