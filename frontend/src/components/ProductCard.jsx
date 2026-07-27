@@ -83,7 +83,7 @@ const ProductCard = ({ product, onMouseEnter, onMouseLeave }) => {
 
             <div className="h-64 bg-white flex items-center justify-center relative overflow-hidden">
                 <div className="h-full w-full transform group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
-                    <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} className="object-contain h-full w-full mix-blend-multiply" />
+                    <img src={imagen || 'https://via.placeholder.com/300'} alt={nombre} loading="lazy" className="object-contain h-full w-full mix-blend-multiply" />
                 </div>
                 
                 {product.estado === 'NoPublicado' && (

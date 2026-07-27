@@ -425,11 +425,8 @@ const MisCompras = () => {
                                             return (
                                                 <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-100 rounded-lg hover:bg-slate-100/50 transition">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="h-16 w-16 bg-white border border-slate-200 rounded overflow-hidden shrink-0 flex items-center justify-center p-1 relative group">
-                                                            <img src={imagen} alt={itemComprado?.titulo} className="object-contain w-full h-full mix-blend-multiply" />
-                                                            <span className="text-[8px] text-red-600 bg-white/90 absolute inset-0 break-all overflow-y-auto leading-tight z-10 hidden group-hover:block cursor-help font-mono p-0.5" title={String(imagen)}>
-                                                                {String(imagen)}
-                                                            </span>
+                                                        <div className="h-16 w-16 bg-white border border-slate-200 rounded overflow-hidden shrink-0 flex items-center justify-center p-1 relative">
+                                                            <img src={imagen} alt={itemComprado?.titulo} loading="lazy" className="object-contain w-full h-full mix-blend-multiply" />
                                                         </div>
                                                         <div>
                                                             <h4 className="font-bold text-sm text-slate-800">
