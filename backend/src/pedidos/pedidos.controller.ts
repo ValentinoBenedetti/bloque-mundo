@@ -57,15 +57,16 @@ export class PedidosController {
   // Este endpoint sirve de puente para que Mercado Pago acepte el auto_return (que requiere HTTPS)
   // y luego redirija al usuario a su localhost:5173 (que es HTTP)
   @Get('retorno')
-  @Redirect('http://localhost:5173/perfil/compras', 302)
+  @Redirect(process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/perfil/compras` : 'http://localhost:5173/perfil/compras', 302)
   async retornoMercadoPago(@Request() req: any) {
     // Obtenemos los parametros de la URL original
     const url = new URL(req.url, `http://${req.headers.host}`);
     const status = url.searchParams.get('status');
     const idPedido = url.searchParams.get('idPedido') || url.searchParams.get('external_reference');
 
-    // Redirigimos al frontend local con los parametros
-    return { url: `http://localhost:5173/perfil/compras?status=${status}&idPedido=${idPedido}` };
+    // Redirigimos al frontend local o remoto con los parametros
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return { url: `${frontendUrl}/perfil/compras?status=${status}&idPedido=${idPedido}` };
   }
 
   // PATCH: http://localhost:3000/pedidos/:id/cancelar

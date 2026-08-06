@@ -166,9 +166,9 @@ export class PedidosService {
         body: {
           items: items,
           back_urls: {
-            success: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `http://localhost:5173/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
-            failure: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=failure` : `http://localhost:5173/perfil/compras?status=failure&idPedido=${(pedidoPendiente as any).idPedido}`,
-            pending: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `http://localhost:5173/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
+            success: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
+            failure: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=failure` : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/perfil/compras?status=failure&idPedido=${(pedidoPendiente as any).idPedido}`,
+            pending: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `${process.env.FRONTEND_URL || 'http://localhost:5173'}/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
           },
           auto_return: 'approved',
           external_reference: (pedidoPendiente as any).idPedido.toString(),
