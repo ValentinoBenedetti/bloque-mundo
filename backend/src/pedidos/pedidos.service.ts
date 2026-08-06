@@ -109,7 +109,7 @@ export class PedidosService {
             }
           }
           if (linea.combo && linea.combo.productos) {
-            linea.combo.productos.forEach(p => { 
+            linea.combo.productos.forEach(p => {
               if (p.tema) {
                 temasEnCarrito.push(p.tema.idTema);
               } else {
@@ -171,7 +171,7 @@ export class PedidosService {
             pending: bridgeUrl ? `${bridgeUrl}${bridgeParams}&status=success` : `http://localhost:5173/perfil/compras?status=success&idPedido=${(pedidoPendiente as any).idPedido}`,
           },
           auto_return: 'approved',
-          external_reference: (pedidoPendiente as any).idPedido.toString(), 
+          external_reference: (pedidoPendiente as any).idPedido.toString(),
           notification_url: process.env.WEBHOOK_URL,
           metadata: {
             id_pedido: (pedidoPendiente as any).idPedido,
@@ -208,7 +208,7 @@ export class PedidosService {
     for (const linea of carrito.lineas) {
       const item = linea.producto || linea.combo;
       if (!item) continue;
-      
+
       const isCombo = !!linea.combo;
       const idStr = isCombo ? `combo-${linea.combo.idCombo}` : linea.producto.idProducto.toString();
       const titulo = isCombo ? linea.combo.titulo : linea.producto.titulo;
@@ -237,22 +237,22 @@ export class PedidosService {
       const lineasActualizadas = await this.lineaCarritoRepository.find({ where: { carrito: { idCarrito: carrito.idCarrito } } });
       const totalBruto = lineasActualizadas.reduce((acc, l) => acc + (Number(l.precioUnitario) * l.cantidad), 0);
       carrito.total = totalBruto;
-      
+
       const porcentaje = Number(carrito.usuario?.nivel?.porcentajeDescuento || 0);
       carrito.descuentoAplicado = totalBruto * (porcentaje / 100);
       carrito.totalConDescuento = totalBruto - carrito.descuentoAplicado;
-      
+
       await this.carritoRepository.save(carrito);
 
       throw new BadRequestException(errorDetalle);
     }
 
     // Validar Stock
-    const demandaProductos = new Map<number, { 
-      titulo: string; 
-      solicitada: number; 
-      stockActual: number; 
-      combosInvolucrados: Set<string>; 
+    const demandaProductos = new Map<number, {
+      titulo: string;
+      solicitada: number;
+      stockActual: number;
+      combosInvolucrados: Set<string>;
     }>();
 
     for (const linea of carrito.lineas) {
@@ -260,27 +260,27 @@ export class PedidosService {
       if (linea.producto) {
         const prod = linea.producto;
         const stockActual = Number(prod.stock) || 0;
-        const actual = demandaProductos.get(prod.idProducto) || { 
-          titulo: prod.titulo, 
-          solicitada: 0, 
-          stockActual: stockActual, 
-          combosInvolucrados: new Set<string>() 
+        const actual = demandaProductos.get(prod.idProducto) || {
+          titulo: prod.titulo,
+          solicitada: 0,
+          stockActual: stockActual,
+          combosInvolucrados: new Set<string>()
         };
         actual.solicitada += cant;
         demandaProductos.set(prod.idProducto, actual);
       } else if (linea.combo) {
-        const comboCompleto = await this.comboRepository.findOne({ 
-          where: { idCombo: linea.combo.idCombo }, 
-          relations: ['productos'] 
+        const comboCompleto = await this.comboRepository.findOne({
+          where: { idCombo: linea.combo.idCombo },
+          relations: ['productos']
         });
         if (comboCompleto && comboCompleto.productos) {
           for (const p of comboCompleto.productos) {
             const stockActual = Number(p.stock) || 0;
-            const actual = demandaProductos.get(p.idProducto) || { 
-              titulo: p.titulo, 
-              solicitada: 0, 
-              stockActual: stockActual, 
-              combosInvolucrados: new Set<string>() 
+            const actual = demandaProductos.get(p.idProducto) || {
+              titulo: p.titulo,
+              solicitada: 0,
+              stockActual: stockActual,
+              combosInvolucrados: new Set<string>()
             };
             actual.solicitada += cant;
             actual.combosInvolucrados.add(comboCompleto.titulo);
@@ -296,7 +296,7 @@ export class PedidosService {
     for (const [id, info] of demandaProductos.entries()) {
       if (info.solicitada > info.stockActual) {
         console.warn(`Stock insuficiente detectado: ${info.titulo} - Solicitada: ${info.solicitada}, Stock: ${info.stockActual}`);
-        
+
         let comboSuffix = '';
         if (info.combosInvolucrados.size > 0) {
           const list = Array.from(info.combosInvolucrados).map(c => `"${c}"`).join(', ');
@@ -305,7 +305,7 @@ export class PedidosService {
             : ` (incluido en los combos ${list})`;
         }
 
-        const messageText = info.stockActual === 0 
+        const messageText = info.stockActual === 0
           ? `El producto "${info.titulo}"${comboSuffix} no tiene stock suficiente (Solicitaste ${info.solicitada}, pero no queda stock).`
           : `El producto "${info.titulo}"${comboSuffix} no tiene stock suficiente (Solicitaste ${info.solicitada}, pero quedan ${info.stockActual} disponibles).`;
 
@@ -334,7 +334,7 @@ export class PedidosService {
             }
           }
           if (linea.combo && linea.combo.productos) {
-            linea.combo.productos.forEach(p => { 
+            linea.combo.productos.forEach(p => {
               if (p.tema) {
                 temasEnCarrito.push(p.tema.idTema);
               } else {
@@ -346,7 +346,7 @@ export class PedidosService {
         cuponEntidad = await this.cuponesService.validate(codigoCupon, carrito.total, temasEnCarrito, idUsuario);
         const descuento = totalFinal * (Number(cuponEntidad?.porcentaje || 0) / 100);
         totalFinal -= descuento;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Calcular costo de envío según el CP
@@ -431,17 +431,17 @@ export class PedidosService {
         linea.producto.stock = Math.max(0, linea.producto.stock - linea.cantidad);
         await this.productoRepository.save(linea.producto);
       } else if (linea.combo) {
-         // Cargar productos del combo si no están
-         const comboCompleto = await this.comboRepository.findOne({ 
-           where: { idCombo: linea.combo.idCombo }, 
-           relations: ['productos'] 
-         });
-         if (comboCompleto && comboCompleto.productos) {
-           for (const p of comboCompleto.productos) {
-             p.stock = Math.max(0, p.stock - linea.cantidad);
-             await this.productoRepository.save(p);
-           }
-         }
+        // Cargar productos del combo si no están
+        const comboCompleto = await this.comboRepository.findOne({
+          where: { idCombo: linea.combo.idCombo },
+          relations: ['productos']
+        });
+        if (comboCompleto && comboCompleto.productos) {
+          for (const p of comboCompleto.productos) {
+            p.stock = Math.max(0, p.stock - linea.cantidad);
+            await this.productoRepository.save(p);
+          }
+        }
       }
     }
 
@@ -462,11 +462,11 @@ export class PedidosService {
 
     // 4. Recalcular nivel y crear envio
     await this.usuariosService.recalcularNivel(pedido.usuario.idUsuario);
-    
+
     const dir = pedido.direccionEnvio || pedido.usuario.direccion || '';
     const cp = extraerCP(dir);
     const costoEnvio = calcularCostoEnvio(cp);
-    
+
     const envioCreado = await this.enviosService.crearEnvio(pedido.idPedido, cp, costoEnvio, dir);
     pedido.envio = envioCreado; // Asignar para que esté disponible en correos y frontend
 
@@ -523,7 +523,7 @@ export class PedidosService {
 
       try {
         const data = await payment.get({ id: paymentId });
-        
+
         if (data.status === 'approved') {
           const idPedido = data.external_reference || data.metadata?.id_pedido;
 
